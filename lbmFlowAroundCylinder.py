@@ -4,7 +4,6 @@ import datetime
 import numpy             as np
 import matplotlib        as mplt
 import matplotlib.pyplot as plt
-from matplotlib import cm
 
 ### General data
 time        = datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S')
@@ -83,7 +82,7 @@ for time in range(maxIter):
     if (time%100==0): # Visualization
         plt.clf()
         plt.imshow(np.sqrt(u[0]**2+u[1]**2).transpose(),
-                   cmap = cm.inferno,
+                   cmap = mplt.cm.inferno,
                    vmin = 0.0,
                    vmax = 0.1)
         plt.savefig(png_dir+"vel."+str(time/100).zfill(4)+".png")
