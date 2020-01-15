@@ -49,7 +49,7 @@ class Lattice:
             for j in range(self.ny):
                 pt           = self.lattice_coords(i, j)
                 inside       = self.is_inside(polygon, pt)
-                lattice[i,j] = inside
+                self.lattice[i,j] = inside
 
     ### ************************************************
     ### Get lattice coordinates from integers
@@ -75,8 +75,22 @@ class Lattice:
         for i in range(len(poly)):
             if ((poly[i,1] < pt[1] and poly[j,1] >= pt[1]) or
                 (poly[j,1] < pt[1] and poly[i,1] >= pt[1])):
-                if ((poly[i,0] + (pt[1] - poly[i,1])/(poly[j,1] - poly[i,1])*(poly[j,0] - poly[i,0])) < pt[0]):
+
+                # Compute slope
+                slope = (poly[j,0] - poly[i,0])/(poly[j,1] - poly[i,1])
+
+                # Check side
+                if ((poly[i,0] + (pt[1] - poly[i,1])*slope) < pt[0]):
                     odd_nodes = not odd_nodes
+
+            # Increment
             j = i
 
         return odd_nodes
+
+    ### ************************************************
+    ### Generate lattice image
+    def generate_image(self):
+
+        plt.imshow(self.lattice)
+        plt.show()

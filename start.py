@@ -21,8 +21,8 @@ xmin           =-10.0
 xmax           = 20.0
 ymin           =-5.0
 ymax           = 5.0
-nx             = 100
-ny             = 100
+nx             = 300
+ny             = 300
 
 ### Initialize shape
 shape = Shape(shape_name,
@@ -44,3 +44,4 @@ lattice = Lattice(lattice_name,
 
 # Generate lattice from shape closed curve
 lattice.generate(shape.curve_pts)
+lattice.generate_image()
