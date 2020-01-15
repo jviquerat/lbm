@@ -5,7 +5,7 @@ import numpy             as np
 import matplotlib        as mplt
 import matplotlib.pyplot as plt
 
-### General data
+# General data
 time        = datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S')
 results_dir = './results/'
 output_dir  = results_dir+str(time)+'/'
@@ -15,7 +15,7 @@ if (not os.path.exists(results_dir)): os.makedirs(results_dir)
 if (not os.path.exists(output_dir)):  os.makedirs(output_dir)
 if (not os.path.exists(png_dir)):     os.makedirs(png_dir)
 
-### Flow parameters
+# Flow parameters
 maxIter = 20000     # total nb of iterations
 Re      = 1000.0    # Re number
 nx      = 520
@@ -29,21 +29,20 @@ uLB     = 0.04      # velocity in lattice units
 nulb    = uLB*r/Re
 omega   = 1.0/(3.*nulb+0.5) # relaxation parameter.
 
-### Lattice definition
-# Set lattice velocities
+# Lattice velocities
 c = np.array([(x,y) for x in [0,-1,1] for y in [0,-1,1]]) # lattice velocities
 
-# Set lattice weights
-t                                            = np.ones(q);
+# Lattice weights
+t                                                   = np.ones(q);
 t[np.asarray([np.linalg.norm(ci)<1.1 for ci in c])] = 1./9.  # cardinal       values
 t[np.asarray([np.linalg.norm(ci)>1.1 for ci in c])] = 1./36. # extra-cardinal values
-t[0]                                         = 4./9.  # central        value
+t[0]                                                = 4./9.  # central        value
 
 
 noslip = [c.tolist().index((-c[i]).tolist()) for i in range(q)]
-i1 = np.arange(q)[np.asarray([ci[0]<0  for ci in c])] # Unknown on right wall.
-i2 = np.arange(q)[np.asarray([ci[0]==0 for ci in c])] # Vertical middle.
-i3 = np.arange(q)[np.asarray([ci[0]>0  for ci in c])] # Unknown on left wall.
+i1     = np.arange(q)[np.asarray([ci[0]<0  for ci in c])] # Unknown on right wall.
+i2     = np.arange(q)[np.asarray([ci[0]==0 for ci in c])] # Vertical middle.
+i3     = np.arange(q)[np.asarray([ci[0]>0  for ci in c])] # Unknown on left wall.
 
 print(noslip)
 
