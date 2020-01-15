@@ -39,7 +39,7 @@ class Lattice:
 
     ### ************************************************
     ### Generate lattice
-    def generate(self, curve):
+    def generate(self, polygon):
 
         # Declare lattice array
         self.lattice = np.zeros((self.nx, self.ny), dtype=bool)
@@ -47,10 +47,9 @@ class Lattice:
         # Fill lattice
         for i in range(self.nx):
             for j in range(self.ny):
-                pt     = self.lattice_coords(i, j)
-                
-                #inside = self.is_inside(curve, x, y)
-
+                pt           = self.lattice_coords(i, j)
+                inside       = self.is_inside(polygon, pt)
+                lattice[i,j] = inside
 
     ### ************************************************
     ### Get lattice coordinates from integers
@@ -63,3 +62,21 @@ class Lattice:
         y  = self.ymin + j*dy
 
         return [x, y]
+
+    ### ************************************************
+    ### Determine if a pt is inside or outside a closed polygon
+    def is_inside(self, poly, pt):
+
+        # Initialize
+        j         = len(poly) - 1
+        odd_nodes = False
+
+        # Check inside or outside
+        for i in range(len(poly)):
+            if ((poly[i,1] < pt[1] and poly[j,1] >= pt[1]) or
+                (poly[j,1] < pt[1] and poly[i,1] >= pt[1])):
+                if ((poly[i,0] + (pt[1] - poly[i,1])/(poly[j,1] - poly[i,1])*(poly[j,0] - poly[i,0])) < pt[0]):
+                    odd_nodes = not odd_nodes
+            j = i
+
+        return odd_nodes
