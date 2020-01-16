@@ -42,18 +42,18 @@ class Lattice:
     def generate(self, polygon):
 
         # Declare lattice array
-        self.lattice = np.zeros((self.nx, self.ny), dtype=bool)
+        self.lattice = np.zeros((self.ny, self.nx), dtype=bool)
 
         # Fill lattice
         for i in range(self.nx):
             for j in range(self.ny):
-                pt           = self.lattice_coords(i, j)
+                pt           = self.lattice_coords(j, i)
                 inside       = self.is_inside(polygon, pt)
-                self.lattice[i,j] = inside
+                self.lattice[j,i] = inside
 
     ### ************************************************
     ### Get lattice coordinates from integers
-    def lattice_coords(self, i, j):
+    def lattice_coords(self, j, i):
 
         # Compute and return the coordinates of the lattice node (i,j)
         dx = (self.xmax - self.xmin)/(self.nx - 1)

@@ -1,3 +1,6 @@
+# Generic imports
+import math
+
 # Custom imports
 from shapes_utils  import *
 from lattice_utils import *
@@ -17,12 +20,13 @@ ctrl_pts       = np.random.rand(n_pts,2)
 ### LBM parameters
 lattice_name   = 'lattice'
 Re             = 100.0
-xmin           =-10.0
-xmax           = 20.0
-ymin           =-5.0
-ymax           = 5.0
-nx             = 300
-ny             = 300
+xmin           =-5.0
+xmax           = 10.0
+ymin           =-2.5
+ymax           = 2.5
+density        = 50
+nx             = math.floor((xmax-xmin)*density)
+ny             = math.floor((ymax-ymin)*density)
 
 ### Initialize shape
 shape = Shape(shape_name,
