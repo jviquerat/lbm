@@ -24,7 +24,7 @@ xmin           =-5.0
 xmax           = 10.0
 ymin           =-2.5
 ymax           = 2.5
-density        = 50
+density        = 100
 nx             = math.floor((xmax-xmin)*density)
 ny             = math.floor((ymax-ymin)*density)
 

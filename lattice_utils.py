@@ -1,6 +1,8 @@
 # Generic imports
+import PIL
 import copy
 import numpy             as np
+import matplotlib        as mplt
 import matplotlib.pyplot as plt
 
 ### ************************************************
@@ -94,6 +96,19 @@ class Lattice:
     ### ************************************************
     ### Generate lattice image
     def generate_image(self):
+        plt.axis('off')
+        plt.imshow(self.lattice,
+                   cmap=mplt.cm.inferno)
+        plt.savefig(self.name, dpi=200, bbox_inches='tight')
+        plt.close()
+        self.trim_white(self.name+'.png')
 
-        plt.imshow(self.lattice)
-        plt.show()
+    ### ************************************************
+    ### Crop white background from image
+    def trim_white(self, filename):
+        im   = PIL.Image.open(filename)
+        bg   = PIL.Image.new(im.mode, im.size, (255,255,255))
+        diff = PIL.ImageChops.difference(im, bg)
+        bbox = diff.getbbox()
+        cp   = im.crop(bbox)
+        cp.save(filename)
