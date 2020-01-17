@@ -17,7 +17,8 @@ class Lattice:
                  ymin = None,
                  ymax = None,
                  nx   = None,
-                 ny   = None):
+                 ny   = None,
+                 q    = None):
 
         if (name is None): name = 'lattice'
         if (xmin is None): xmin =-10.0
@@ -26,6 +27,7 @@ class Lattice:
         if (ymax is None): ymax = -5.0
         if (nx   is None): nx   = 100
         if (ny   is None): ny   = 200
+        if (q    is None): q    = 9
 
         self.name = name
         self.xmin = xmin
@@ -34,34 +36,49 @@ class Lattice:
         self.ymax = ymax
         self.nx   = nx
         self.ny   = ny
+        self.q    = q
 
     ### ************************************************
     ### Solve LBM
     def solve(self):
 
+        return 0
+
 
     ### ************************************************
     ### Solve equilibrium state
-    def solve_eq(self, rho, u):
+    #def solve_eq(self, rho, u):
 
     ### ************************************************
     ### Initialize computation
-    def init_computation(self):
+    def init_computation(self, u_in):
 
         # D2Q9 Velocities
         self.c = np.array([(x,y) for x in [0,-1,1] for y in [0,-1,1]])
 
         # Weights
         # Cardinal values, then extra-cardinal values, then central value
-        self.w = np.ones(9)
-        self.w[np.asarray([np.linalg.norm(ci)<1.1 for ci in c])] = 1./9.
-        self.w[np.asarray([np.linalg.norm(ci)>1.1 for ci in c])] = 1./36.
-        self.w[0]                                                = 4./9.
+        idx_card       = [np.linalg.norm(ci)<1.1 for ci in self.c]
+        idx_extra_card = [np.linalg.norm(ci)>1.1 for ci in self.c]
+        
+        self.w                             = np.ones(self.q)
+        self.w[np.asarray(idx_card)]       = 1./9.
+        self.w[np.asarray(idx_extra_card)] = 1./36.
+        self.w[0]                          = 4./9.
 
         # Boundary conditions
-        # Values on which to apply the different BC
+        # Velocities on which to apply the different BC
+        self.right = np.arange(self.q)[np.asarray([ci[0] <0
+                                                   for ci in self.c])]
+        self.left  = np.arange(self.q)[np.asarray([ci[0] >0
+                                                   for ci in self.c])]
+        self.mid   = np.arange(self.q)[np.asarray([ci[0]==0
+                                                   for ci in self.c])]
+        #self.ns    = [self.c.tolist().index((-self.c[i]).tolist()) for i in range(self.q)]
+        self.ns    = copy.deepcopy(self.c)
 
         # Initial velocity
+        #self.u_in  = np.fromfunction(lambda d,x,y: (1-d)*uLB,(2,nx,ny))
 
     ### ************************************************
     ### Generate lattice

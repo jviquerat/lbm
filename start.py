@@ -18,17 +18,23 @@ edgy           = np.random.uniform(low=0.0, high=1.0, size=n_pts)
 ctrl_pts       = np.random.rand(n_pts,2)
 
 ### LBM parameters
+q              = 9     # D2Q9 lattice
 t_max          = 1.0
 Re             = 100.0
 x_min          =-5.0
 x_max          = 10.0
 y_min          =-2.5
 y_max          = 2.5
-lat_density    = 100
+lat_density    = 10
 lattice_name   = 'lattice'
-nx             = math.floor((xmax-xmin)*lat_density)
-ny             = math.floor((ymax-ymin)*lat_density)
+nx             = math.floor((x_max-x_min)*lat_density)
+ny             = math.floor((y_max-y_min)*lat_density)
 it_max         = 2.0*nx
+
+### Normalize units
+c_sound        = 343.0 # speed of sound
+u_in           = Re/c_sound
+
 
 ### Initialize shape
 shape = Shape(shape_name,
@@ -47,9 +53,11 @@ shape.write_csv()
 lattice = Lattice(lattice_name,
                   x_min, x_max,
                   y_min, y_max,
-                  nx,    ny)
+                  nx,    ny,
+                  q)
 
 # Generate lattice from shape closed curve
 lattice.generate(shape.curve_pts)
 lattice.generate_image()
-lattice.init_computation()
+lattice.init_computation(u_in)
+lattice.solve()
