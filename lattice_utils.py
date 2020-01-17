@@ -40,9 +40,21 @@ class Lattice:
 
     ### ************************************************
     ### Solve LBM
-    def solve(self):
+    def solve(self, it_max):
 
-        return 0
+        # Solve
+        for it in range(it_max):
+            print('coucou')
+
+            # Propagation
+
+            # Macroscopic quantities
+
+            # Equilibrium
+
+            # Collision
+
+        #return 0
 
 
     ### ************************************************
@@ -60,7 +72,7 @@ class Lattice:
         # Cardinal values, then extra-cardinal values, then central value
         idx_card       = [np.linalg.norm(ci)<1.1 for ci in self.c]
         idx_extra_card = [np.linalg.norm(ci)>1.1 for ci in self.c]
-        
+
         self.w                             = np.ones(self.q)
         self.w[np.asarray(idx_card)]       = 1./9.
         self.w[np.asarray(idx_extra_card)] = 1./36.
@@ -75,7 +87,7 @@ class Lattice:
         self.mid   = np.arange(self.q)[np.asarray([ci[0]==0
                                                    for ci in self.c])]
         #self.ns    = [self.c.tolist().index((-self.c[i]).tolist()) for i in range(self.q)]
-        self.ns    = copy.deepcopy(self.c)
+        self.ns    = self.c.copy()
 
         # Initial velocity
         #self.u_in  = np.fromfunction(lambda d,x,y: (1-d)*uLB,(2,nx,ny))
@@ -86,7 +98,7 @@ class Lattice:
 
         # Because we loop on the lattice left-right and top-down,
         # we need to flip the polygon up-down
-        poly       = copy.deepcopy(polygon)
+        poly       = polygon.copy()
         poly[:,1] *= -1.0
 
         # Declare lattice array
