@@ -83,7 +83,10 @@ class Lattice:
 
             # Top/bottom walls b.c.
 
+
             # Obstacle b.c.
+            for q in range (self.q):
+                self.g[q,self.lattice] = self.g[self.ns[q],self.lattice]
 
 
     ### ************************************************
@@ -96,7 +99,6 @@ class Lattice:
 
         # D2Q9 Velocities
         self.c = np.array([(x,y) for x in [0,-1,1] for y in [0,-1,1]])
-        print(self.c)
 
         # Weights
         # Cardinal values, then extra-cardinal values, then central value
@@ -116,8 +118,8 @@ class Lattice:
                                                    for ci in self.c])]
         self.mid   = np.arange(self.q)[np.asarray([ci[0]==0
                                                    for ci in self.c])]
-        #self.ns    = [self.c.tolist().index((-self.c[i]).tolist()) for i in range(self.q)]
-        self.ns    = self.c.copy()
+        self.ns    = [self.c.tolist().index(
+            (-self.c[i]).tolist()) for i in range(self.q)]
 
         # Initial velocity
         #self.u_in  = np.fromfunction(lambda d,x,y: (1-d)*uLB,(2,nx,ny))

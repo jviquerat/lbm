@@ -44,8 +44,6 @@ i1     = np.arange(q)[np.asarray([ci[0]<0  for ci in c])] # Unknown on right wal
 i2     = np.arange(q)[np.asarray([ci[0]==0 for ci in c])] # Vertical middle.
 i3     = np.arange(q)[np.asarray([ci[0]>0  for ci in c])] # Unknown on left wall.
 
-print(noslip)
-
 ###### Function Definitions ####################################################
 sumpop = lambda fin: np.sum(fin,axis=0) # Helper function for density computation.
 def equilibrium(rho,u):              # Equilibrium distribution function.

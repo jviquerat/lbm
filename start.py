@@ -28,7 +28,7 @@ Re             = u_in*L/nu # baseline Reynolds for L=1
 ### Normalize units
 c_sound        = 343.0        # speed of sound
 u_in           = u_in/c_sound # normalized speed
-nu =?
+nu             = 
 
 ### LBM parameters
 q              = 9     # D2Q9 lattice
