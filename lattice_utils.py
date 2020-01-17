@@ -36,6 +36,34 @@ class Lattice:
         self.ny   = ny
 
     ### ************************************************
+    ### Solve LBM
+    def solve(self):
+
+
+    ### ************************************************
+    ### Solve equilibrium state
+    def solve_eq(self, rho, u):
+
+    ### ************************************************
+    ### Initialize computation
+    def init_computation(self):
+
+        # D2Q9 Velocities
+        self.c = np.array([(x,y) for x in [0,-1,1] for y in [0,-1,1]])
+
+        # Weights
+        # Cardinal values, then extra-cardinal values, then central value
+        self.w = np.ones(9)
+        self.w[np.asarray([np.linalg.norm(ci)<1.1 for ci in c])] = 1./9.
+        self.w[np.asarray([np.linalg.norm(ci)>1.1 for ci in c])] = 1./36.
+        self.w[0]                                                = 4./9.
+
+        # Boundary conditions
+        # Values on which to apply the different BC
+
+        # Initial velocity
+
+    ### ************************************************
     ### Generate lattice
     def generate(self, polygon):
 
@@ -96,6 +124,8 @@ class Lattice:
     ### ************************************************
     ### Generate lattice image
     def generate_image(self):
+
+        # Plot and save image of lattice
         plt.axis('off')
         plt.imshow(self.lattice,
                    cmap=mplt.cm.inferno)
@@ -106,6 +136,8 @@ class Lattice:
     ### ************************************************
     ### Crop white background from image
     def trim_white(self, filename):
+
+        # Trim using PIL
         im   = PIL.Image.open(filename)
         bg   = PIL.Image.new(im.mode, im.size, (255,255,255))
         diff = PIL.ImageChops.difference(im, bg)

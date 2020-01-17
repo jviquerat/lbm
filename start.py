@@ -6,7 +6,7 @@ from shapes_utils  import *
 from lattice_utils import *
 
 ###############################################
-### 
+### LBM solver
 ###############################################
 
 ### Shape parameters
@@ -18,15 +18,17 @@ edgy           = np.random.uniform(low=0.0, high=1.0, size=n_pts)
 ctrl_pts       = np.random.rand(n_pts,2)
 
 ### LBM parameters
-lattice_name   = 'lattice'
+t_max          = 1.0
 Re             = 100.0
-xmin           =-5.0
-xmax           = 10.0
-ymin           =-2.5
-ymax           = 2.5
-density        = 100
-nx             = math.floor((xmax-xmin)*density)
-ny             = math.floor((ymax-ymin)*density)
+x_min          =-5.0
+x_max          = 10.0
+y_min          =-2.5
+y_max          = 2.5
+lat_density    = 100
+lattice_name   = 'lattice'
+nx             = math.floor((xmax-xmin)*lat_density)
+ny             = math.floor((ymax-ymin)*lat_density)
+it_max         = 2.0*nx
 
 ### Initialize shape
 shape = Shape(shape_name,
@@ -43,10 +45,11 @@ shape.write_csv()
 
 # Initialize lattice
 lattice = Lattice(lattice_name,
-                  xmin, xmax,
-                  ymin, ymax,
-                  nx,   ny)
+                  x_min, x_max,
+                  y_min, y_max,
+                  nx,    ny)
 
 # Generate lattice from shape closed curve
 lattice.generate(shape.curve_pts)
 lattice.generate_image()
+lattice.init_computation()
