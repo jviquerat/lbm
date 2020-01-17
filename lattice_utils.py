@@ -10,24 +10,11 @@ import matplotlib.pyplot as plt
 class Lattice:
     ### ************************************************
     ### Constructor
-    def __init__(self,
-                 name = None,
-                 xmin = None,
-                 xmax = None,
-                 ymin = None,
-                 ymax = None,
-                 nx   = None,
-                 ny   = None,
-                 q    = None):
-
-        if (name is None): name = 'lattice'
-        if (xmin is None): xmin =-10.0
-        if (xmax is None): xmax = 20.0
-        if (ymin is None): ymin = -5.0
-        if (ymax is None): ymax = -5.0
-        if (nx   is None): nx   = 100
-        if (ny   is None): ny   = 200
-        if (q    is None): q    = 9
+    def __init__(self, name,
+                 xmin, xmax,
+                 ymin, ymax,
+                 nx,   ny,
+                 q,    tau):
 
         self.name = name
         self.xmin = xmin
@@ -37,24 +24,66 @@ class Lattice:
         self.nx   = nx
         self.ny   = ny
         self.q    = q
+        self.tau  = tau
 
     ### ************************************************
     ### Solve LBM
-    def solve(self, it_max):
+    def solve(self, it_max, rho):
+
+        self.g    = np.zeros((self.q,  self.nx, self.ny))
+        self.g_eq = np.zeros((self.q,  self.nx, self.ny))
+        self.g_up = np.zeros((self.q,  self.nx, self.ny))
+        self.rho  = np.ones ((self.nx, self.ny))*rho
+        self.u    = np.zeros((2,       self.nx, self.ny))
+
+        # Missing initial velocity profile here
+
+        # Solve equilibrium to get a starting distribution
+        for q in range(self.q):
+                self.g[q,:,:] = self.rho[:,:]*self.w[q]*(
+                    1.0 + 3.0*(self.u[0,:,:]*self.c[q,0] +
+                               self.u[1,:,:]*self.c[q,1]))
 
         # Solve
         for it in range(it_max):
-            print('coucou')
 
-            # Propagation
+            # Streaming
+            for q in range(self.q):
+                self.g_up = np.roll(np.roll(
+                    self.g[q,:,:],self.c[q,0],axis=0),
+                    self.c[q,1],axis=1)
 
-            # Macroscopic quantities
+            # Update rho
+            self.rho = np.sum(self.g_up, axis=0)
+
+            # Update u
+            self.u[:,:,:] = 0.0
+
+            for q in range(self.q):
+                self.u[0,:,:] += self.c[q,0]*self.g_up[q,:,:]
+                self.u[1,:,:] += self.c[q,1]*self.g_up[q,:,:]
+
+            self.u[0,:,:] /= self.rho[:,:]
+            self.u[1,:,:] /= self.rho[:,:]
 
             # Equilibrium
+            for q in range(self.q):
+                self.g_eq[q,:,:] = self.rho[:,:]*self.w[q]*(
+                    1.0 + 3.0*(self.u[0,:,:]*self.c[q,0] +
+                               self.u[1,:,:]*self.c[q,1]))
 
-            # Collision
+            # Collisions
+            self.g = self.g_up - (1.0/self.tau)*(self.g_up - self.g_eq)
 
-        #return 0
+            # Inflow  b.c.
+
+
+            # Outflow b.c.
+            self.g[right,-1,:] = self.g[right,-2,:]
+
+            # Top/bottom walls b.c.
+
+            # Obstacle b.c.
 
 
     ### ************************************************
@@ -67,6 +96,7 @@ class Lattice:
 
         # D2Q9 Velocities
         self.c = np.array([(x,y) for x in [0,-1,1] for y in [0,-1,1]])
+        print(self.c)
 
         # Weights
         # Cardinal values, then extra-cardinal values, then central value
