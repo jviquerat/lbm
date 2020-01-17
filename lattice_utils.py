@@ -1,9 +1,5 @@
 # Generic imports
-import os
-import os.path
-import PIL
-import math
-import matplotlib
+import copy
 import numpy             as np
 import matplotlib.pyplot as plt
 
@@ -41,6 +37,11 @@ class Lattice:
     ### Generate lattice
     def generate(self, polygon):
 
+        # Because we loop on the lattice left-right and top-down,
+        # we need to flip the polygon up-down
+        poly       = copy.deepcopy(polygon)
+        poly[:,1] *= -1.0
+
         # Declare lattice array
         self.lattice = np.zeros((self.ny, self.nx), dtype=bool)
 
@@ -48,7 +49,7 @@ class Lattice:
         for i in range(self.nx):
             for j in range(self.ny):
                 pt           = self.lattice_coords(j, i)
-                inside       = self.is_inside(polygon, pt)
+                inside       = self.is_inside(poly, pt)
                 self.lattice[j,i] = inside
 
     ### ************************************************
@@ -71,10 +72,12 @@ class Lattice:
         j         = len(poly) - 1
         odd_nodes = False
 
-        # Check inside or outside
+        # Check if point is inside or outside
+        # This is a valid algorithm for any non-convex polygon
         for i in range(len(poly)):
-            if ((poly[i,1] < pt[1] and poly[j,1] >= pt[1]) or
-                (poly[j,1] < pt[1] and poly[i,1] >= pt[1])):
+            if (((poly[i,1] < pt[1] and poly[j,1] >= pt[1])  or
+                 (poly[j,1] < pt[1] and poly[i,1] >= pt[1])) and
+                 (poly[i,0] < pt[0] or  poly[j,0]  < pt[0])):
 
                 # Compute slope
                 slope = (poly[j,0] - poly[i,0])/(poly[j,1] - poly[i,1])

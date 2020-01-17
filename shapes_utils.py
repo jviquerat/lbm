@@ -184,7 +184,7 @@ class Shape:
     ### ************************************************
     ### Write csv
     def write_csv(self):
-        filename = self.csv_path+self.name+'.csv'
+        filename = self.name+'.csv'
         with open(filename,'w') as file:
             # Write header
             file.write('{} {}\n'.format(self.n_control_pts,

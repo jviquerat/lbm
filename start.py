@@ -39,6 +39,7 @@ shape = Shape(shape_name,
 # Generate shape
 shape.generate()
 shape.generate_image()
+shape.write_csv()
 
 # Initialize lattice
 lattice = Lattice(lattice_name,
