@@ -30,11 +30,11 @@ class Lattice:
     ### Solve LBM
     def solve(self, it_max, rho):
 
-        self.g    = np.zeros((self.q,  self.nx, self.ny))
-        self.g_eq = np.zeros((self.q,  self.nx, self.ny))
-        self.g_up = np.zeros((self.q,  self.nx, self.ny))
-        self.rho  = np.ones ((self.nx, self.ny))*rho
-        self.u    = np.zeros((2,       self.nx, self.ny))
+        self.g    = np.zeros((self.q,  self.ny, self.nx))
+        self.g_eq = np.zeros((self.q,  self.ny, self.nx))
+        self.g_up = np.zeros((self.q,  self.ny, self.nx))
+        self.rho  = np.ones ((self.ny, self.nx))*rho
+        self.u    = np.zeros((2,       self.ny, self.nx))
 
         # Missing initial velocity profile here
 
@@ -49,7 +49,7 @@ class Lattice:
 
             # Streaming
             for q in range(self.q):
-                self.g_up = np.roll(np.roll(
+                self.g_up[q,:,:] = np.roll(np.roll(
                     self.g[q,:,:],self.c[q,0],axis=0),
                     self.c[q,1],axis=1)
 
@@ -79,7 +79,7 @@ class Lattice:
 
 
             # Outflow b.c.
-            self.g[right,-1,:] = self.g[right,-2,:]
+            self.g[self.right,-1,:] = self.g[self.right,-2,:]
 
             # Top/bottom walls b.c.
 
