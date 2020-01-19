@@ -1,6 +1,6 @@
 # Generic imports
+import os
 import PIL
-import copy
 import numpy             as np
 import matplotlib        as mplt
 import matplotlib.pyplot as plt
@@ -14,21 +14,27 @@ class Lattice:
                  xmin, xmax,
                  ymin, ymax,
                  nx,   ny,
-                 q,    tau):
+                 q,    tau,
+                 output_dir):
 
-        self.name = name
-        self.xmin = xmin
-        self.xmax = xmax
-        self.ymin = ymin
-        self.ymax = ymax
-        self.nx   = nx
-        self.ny   = ny
-        self.q    = q
-        self.tau  = tau
+        self.name       = name
+        self.xmin       = xmin
+        self.xmax       = xmax
+        self.ymin       = ymin
+        self.ymax       = ymax
+        self.nx         = nx
+        self.ny         = ny
+        self.q          = q
+        self.tau        = tau
+        self.output_dir = output_dir
+        self.png_dir    = self.output_dir+'./png/'
+
+        if (not os.path.exists(self.output_dir)): os.makedirs(self.output_dir)
+        if (not os.path.exists(self.png_dir)):    os.makedirs(self.png_dir)
 
     ### ************************************************
     ### Solve LBM
-    def solve(self, it_max, rho):
+    def solve(self, it_max, rho, freq):
 
         self.g    = np.zeros((self.q,  self.ny, self.nx))
         self.g_eq = np.zeros((self.q,  self.ny, self.nx))
@@ -76,7 +82,8 @@ class Lattice:
             self.g = self.g_up - (1.0/self.tau)*(self.g_up - self.g_eq)
 
             # Inflow  b.c.
-
+            # Do as in the lbm code but need to define inflow
+            # velocity with parabola profile and only on inflow position
 
             # Outflow b.c.
             self.g[self.right,-1,:] = self.g[self.right,-2,:]
@@ -87,6 +94,15 @@ class Lattice:
             # Obstacle b.c.
             for q in range (self.q):
                 self.g[q,self.lattice] = self.g[self.ns[q],self.lattice]
+
+            # Output view
+            if (it%100==0): # Visualization
+                plt.clf()
+                plt.imshow(np.sqrt(self.u[0]**2+self.u[1]**2),
+                           cmap = mplt.cm.inferno)
+                           #vmin = 0.0,
+                           #vmax = 1.0)
+                plt.savefig(self.png_dir+"vel."+str(it/100)+".png")
 
 
     ### ************************************************
@@ -122,7 +138,8 @@ class Lattice:
             (-self.c[i]).tolist()) for i in range(self.q)]
 
         # Initial velocity
-        #self.u_in  = np.fromfunction(lambda d,x,y: (1-d)*uLB,(2,nx,ny))
+        #self.u_in  = np.fromfunction(lambda d,x,y: (1-d)*u_in,(2,nx,ny))
+        # not ok, can be defined only at inflow
 
     ### ************************************************
     ### Generate lattice

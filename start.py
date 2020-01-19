@@ -1,5 +1,6 @@
 # Generic imports
 import math
+import datetime
 
 # Custom imports
 from shapes_utils  import *
@@ -44,8 +45,13 @@ ny             = math.floor((y_max-y_min)*lat_density)
 it_max         = 2*nx
 tau            = 0.5 + 3.0*nu
 
+# Output parameters
+output_freq = 100
+time        = datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S')
+results_dir = './results/'
+output_dir  = results_dir+str(time)+'/'
 
-
+if (not os.path.exists(results_dir)): os.makedirs(results_dir)
 
 ### Initialize shape
 shape = Shape(shape_name,
@@ -65,10 +71,11 @@ lattice = Lattice(lattice_name,
                   x_min, x_max,
                   y_min, y_max,
                   nx,    ny,
-                  q,     tau)
+                  q,     tau,
+                  output_dir)
 
 # Generate lattice from shape closed curve
 lattice.generate(shape.curve_pts)
 lattice.generate_image()
 lattice.init_computation(u_in)
-lattice.solve(it_max, rho)
+lattice.solve(it_max, rho, output_freq)
