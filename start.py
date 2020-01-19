@@ -78,4 +78,4 @@ lattice = Lattice(lattice_name,
 lattice.generate(shape.curve_pts)
 lattice.generate_image()
 lattice.init_computation(u_in)
-lattice.solve(it_max, rho, output_freq)
+lattice.solve(it_max, u_in, rho, output_freq)

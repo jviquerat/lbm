@@ -34,7 +34,7 @@ class Lattice:
 
     ### ************************************************
     ### Solve LBM
-    def solve(self, it_max, rho, freq):
+    def solve(self, it_max, u_in, rho, freq):
 
         self.g    = np.zeros((self.q,  self.ny, self.nx))
         self.g_eq = np.zeros((self.q,  self.ny, self.nx))
@@ -42,7 +42,8 @@ class Lattice:
         self.rho  = np.ones ((self.ny, self.nx))*rho
         self.u    = np.zeros((2,       self.ny, self.nx))
 
-        # Missing initial velocity profile here
+        # Initial velocity profile
+        self.u_in = u_in*np.ones((2, self.ny))
 
         # Solve equilibrium to get a starting distribution
         for q in range(self.q):
@@ -81,12 +82,16 @@ class Lattice:
             # Collisions
             self.g = self.g_up - (1.0/self.tau)*(self.g_up - self.g_eq)
 
-            # Inflow  b.c.
-            # Do as in the lbm code but need to define inflow
-            # velocity with parabola profile and only on inflow position
+            # Inflow : Zou-He b.c.
+            self.u[:,:,0] = self.u_in[:,:]
+            self.rho[:,0] = 1.0/(1.0-self.u[0,:,0])*(
+                      np.sum(self.g[self.mid, :,0],axis=0)
+                + 2.0*np.sum(self.g[self.left,:,0],axis=0))
+
+            self.g[self.right,:,0] = self.g_eq[self.right,:,0]
 
             # Outflow b.c.
-            self.g[self.right,-1,:] = self.g[self.right,-2,:]
+            self.g[self.right,:,-1] = self.g[self.right,:,-2]
 
             # Top/bottom walls b.c.
 
@@ -99,7 +104,8 @@ class Lattice:
             if (it%100==0): # Visualization
                 plt.clf()
                 plt.imshow(np.sqrt(self.u[0]**2+self.u[1]**2),
-                           cmap = mplt.cm.inferno)
+                           cmap = 'Blues')
+                plt.colorbar()
                            #vmin = 0.0,
                            #vmax = 1.0)
                 plt.savefig(self.png_dir+"vel."+str(it/100)+".png")
