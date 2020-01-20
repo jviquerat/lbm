@@ -45,7 +45,10 @@ class Lattice:
         # Input velocity profile
         self.u_in  = u_in*np.fromfunction(self.poiseuille,
                                           (2, self.ny, self.nx))
+
+        self.u[:,:,0] = self.u_in[:,:,0]
         #self.u     = self.u_in
+        #self.u[:,self.lattice] = 0.0
 
         # # Output velocity profile
         # self.u_out = np.fromfunction(self.output_velocity,
@@ -86,7 +89,8 @@ class Lattice:
             self.g_up[self.left,:,-1]   = self.g_up[self.left,:,-2]
 
             # Obstacle b.c.
-            #self.g_up[:,self.lattice]   = self.g_up[self.ns[:],self.lattice]
+            for q in range(self.q):
+                self.g_up[q,self.lattice] = self.g_up[self.ns[q], self.lattice]
 
             # Streaming
             for q in range(self.q):
