@@ -43,7 +43,9 @@ class Lattice:
         self.u    = np.zeros((2,       self.ny, self.nx))
 
         # Initial velocity profile
-        self.u_in = u_in*np.ones((2, self.ny))
+        self.u_in     = u_in*np.fromfunction(self.poiseuille,
+                                             (2, self.ny, self.nx))
+        self.u[:,:,:] = self.u_in[:,:,:]
 
         # Solve equilibrium to get a starting distribution
         for q in range(self.q):
@@ -54,11 +56,18 @@ class Lattice:
         # Solve
         for it in range(it_max):
 
-            # Streaming
+            # Reset g_up and stream
+            #self.g_up[:,:,:] = 0.0
+
+            # for q in range(self.q):
+            #     for y in range(self.ny-1):
+            #         for x in range(self.nx-1):
+            #             self.g_up[q,y,x] = self.g[q,
+            #                                       y+self.c[q,1],
+            #                                       x+self.c[q,0]]
             for q in range(self.q):
                 self.g_up[q,:,:] = np.roll(np.roll(
-                    self.g[q,:,:],self.c[q,0],axis=0),
-                    self.c[q,1],axis=1)
+                    self.g[q,:,:],self.c[q,1],axis=0),self.c[q,0],axis=1)
 
             # Update rho
             self.rho = np.sum(self.g_up, axis=0)
@@ -83,7 +92,7 @@ class Lattice:
             self.g = self.g_up - (1.0/self.tau)*(self.g_up - self.g_eq)
 
             # Inflow : Zou-He b.c.
-            self.u[:,:,0] = self.u_in[:,:]
+            self.u[:,:,0] = self.u_in[:,:,0]
             self.rho[:,0] = 1.0/(1.0-self.u[0,:,0])*(
                       np.sum(self.g[self.mid, :,0],axis=0)
                 + 2.0*np.sum(self.g[self.left,:,0],axis=0))
@@ -95,10 +104,9 @@ class Lattice:
 
             # Top/bottom walls b.c.
 
-
             # Obstacle b.c.
-            for q in range (self.q):
-                self.g[q,self.lattice] = self.g[self.ns[q],self.lattice]
+            #for q in range (self.q):
+            #    self.g[q,self.lattice] = self.g[self.ns[q],self.lattice]
 
             # Output view
             if (it%100==0): # Visualization
@@ -108,7 +116,7 @@ class Lattice:
                 plt.colorbar()
                            #vmin = 0.0,
                            #vmax = 1.0)
-                plt.savefig(self.png_dir+"vel."+str(it/100)+".png")
+                plt.savefig(self.png_dir+"vel."+str(it)+".png")
 
 
     ### ************************************************
@@ -228,3 +236,9 @@ class Lattice:
         bbox = diff.getbbox()
         cp   = im.crop(bbox)
         cp.save(filename)
+
+    ### ************************************************
+    ### Poiseuille flow
+    def poiseuille(self, d, y, x):
+
+        return (1.0-d)*(4.0*y/self.ny)*(1.0 - y/self.ny)

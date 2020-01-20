@@ -19,7 +19,7 @@ edgy           = np.random.uniform(low=0.0, high=1.0, size=n_pts)
 ctrl_pts       = np.random.rand(n_pts,2)
 
 ### Fluid parameters
-u_in           = 1.0       # input velocity
+u_in           = 10.0       # input velocity
 rho            = 1.0       # fluid density
 mu             = 0.1       # dynamic viscosity
 nu             = mu/rho    # cinematic viscosity
@@ -33,7 +33,6 @@ nu             = nu/c_sound
 
 ### LBM parameters
 q              = 9     # D2Q9 lattice
-t_max          = 1.0
 x_min          =-5.0
 x_max          = 10.0
 y_min          =-2.5
@@ -42,7 +41,7 @@ lat_density    = 10
 lattice_name   = 'lattice'
 nx             = math.floor((x_max-x_min)*lat_density)
 ny             = math.floor((y_max-y_min)*lat_density)
-it_max         = 2*nx
+it_max         = 20*nx
 tau            = 0.5 + 3.0*nu
 
 # Output parameters
