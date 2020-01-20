@@ -42,9 +42,13 @@ class Lattice:
         self.rho  = np.ones ((self.ny, self.nx))*rho
         self.u    = np.zeros((2,       self.ny, self.nx))
 
-        # Initial velocity profile
-        self.u_in     = u_in*np.fromfunction(self.poiseuille,
+        # Input velocity profile
+        self.u_in  = u_in*np.fromfunction(self.poiseuille,
                                              (2, self.ny, self.nx))
+
+        # # Output velocity profile
+        # self.u_out = np.fromfunction(self.output_velocity,
+        #                              (2, self.ny, self.nx))
 
         # Initial distribution
         self.equilibrium(self.g, self.rho, self.u)
@@ -65,14 +69,14 @@ class Lattice:
                                    + self.g   [self.left, :,0] \
                                    - self.g_eq[self.left, :,0]
 
-            # Outflow b.c.
-            self.g[self.left,:,-1] = self.g[self.left,:,-2]
-
             # Compute equilibrium state
             self.equilibrium(self.g_eq, self.rho, self.u)
 
             # Collisions
             self.g_up = self.g - (1.0/self.tau)*(self.g - self.g_eq)
+
+            # Outflow b.c.
+            self.g_up[self.left,:,-1] = self.g_up[self.left,:,-2]
 
             # Top b.c.
             self.g_up[self.bot[:],0,:]  = self.g_up[self.ns[self.bot[:]],0,:]
