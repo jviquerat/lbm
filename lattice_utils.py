@@ -44,7 +44,8 @@ class Lattice:
 
         # Input velocity profile
         self.u_in  = u_in*np.fromfunction(self.poiseuille,
-                                             (2, self.ny, self.nx))
+                                          (2, self.ny, self.nx))
+        #self.u     = self.u_in
 
         # # Output velocity profile
         # self.u_out = np.fromfunction(self.output_velocity,
@@ -59,24 +60,11 @@ class Lattice:
             # Compute macroscopic fields
             self.macro()
 
-            # Inflow : Zou-He b.c.
-            self.u[:,:,0] = self.u_in[:,:,0]
-            self.rho[:,0] = 1.0/(1.0-self.u[0,:,0])*(
-                      np.sum(self.g[self.mid, :,0],axis=0)
-                + 2.0*np.sum(self.g[self.left,:,0],axis=0))
-            self.equilibrium(self.g_eq, self.rho, self.u)
-            self.g[self.right,:,0] = self.g_eq[self.right,:,0] \
-                                   + self.g   [self.left, :,0] \
-                                   - self.g_eq[self.left, :,0]
-
             # Compute equilibrium state
             self.equilibrium(self.g_eq, self.rho, self.u)
 
             # Collisions
             self.g_up = self.g - (1.0/self.tau)*(self.g - self.g_eq)
-
-            # Outflow b.c.
-            self.g_up[self.left,:,-1] = self.g_up[self.left,:,-2]
 
             # Top b.c.
             self.g_up[self.bot[:],0,:]  = self.g_up[self.ns[self.bot[:]],0,:]
@@ -84,18 +72,29 @@ class Lattice:
             # Bottom b.c.
             self.g_up[self.top[:],-1,:] = self.g_up[self.ns[self.top[:]],-1,:]
 
+            # Inflow : Zou-He b.c.
+            self.u[:,:,0] = self.u_in[:,:,0]
+            self.rho[:,0] = 1.0/(1.0-self.u[0,:,0])*(
+                      np.sum(self.g[self.mid, :,0],axis=0)
+                + 2.0*np.sum(self.g[self.left,:,0],axis=0))
+            self.equilibrium(self.g_eq, self.rho, self.u)
+            self.g_up[self.right,:,0] = self.g_eq[self.right,:,0] \
+                                      + self.g_up[self.left, :,0] \
+                                      - self.g_eq[self.left, :,0]
+
+            # Outflow b.c.
+            self.g_up[self.left,:,-1]   = self.g_up[self.left,:,-2]
+
+            # Obstacle b.c.
+            #self.g_up[:,self.lattice]   = self.g_up[self.ns[:],self.lattice]
+
             # Streaming
             for q in range(self.q):
                 self.g[q,:,:] = np.roll(np.roll(
                     self.g_up[q,:,:],self.c[q,1],axis=0),self.c[q,0],axis=1)
 
-            # Obstacle b.c.
-            #for q in range (self.q):
-            #    self.g[q,self.lattice] = self.g_eq[self.ns[q],self.lattice]
-
-
             # Output view
-            if (it%2==0): # Visualization
+            if (it%freq==0): # Visualization
                 plt.clf()
                 plt.imshow(np.sqrt(self.u[0]**2+self.u[1]**2),
                            cmap = 'Blues')
@@ -172,10 +171,6 @@ class Lattice:
                                                    for ci in self.c])]
         self.ns    = np.asarray([self.c.tolist().index(
             (-self.c[i]).tolist()) for i in range(self.q)])
-
-        # Initial velocity
-        #self.u_in  = np.fromfunction(lambda d,x,y: (1-d)*u_in,(2,nx,ny))
-        # not ok, can be defined only at inflow
 
     ### ************************************************
     ### Generate lattice

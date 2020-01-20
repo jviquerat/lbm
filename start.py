@@ -24,13 +24,11 @@ x_min          =-5.0
 x_max          = 10.0
 y_min          =-2.5
 y_max          = 2.5
-lat_density    = 10
+lat_density    = 50
 lattice_name   = 'lattice'
 nx             = math.floor((x_max-x_min)*lat_density)
 ny             = math.floor((y_max-y_min)*lat_density)
-it_max         = 1*nx
-
-
+it_max         = 5*nx
 
 ### Fluid parameters
 Re             = 100.0
@@ -40,10 +38,10 @@ tau            = 0.5 + 3.0*nu # relaxation parameter
 rho            = 1.0       # fluid density
 
 # Output parameters
-output_freq = 100
-time        = datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S')
-results_dir = './results/'
-output_dir  = results_dir+str(time)+'/'
+output_freq    = 100
+time           = datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S')
+results_dir    = './results/'
+output_dir     = results_dir+str(time)+'/'
 
 if (not os.path.exists(results_dir)): os.makedirs(results_dir)
 
