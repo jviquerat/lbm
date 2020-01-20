@@ -52,23 +52,27 @@ class Lattice:
         # Solve
         for it in range(it_max):
 
-            # Streaming
-            for q in range(self.q):
-                self.g_up[q,:,:] = np.roll(np.roll(
-                    self.g[q,:,:],self.c[q,1],axis=0),self.c[q,0],axis=1)
+            # Compute macroscopic fields
+            self.macro()
 
             # Inflow : Zou-He b.c.
             self.u[:,:,0] = self.u_in[:,:,0]
             self.rho[:,0] = 1.0/(1.0-self.u[0,:,0])*(
-                      np.sum(self.g_up[self.mid, :,0],axis=0)
-                + 2.0*np.sum(self.g_up[self.left,:,0],axis=0))
+                      np.sum(self.g[self.mid, :,0],axis=0)
+                + 2.0*np.sum(self.g[self.left,:,0],axis=0))
             self.equilibrium(self.g_eq, self.rho, self.u)
-            self.g_up[self.right,:,0] = self.g_eq[self.right,:,0] \
-                                      + self.g_up[self.left, :,0] \
-                                      - self.g_eq[self.left, :,0]
+            self.g[self.right,:,0] = self.g_eq[self.right,:,0] \
+                                   + self.g   [self.left, :,0] \
+                                   - self.g_eq[self.left, :,0]
 
             # Outflow b.c.
-            self.g_up[self.left,:,-1]   = self.g_up[self.left,:,-2]
+            self.g[self.left,:,-1] = self.g[self.left,:,-2]
+
+            # Compute equilibrium state
+            self.equilibrium(self.g_eq, self.rho, self.u)
+
+            # Collisions
+            self.g_up = self.g - (1.0/self.tau)*(self.g - self.g_eq)
 
             # Top b.c.
             self.g_up[self.bot[:],0,:]  = self.g_up[self.ns[self.bot[:]],0,:]
@@ -76,14 +80,10 @@ class Lattice:
             # Bottom b.c.
             self.g_up[self.top[:],-1,:] = self.g_up[self.ns[self.top[:]],-1,:]
 
-            # Compute macroscopic fields
-            self.macro()
-
-            # Compute equilibrium state
-            self.equilibrium(self.g_eq, self.rho, self.u)
-
-            # Collisions
-            self.g = self.g_up - (1.0/self.tau)*(self.g_up - self.g_eq)
+            # Streaming
+            for q in range(self.q):
+                self.g[q,:,:] = np.roll(np.roll(
+                    self.g_up[q,:,:],self.c[q,1],axis=0),self.c[q,0],axis=1)
 
             # Obstacle b.c.
             #for q in range (self.q):

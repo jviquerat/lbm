@@ -28,7 +28,7 @@ lat_density    = 10
 lattice_name   = 'lattice'
 nx             = math.floor((x_max-x_min)*lat_density)
 ny             = math.floor((y_max-y_min)*lat_density)
-it_max         = 20*nx
+it_max         = 1*nx
 
 
 
