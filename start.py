@@ -20,20 +20,26 @@ ctrl_pts       = np.random.rand(n_pts,2)
 
 ### LBM parameters
 q              = 9     # D2Q9 lattice
-x_min          =-2.5
-x_max          = 5.0
-y_min          =-2.0
-y_max          = 2.0
-lat_density    = 30
+x_min          =-3.0
+x_max          = 10.0
+y_min          =-5.0
+y_max          = 5.0
+lat_density    = 20
 lattice_name   = 'lattice'
 nx             = math.floor((x_max-x_min)*lat_density)
 ny             = math.floor((y_max-y_min)*lat_density)
 it_max         = 20*nx
 
+print('# LBM solver')
+print('# nx = '+str(nx))
+print('# ny = '+str(ny))
+print('# it = '+str(it_max))
+
 ### Fluid parameters
 Re             = 100.0
 u_in           = 0.1
-nu             = u_in*ny/Re
+L              = 2.0*nx/(x_max-x_min) # approx size of obstacle
+nu             = u_in*L/Re
 tau            = 0.5 + 3.0*nu # relaxation parameter
 rho            = 1.0          # fluid density
 

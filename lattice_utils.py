@@ -5,6 +5,8 @@ import numpy             as np
 import matplotlib        as mplt
 import matplotlib.pyplot as plt
 
+from numba import jit
+
 ### ************************************************
 ### Class defining lattice object
 class Lattice:
@@ -50,10 +52,6 @@ class Lattice:
         #self.u     = self.u_in
         #self.u[:,self.lattice] = 0.0
 
-        # # Output velocity profile
-        # self.u_out = np.fromfunction(self.output_velocity,
-        #                              (2, self.ny, self.nx))
-
         # Initial distribution
         self.equilibrium(self.g, self.rho, self.u)
 
@@ -74,6 +72,9 @@ class Lattice:
             self.u[0,:,-1] =-1.0 + np.sum(self.g[self.mid,:,-1],axis=0) \
                 + 2.0*np.sum(self.g[self.right,:,-1],axis=0)
 
+            # Obstacle b.c. : macro part
+            self.u[:,self.lattice] = 0.0
+
             # Compute equilibrium state
             self.equilibrium(self.g_eq, self.rho, self.u)
 
@@ -92,8 +93,6 @@ class Lattice:
                 + self.g_up[2,:,0] - self.g_up[3,:,0] + self.g_up[4,:,0] + 2.0*self.g_up[6,:,0])
             self.g_up[8,:,0] = self.g_up[3,:,0] - self.g_up[4,:,0] + self.g_up[5,:,0] \
                 - self.g_up[6,:,0] + self.g_up[7,:,0]
-            # self.g_up[self.right,:,0] = self.g_eq[self.right,:,0] \
-            #     + self.g_up[self.left, :,0] - self.g_eq[self.left, :,0]
 
             # Outflow b.c. : Zou-He, micro part
             self.g_up[2,:,-1] = self.g_eq[2,:,-1] + self.g_up[1,:,-1] - self.g_eq[1,:,-1]
@@ -101,8 +100,6 @@ class Lattice:
                 + self.g_up[2,:,-1] - self.g_up[3,:,-1] + self.g_up[4,:,-1] - 2.0*self.g_up[5,:,-1])
             self.g_up[7,:,-1] =-self.g_up[3,:,-1] + self.g_up[4,:,-1] - self.g_up[5,:,-1] \
                 + self.g_up[6,:,-1] + self.g_up[8,:,-1]
-            # self.g_up[self.left,:,-1] = self.g_eq[self.left, :,-1] \
-            #     + self.g_up[self.right,:,-1] - self.g_eq[self.right,:,-1]
 
             # Obstacle b.c.
             for q in range(self.q):
