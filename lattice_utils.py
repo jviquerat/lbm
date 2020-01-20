@@ -56,15 +56,7 @@ class Lattice:
         # Solve
         for it in range(it_max):
 
-            # Reset g_up and stream
-            #self.g_up[:,:,:] = 0.0
-
-            # for q in range(self.q):
-            #     for y in range(self.ny-1):
-            #         for x in range(self.nx-1):
-            #             self.g_up[q,y,x] = self.g[q,
-            #                                       y+self.c[q,1],
-            #                                       x+self.c[q,0]]
+            # Streaming
             for q in range(self.q):
                 self.g_up[q,:,:] = np.roll(np.roll(
                     self.g[q,:,:],self.c[q,1],axis=0),self.c[q,0],axis=1)
@@ -106,7 +98,7 @@ class Lattice:
 
             # Obstacle b.c.
             #for q in range (self.q):
-            #    self.g[q,self.lattice] = self.g[self.ns[q],self.lattice]
+            #    self.g[q,self.lattice] = self.g_eq[self.ns[q],self.lattice]
 
             # Output view
             if (it%100==0): # Visualization
