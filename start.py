@@ -18,19 +18,6 @@ radius         = np.random.uniform(low=0.0, high=1.0, size=n_pts)
 edgy           = np.random.uniform(low=0.0, high=1.0, size=n_pts)
 ctrl_pts       = np.random.rand(n_pts,2)
 
-### Fluid parameters
-u_in           = 10.0       # input velocity
-rho            = 1.0       # fluid density
-mu             = 0.1       # dynamic viscosity
-nu             = mu/rho    # cinematic viscosity
-L              = 1.0       # baseline dimension
-Re             = u_in*L/nu # baseline Reynolds for L=1
-
-### Normalize units
-c_sound        = 343.0        # speed of sound
-u_in           = u_in/c_sound # normalized speed
-nu             = nu/c_sound
-
 ### LBM parameters
 q              = 9     # D2Q9 lattice
 x_min          =-5.0
@@ -42,7 +29,15 @@ lattice_name   = 'lattice'
 nx             = math.floor((x_max-x_min)*lat_density)
 ny             = math.floor((y_max-y_min)*lat_density)
 it_max         = 20*nx
-tau            = 0.5 + 3.0*nu
+
+
+
+### Fluid parameters
+Re             = 100.0
+u_in           = 0.04
+nu             = u_in*ny/Re
+tau            = 0.5 + 3.0*nu # relaxation parameter
+rho            = 1.0       # fluid density
 
 # Output parameters
 output_freq = 100

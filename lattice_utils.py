@@ -45,13 +45,9 @@ class Lattice:
         # Initial velocity profile
         self.u_in     = u_in*np.fromfunction(self.poiseuille,
                                              (2, self.ny, self.nx))
-        self.u[:,:,:] = self.u_in[:,:,:]
 
-        # Solve equilibrium to get a starting distribution
-        for q in range(self.q):
-                self.g[q,:,:] = self.rho[:,:]*self.w[q]*(
-                    1.0 + 3.0*(self.u[0,:,:]*self.c[q,0] +
-                               self.u[1,:,:]*self.c[q,1]))
+        # Initial distribution
+        self.equilibrium(self.g, self.rho, self.u)
 
         # Solve
         for it in range(it_max):
@@ -61,47 +57,41 @@ class Lattice:
                 self.g_up[q,:,:] = np.roll(np.roll(
                     self.g[q,:,:],self.c[q,1],axis=0),self.c[q,0],axis=1)
 
-            # Update rho
-            self.rho = np.sum(self.g_up, axis=0)
-
-            # Update u
-            self.u[:,:,:] = 0.0
-
-            for q in range(self.q):
-                self.u[0,:,:] += self.c[q,0]*self.g_up[q,:,:]
-                self.u[1,:,:] += self.c[q,1]*self.g_up[q,:,:]
-
-            self.u[0,:,:] /= self.rho[:,:]
-            self.u[1,:,:] /= self.rho[:,:]
-
-            # Equilibrium
-            for q in range(self.q):
-                self.g_eq[q,:,:] = self.rho[:,:]*self.w[q]*(
-                    1.0 + 3.0*(self.u[0,:,:]*self.c[q,0] +
-                               self.u[1,:,:]*self.c[q,1]))
-
-            # Collisions
-            self.g = self.g_up - (1.0/self.tau)*(self.g_up - self.g_eq)
-
             # Inflow : Zou-He b.c.
             self.u[:,:,0] = self.u_in[:,:,0]
             self.rho[:,0] = 1.0/(1.0-self.u[0,:,0])*(
-                      np.sum(self.g[self.mid, :,0],axis=0)
-                + 2.0*np.sum(self.g[self.left,:,0],axis=0))
-
-            self.g[self.right,:,0] = self.g_eq[self.right,:,0]
+                      np.sum(self.g_up[self.mid, :,0],axis=0)
+                + 2.0*np.sum(self.g_up[self.left,:,0],axis=0))
+            self.equilibrium(self.g_eq, self.rho, self.u)
+            self.g_up[self.right,:,0] = self.g_eq[self.right,:,0] \
+                                      + self.g_up[self.left, :,0] \
+                                      - self.g_eq[self.left, :,0]
 
             # Outflow b.c.
-            self.g[self.right,:,-1] = self.g[self.right,:,-2]
+            self.g_up[self.left,:,-1]   = self.g_up[self.left,:,-2]
 
-            # Top/bottom walls b.c.
+            # Top b.c.
+            self.g_up[self.bot[:],0,:]  = self.g_up[self.ns[self.bot[:]],0,:]
+
+            # Bottom b.c.
+            self.g_up[self.top[:],-1,:] = self.g_up[self.ns[self.top[:]],-1,:]
+
+            # Compute macroscopic fields
+            self.macro()
+
+            # Compute equilibrium state
+            self.equilibrium(self.g_eq, self.rho, self.u)
+
+            # Collisions
+            self.g = self.g_up - (1.0/self.tau)*(self.g_up - self.g_eq)
 
             # Obstacle b.c.
             #for q in range (self.q):
             #    self.g[q,self.lattice] = self.g_eq[self.ns[q],self.lattice]
 
+
             # Output view
-            if (it%100==0): # Visualization
+            if (it%2==0): # Visualization
                 plt.clf()
                 plt.imshow(np.sqrt(self.u[0]**2+self.u[1]**2),
                            cmap = 'Blues')
@@ -112,15 +102,47 @@ class Lattice:
 
 
     ### ************************************************
-    ### Solve equilibrium state
-    #def solve_eq(self, rho, u):
+    ### Compute equilibrium state
+    def equilibrium(self, g, rho, u):
+
+        # Reset distribution
+        g[:,:,:] = 0.0
+
+        # Compute velocity term
+        v = (3.0/2.0)*(u[0,:,:]**2 + u[1,:,:]**2)
+
+        # Compute equilibrium
+        for q in range(self.q):
+            t        = 3.0*(u[0,:,:]*self.c[q,0] + u[1,:,:]*self.c[q,1])
+            g[q,:,:] = rho*self.w[q]*(1.0 + t + 0.5*t**2 - v)
+
+    ### ************************************************
+    ### Compute macroscopic fields
+    def macro(self):
+
+        # Compute density
+        self.rho = np.sum(self.g, axis=0)
+
+        # Compute velocity
+        self.u[:,:,:] = 0.0
+
+        for q in range(self.q):
+            self.u[0,:,:] += self.c[q,0]*self.g[q,:,:]
+            self.u[1,:,:] += self.c[q,1]*self.g[q,:,:]
+
+        self.u[0,:,:] /= self.rho[:,:]
+        self.u[1,:,:] /= self.rho[:,:]
 
     ### ************************************************
     ### Initialize computation
     def init_computation(self, u_in):
 
         # D2Q9 Velocities
-        self.c = np.array([(x,y) for x in [0,-1,1] for y in [0,-1,1]])
+        self.c  = np.array([ [ 0, 0],
+                             [ 1, 0], [-1, 0],
+                             [ 0, 1], [ 0,-1],
+                             [ 1, 1], [-1,-1],
+                             [-1, 1], [ 1,-1]])
 
         # Weights
         # Cardinal values, then extra-cardinal values, then central value
@@ -134,14 +156,18 @@ class Lattice:
 
         # Boundary conditions
         # Velocities on which to apply the different BC
-        self.right = np.arange(self.q)[np.asarray([ci[0] <0
+        self.right = np.arange(self.q)[np.asarray([ci[0] >0
                                                    for ci in self.c])]
-        self.left  = np.arange(self.q)[np.asarray([ci[0] >0
+        self.left  = np.arange(self.q)[np.asarray([ci[0] <0
                                                    for ci in self.c])]
         self.mid   = np.arange(self.q)[np.asarray([ci[0]==0
                                                    for ci in self.c])]
-        self.ns    = [self.c.tolist().index(
-            (-self.c[i]).tolist()) for i in range(self.q)]
+        self.top   = np.arange(self.q)[np.asarray([ci[1] >0
+                                                   for ci in self.c])]
+        self.bot   = np.arange(self.q)[np.asarray([ci[1] <0
+                                                   for ci in self.c])]
+        self.ns    = np.asarray([self.c.tolist().index(
+            (-self.c[i]).tolist()) for i in range(self.q)])
 
         # Initial velocity
         #self.u_in  = np.fromfunction(lambda d,x,y: (1-d)*u_in,(2,nx,ny))
