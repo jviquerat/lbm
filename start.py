@@ -31,8 +31,8 @@ ny             = math.floor((y_max-y_min)*lat_density)
 it_max         = 20*nx
 
 ### Fluid parameters
-Re             = 500.0
-u_in           = 0.2
+Re             = 100.0
+u_in           = 0.1
 nu             = u_in*ny/Re
 tau            = 0.5 + 3.0*nu # relaxation parameter
 rho            = 1.0          # fluid density

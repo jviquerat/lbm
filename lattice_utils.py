@@ -63,6 +63,17 @@ class Lattice:
             # Compute macroscopic fields
             self.macro()
 
+            # Inflow b.c. : Zou-He, macro part
+            self.u[:,:,0] = self.u_in[:,:,0]
+            self.rho[:,0] = 1.0/(1.0-self.u[0,:,0])*(np.sum(self.g[self.mid, :,0],axis=0) \
+                + 2.0*np.sum(self.g[self.left,:,0],axis=0))
+
+            # Outflow b.c. : Zou-He, macro part
+            self.u[1,:,-1] = 0.0
+            self.rho[:,-1] = 1.0
+            self.u[0,:,-1] =-1.0 + np.sum(self.g[self.mid,:,-1],axis=0) \
+                + 2.0*np.sum(self.g[self.right,:,-1],axis=0)
+
             # Compute equilibrium state
             self.equilibrium(self.g_eq, self.rho, self.u)
 
@@ -75,18 +86,23 @@ class Lattice:
             # Bottom b.c.
             self.g_up[self.top[:],-1,:] = self.g_up[self.ns[self.top[:]],-1,:]
 
-            # Inflow : Zou-He b.c.
-            self.u[:,:,0] = self.u_in[:,:,0]
-            self.rho[:,0] = 1.0/(1.0-self.u[0,:,0])*(
-                      np.sum(self.g[self.mid, :,0],axis=0)
-                + 2.0*np.sum(self.g[self.left,:,0],axis=0))
-            self.equilibrium(self.g_eq, self.rho, self.u)
-            self.g_up[self.right,:,0] = self.g_eq[self.right,:,0] \
-                                      + self.g_up[self.left, :,0] \
-                                      - self.g_eq[self.left, :,0]
+            # Inflow b.c. : Zou-He, micro part
+            self.g_up[1,:,0] = self.g_eq[1,:,0] + self.g_up[2,:,0] - self.g_eq[2,:,0]
+            self.g_up[5,:,0] = 0.5*(self.rho[:,0]*self.u[0,:,0] - self.g_up[1,:,0] \
+                + self.g_up[2,:,0] - self.g_up[3,:,0] + self.g_up[4,:,0] + 2.0*self.g_up[6,:,0])
+            self.g_up[8,:,0] = self.g_up[3,:,0] - self.g_up[4,:,0] + self.g_up[5,:,0] \
+                - self.g_up[6,:,0] + self.g_up[7,:,0]
+            # self.g_up[self.right,:,0] = self.g_eq[self.right,:,0] \
+            #     + self.g_up[self.left, :,0] - self.g_eq[self.left, :,0]
 
-            # Outflow b.c.
-            self.g_up[self.left,:,-1]   = self.g_up[self.left,:,-2]
+            # Outflow b.c. : Zou-He, micro part
+            self.g_up[2,:,-1] = self.g_eq[2,:,-1] + self.g_up[1,:,-1] - self.g_eq[1,:,-1]
+            self.g_up[6,:,-1] =-0.5*(self.rho[:,-1]*self.u[0,:,-1] - self.g_up[1,:,-1] \
+                + self.g_up[2,:,-1] - self.g_up[3,:,-1] + self.g_up[4,:,-1] - 2.0*self.g_up[5,:,-1])
+            self.g_up[7,:,-1] =-self.g_up[3,:,-1] + self.g_up[4,:,-1] - self.g_up[5,:,-1] \
+                + self.g_up[6,:,-1] + self.g_up[8,:,-1]
+            # self.g_up[self.left,:,-1] = self.g_eq[self.left, :,-1] \
+            #     + self.g_up[self.right,:,-1] - self.g_eq[self.right,:,-1]
 
             # Obstacle b.c.
             for q in range(self.q):
