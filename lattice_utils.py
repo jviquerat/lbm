@@ -47,9 +47,9 @@ class Lattice:
         self.u_in  = u_in*np.fromfunction(self.poiseuille,
                                           (2, self.ny, self.nx))
 
-        self.u[:,:,0] = self.u_in[:,:,0]
-        #self.u     = self.u_in
-        #self.u[:,self.lattice] = 0.0
+        #self.u[:,:,0] = self.u_in[:,:,0]
+        self.u                 = self.u_in
+        self.u[:,self.lattice] = 0.0
 
         # Initial distribution
         self.equilibrium(self.g, self.rho, self.u)
@@ -63,7 +63,7 @@ class Lattice:
 
             # Inflow b.c. : Zou-He, macro part
             self.u[:,:,0] = self.u_in[:,:,0]
-            self.rho[:,0] = 1.0/(1.0-self.u[0,:,0])*(
+            self.rho[:,0] = 1.0/(1.0-self.u[0,:,0])*( \
                 np.sum(self.g[self.mid, :,0],axis=0) \
                 + 2.0*np.sum(self.g[self.left,:,0],axis=0))
 
@@ -74,7 +74,7 @@ class Lattice:
                 + 2.0*np.sum(self.g[self.right,:,-1],axis=0)
 
             # Obstacle b.c. : macro part
-            self.u[:,self.lattice] = 0.0
+            #self.u[:,self.lattice] = 0.0
 
             # Compute equilibrium state
             self.equilibrium(self.g_eq, self.rho, self.u)
@@ -161,7 +161,7 @@ class Lattice:
 
     ### ************************************************
     ### Initialize computation
-    def init_computation(self, u_in):
+    def init_computation(self):
 
         # D2Q9 Velocities
         self.c  = np.array([ [ 0, 0],
@@ -240,6 +240,7 @@ class Lattice:
 
         # Check if point is inside or outside
         # This is a valid algorithm for any non-convex polygon
+
         for i in range(len(poly)):
             if (((poly[i,1] < pt[1] and poly[j,1] >= pt[1])  or
                  (poly[j,1] < pt[1] and poly[i,1] >= pt[1])) and
