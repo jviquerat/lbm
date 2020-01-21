@@ -19,22 +19,22 @@ edgy           = np.random.uniform(low=0.0, high=1.0, size=n_pts)
 ctrl_pts       = np.random.rand(n_pts,2)
 
 ### LBM parameters
-u              = 0.1
-nu             = 0.1
+u              = 1.0
+nu             = 0.01
 q              = 9
 x_min          =-5.0
 x_max          = 10.0
-y_min          =-5.0
-y_max          = 5.0
-Re             = u*(x_max-x_min)/nu
-nx             = 300
+y_min          =-2.0
+y_max          = 2.0
+Re             = u*(y_max-y_min)/nu
+nx             = 1000
 ny             = math.floor(nx*(y_max-y_min)/(x_max-x_min))
 dx             = (x_max-x_min)/nx
 cs             = 1.0/math.sqrt(3.0)
-tau            = 0.55
+tau            = 0.6
 nu_lbm         = (tau - 0.5)*cs**2
 dt             = (nu_lbm/nu)*dx**2
-u_lbm          = u/(dx/dt)
+u_lbm          = u*(dt/dx)
 rho            = 1.0
 
 #lat_density    = 25
@@ -53,12 +53,11 @@ it_max         = 20*nx
 #nu             = u_in*L/Re
 #tau            = 0.5 + 3.0*nu # relaxation parameter
 
-
 print('### LBM solver ###')
 print('# u        = '+str(u))
-print('# u_lbm    = '+str(u_lbm))
+print('# u_lbm    = '+str(u_lbm)+' (should be < 0.05)')
 print('# tau      = '+str(tau))
-print('# u_lbm/cs = '+str(u_lbm/cs))
+print('# u_lbm/cs = '+str(u_lbm/cs)+' (should be < 0.15)')
 print('# Re       = '+str(Re))
 print('# nx       = '+str(nx))
 print('# ny       = '+str(ny))
@@ -67,7 +66,7 @@ print('# dt       = '+str(dt))
 print('# it       = '+str(it_max))
 
 # Output parameters
-output_freq    = 10
+output_freq    = 500
 time           = datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S')
 results_dir    = './results/'
 output_dir     = results_dir+str(time)+'/'
