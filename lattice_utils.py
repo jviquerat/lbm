@@ -1,11 +1,10 @@
 # Generic imports
 import os
 import PIL
+import progress.bar
 import numpy             as np
 import matplotlib        as mplt
 import matplotlib.pyplot as plt
-
-from numba import jit
 
 ### ************************************************
 ### Class defining lattice object
@@ -55,7 +54,8 @@ class Lattice:
         # Initial distribution
         self.equilibrium(self.g, self.rho, self.u)
 
-        # Solve
+        # Solve with progress bar
+        bar = progress.bar.Bar('Solving...', max=it_max)
         for it in range(it_max):
 
             # Compute macroscopic fields
@@ -63,7 +63,8 @@ class Lattice:
 
             # Inflow b.c. : Zou-He, macro part
             self.u[:,:,0] = self.u_in[:,:,0]
-            self.rho[:,0] = 1.0/(1.0-self.u[0,:,0])*(np.sum(self.g[self.mid, :,0],axis=0) \
+            self.rho[:,0] = 1.0/(1.0-self.u[0,:,0])*(
+                np.sum(self.g[self.mid, :,0],axis=0) \
                 + 2.0*np.sum(self.g[self.left,:,0],axis=0))
 
             # Outflow b.c. : Zou-He, macro part
@@ -114,12 +115,17 @@ class Lattice:
             if (it%freq==0): # Visualization
                 plt.clf()
                 plt.imshow(np.sqrt(self.u[0]**2+self.u[1]**2),
-                           cmap = 'Blues')
+                           cmap = 'Blues',
+                           vmin = 0.0,
+                           vmax = u_in)
                 plt.colorbar()
-                           #vmin = 0.0,
-                           #vmax = 1.0)
                 plt.savefig(self.png_dir+"vel."+str(it)+".png")
 
+            # Increment bar
+            bar.next()
+
+        # End bar
+        bar.finish()
 
     ### ************************************************
     ### Compute equilibrium state
@@ -202,11 +208,15 @@ class Lattice:
         self.lattice = np.zeros((self.ny, self.nx), dtype=bool)
 
         # Fill lattice
+        bar = progress.bar.Bar('Generating...', max=self.nx*self.ny)
         for i in range(self.nx):
             for j in range(self.ny):
                 pt           = self.lattice_coords(j, i)
                 inside       = self.is_inside(poly, pt)
                 self.lattice[j,i] = inside
+
+                bar.next()
+        bar.finish()
 
     ### ************************************************
     ### Get lattice coordinates from integers
