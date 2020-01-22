@@ -232,8 +232,15 @@ class Lattice:
 
         # Because we loop on the lattice left-right and top-down,
         # we need to flip the polygon up-down
-        poly       = polygon.copy()
-        poly[:,1] *= -1.0
+        poly        = polygon.copy()
+        poly[:,1]  *= -1.0
+
+        # Compute polygon bounds
+        poly_bounds    = np.zeros((4))
+        poly_bounds[0] = np.amin(poly[:,0])
+        poly_bounds[1] = np.amax(poly[:,0])
+        poly_bounds[2] = np.amin(poly[:,1])
+        poly_bounds[3] = np.amax(poly[:,1])
 
         # Declare lattice array
         self.lattice = np.zeros((self.ny, self.nx), dtype=bool)
@@ -242,8 +249,15 @@ class Lattice:
         bar = progress.bar.Bar('Generating...', max=self.nx*self.ny)
         for i in range(self.nx):
             for j in range(self.ny):
-                pt           = self.lattice_coords(j, i)
-                inside       = self.is_inside(poly, pt)
+                pt     = self.lattice_coords(j, i)
+                inside = False
+
+                # Check if pt is inside polygon bbox
+                if ((pt[0] > poly_bounds[0]) and (pt[0] < poly_bounds[1])):
+                    if ((pt[1] > poly_bounds[2]) and (pt[1] < poly_bounds[3])):
+                        inside = self.is_inside(poly, pt)
+
+                # Fill lattice
                 self.lattice[j,i] = inside
 
                 bar.next()
@@ -271,7 +285,6 @@ class Lattice:
 
         # Check if point is inside or outside
         # This is a valid algorithm for any non-convex polygon
-
         for i in range(len(poly)):
             if (((poly[i,1] < pt[1] and poly[j,1] >= pt[1])  or
                  (poly[j,1] < pt[1] and poly[i,1] >= pt[1])) and

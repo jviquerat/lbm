@@ -19,7 +19,7 @@ edgy           = np.random.uniform(low=0.0, high=1.0, size=n_pts)
 ctrl_pts       = np.random.rand(n_pts,2)
 
 ### LBM parameters
-u              = 0.5
+u              = 0.1
 nu             = 0.01
 q              = 9
 x_min          =-5.0
@@ -27,7 +27,7 @@ x_max          = 10.0
 y_min          =-2.5
 y_max          = 2.5
 Re             = u*(y_max-y_min)/nu
-nx             = 1000
+nx             = 500
 ny             = math.floor(nx*(y_max-y_min)/(x_max-x_min))
 dx             = (x_max-x_min)/nx
 cs             = 1.0/math.sqrt(3.0)
@@ -37,7 +37,7 @@ dt             = (nu_lbm/nu)*dx**2
 u_lbm          = u*(dt/dx)
 rho            = 1.0
 lattice_name   = 'lattice'
-it_max         = 50*nx
+it_max         = 20*nx
 
 # Printings
 print('### LBM solver ###')
