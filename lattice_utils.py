@@ -307,12 +307,14 @@ class Lattice:
     def generate_image(self):
 
         # Plot and save image of lattice
+        filename = self.output_dir+self.name+'.png'
+
         plt.axis('off')
         plt.imshow(self.lattice,
                    cmap=mplt.cm.inferno)
-        plt.savefig(self.name, dpi=200, bbox_inches='tight')
+        plt.savefig(filename, dpi=200, bbox_inches='tight')
         plt.close()
-        self.trim_white(self.name+'.png')
+        self.trim_white(filename)
 
     ### ************************************************
     ### Crop white background from image

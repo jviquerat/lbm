@@ -260,6 +260,20 @@ def compute_distance(p1, p2):
     return np.sqrt((p1[0]-p2[0])**2+(p1[1]-p2[1])**2)
 
 ### ************************************************
+### Generate cylinder points
+def generate_cylinder_pts(n_pts):
+    if (n_pts < 4):
+        print('Not enough points to generate cylinder')
+        exit()
+
+    pts = np.zeros([n_pts, 2])
+    ang = 2.0*math.pi/n_pts
+    for i in range(0,n_pts):
+        pts[i,:] = [math.cos(float(i)*ang),math.sin(float(i)*ang)]
+
+    return pts
+
+### ************************************************
 ### Remove duplicate points in input coordinates array
 ### WARNING : this routine is highly sub-optimal
 def remove_duplicate_pts(pts):
