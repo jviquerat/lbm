@@ -29,6 +29,7 @@ class Lattice:
         self.tau        = tau
         self.output_dir = output_dir
         self.png_dir    = self.output_dir+'./png/'
+        self.output_it  = 0
 
         if (not os.path.exists(self.output_dir)): os.makedirs(self.output_dir)
         if (not os.path.exists(self.png_dir)):    os.makedirs(self.png_dir)
@@ -50,13 +51,17 @@ class Lattice:
         #self.u[:,:,0] = self.u_in[:,:,0]
         self.u                 = self.u_in
         self.u[:,self.lattice] = 0.0
-        
+
         # Initial distribution
         self.equilibrium(self.g, self.rho, self.u)
 
         # Solve with progress bar
         bar = progress.bar.Bar('Solving...', max=it_max)
-        for it in range(it_max):
+        for it in range(it_max+1):
+
+            # Sizes
+            lx = self.nx-1
+            ly = self.ny-1
 
             # Compute macroscopic fields ### local
             self.macro()
@@ -68,10 +73,10 @@ class Lattice:
                 + 2.0*np.sum(self.g[self.left,:,0],axis=0))
 
             # Outflow b.c. : Zou-He, macro part ### local
-            self.u[1,:,-1] = 0.0
-            self.rho[:,-1] = 1.0
-            self.u[0,:,-1] =-1.0 + np.sum(self.g[self.mid,:,-1],axis=0) \
-                + 2.0*np.sum(self.g[self.right,:,-1],axis=0)
+            self.u[1,:,lx] = 0.0
+            self.rho[:,lx] = 1.0
+            self.u[0,:,lx] =-1.0 + np.sum(self.g[self.mid,:,lx],axis=0) \
+                + 2.0*np.sum(self.g[self.right,:,lx],axis=0)
 
             # Obstacle b.c. : macro part ### local but need to cut and distribute lattice
             self.u[:,self.lattice] = 0.0
@@ -82,59 +87,59 @@ class Lattice:
             # Collisions ### local
             self.g_up = self.g - (1.0/self.tau)*(self.g - self.g_eq)
 
-            # Inflow b.c. : Zou-He, micro part ### local
-            self.g_up[1,:,0] = self.g_eq[1,:,0] + self.g_up[2,:,0] - self.g_eq[2,:,0]
-            self.g_up[5,:,0] = 0.5*(self.rho[:,0]*self.u[0,:,0] - self.g_up[1,:,0] \
-                + self.g_up[2,:,0] - self.g_up[3,:,0] + self.g_up[4,:,0] + 2.0*self.g_up[6,:,0])
-            self.g_up[8,:,0] = self.g_up[3,:,0] - self.g_up[4,:,0] + self.g_up[5,:,0] \
-                - self.g_up[6,:,0] + self.g_up[7,:,0]
-
-            # Outflow b.c. : Zou-He, micro part ### local
-            self.g_up[2,:,-1] = self.g_eq[2,:,-1] + self.g_up[1,:,-1] - self.g_eq[1,:,-1]
-            self.g_up[6,:,-1] =-0.5*(self.rho[:,-1]*self.u[0,:,-1] - self.g_up[1,:,-1] \
-                + self.g_up[2,:,-1] - self.g_up[3,:,-1] + self.g_up[4,:,-1] - 2.0*self.g_up[5,:,-1])
-            self.g_up[7,:,-1] =-self.g_up[3,:,-1] + self.g_up[4,:,-1] - self.g_up[5,:,-1] \
-                + self.g_up[6,:,-1] + self.g_up[8,:,-1]
-
-            # Top b.c.
-            #self.g_up[self.bot[:],0,:]  = self.g_up[self.ns[self.bot[:]],0,:]
-
-            # Bottom b.c.
-            #self.g_up[self.top[:],-1,:] = self.g_up[self.ns[self.top[:]],-1,:]
-
-            # Obstacle b.c.
-            for q in range(self.q):
-                self.g_up[q,self.lattice] = self.g_up[self.ns[q], self.lattice]
-
             # Streaming ### NOT local : use extended arrays for artificial boundaries
                         ###             and then just stream normally ?
+
+            # Stream 0
+            self.g[0, :, :]           = self.g_up[0, :, :]
+
+            # Stream +x and -x
+            self.g[1, 1:ly-1, 1:lx]   = self.g_up[1, 1:ly-1, 0:lx-1]
+            self.g[2, 1:ly-1, 0:lx-1] = self.g_up[2, 1:ly-1, 1:lx]
+
+            # Stream +y and -y
+            self.g[3, 0:ly-1, 1:lx-1] = self.g_up[3, 1:ly,   1:lx-1]
+            self.g[4, 1:ly,   1:lx-1] = self.g_up[4, 0:ly-1, 1:lx-1]
+
+            # Stream +x+y and -x-y
+            self.g[5, 0:ly-1, 1:lx]   = self.g_up[5, 1:ly,   0:lx-1]
+            self.g[6, 1:ly,   0:lx-1] = self.g_up[6, 0:ly-1, 1:lx]
+
+            # Stream -x+y and +x-y
+            self.g[7, 0:ly-1, 0:lx-1] = self.g_up[7, 1:ly,   1:lx]
+            self.g[8, 1:ly,   1:lx]   = self.g_up[8, 0:ly-1, 0:lx-1]
+
+            # Inflow b.c. : Zou-He, micro part ### local
+            self.g[1,:,0] = self.g_eq[1,:,0] + self.g[2,:,0] - self.g_eq[2,:,0]
+            self.g[5,:,0] = 0.5*(self.rho[:,0]*self.u[0,:,0] - self.g[1,:,0] \
+                + self.g[2,:,0] - self.g[3,:,0] + self.g[4,:,0] + 2.0*self.g[6,:,0])
+            self.g[8,:,0] = self.g[3,:,0] - self.g[4,:,0] + self.g[5,:,0] \
+                - self.g[6,:,0] + self.g[7,:,0]
+
+            # Outflow b.c. : Zou-He, micro part ### local
+            self.g[2,:,lx] = self.g_eq[2,:,lx] + self.g[1,:,lx] - self.g_eq[1,:,lx]
+            self.g[6,:,lx] =-0.5*(self.rho[:,lx]*self.u[0,:,lx] - self.g[1,:,lx] \
+                + self.g[2,:,lx] - self.g[3,:,lx] + self.g[4,:,lx] - 2.0*self.g[5,:,lx])
+            self.g[7,:,lx] =-self.g[3,:,lx] + self.g[4,:,lx] - self.g[5,:,lx] \
+                + self.g[6,:,lx] + self.g[8,:,lx]
+
+            # Top b.c. : Zou-He, micro part ### local
+            self.g[4,0,:] = self.g_eq[4,0,:] + self.g[3,0,:] - self.g_eq[3,0,:]
+            self.g[6,0,:] = 0.5*(self.g[1,0,:] + self.g[3,0,:] - self.g[2,0,:] \
+                - self.g[4,0,:] + 2.0*self.g[5,0,:])
+            self.g[8,0,:] = self.g[3,0,:] - self.g[4,0,:] + self.g[5,0,:] \
+                - self.g[6,0,:] + self.g[7,0,:]
+
+            # Bottom b.c. : Zou-He, micro part ### local
+            self.g[3,ly,:] = self.g_eq[3,ly,:] + self.g[4,ly,:] - self.g_eq[4,ly,:]
+            self.g[5,ly,:] = 0.5*(2.0*self.g[6,ly,:] - self.g[1,ly,:] - self.g[3,ly,:] \
+                + self.g[2,ly,:] + self.g[4,ly,:])
+            self.g[7,ly,:] = self.g[8,ly,:] - self.g[3,ly,:] + self.g[4,ly,:] \
+                - self.g[5,ly,:] + self.g[6,ly,:]
+
+            # Obstacle b.c. ### local
             for q in range(self.q):
-                self.g[q,:,:] = np.roll(np.roll(
-                    self.g_up[q,:,:],self.c[q,1],axis=0),self.c[q,0],axis=1)
-
-            # # Inflow b.c. : Zou-He, micro part ### local
-            # self.g[1,:,0] = self.g_eq[1,:,0] + self.g[2,:,0] - self.g_eq[2,:,0]
-            # self.g[5,:,0] = 0.5*(self.rho[:,0]*self.u[0,:,0] - self.g[1,:,0] \
-            #     + self.g[2,:,0] - self.g[3,:,0] + self.g[4,:,0] + 2.0*self.g[6,:,0])
-            # self.g[8,:,0] = self.g[3,:,0] - self.g[4,:,0] + self.g[5,:,0] \
-            #     - self.g[6,:,0] + self.g[7,:,0]
-
-            # # Outflow b.c. : Zou-He, micro part ### local
-            # self.g[2,:,-1] = self.g_eq[2,:,-1] + self.g[1,:,-1] - self.g_eq[1,:,-1]
-            # self.g[6,:,-1] =-0.5*(self.rho[:,-1]*self.u[0,:,-1] - self.g[1,:,-1] \
-            #     + self.g[2,:,-1] - self.g[3,:,-1] + self.g[4,:,-1] - 2.0*self.g[5,:,-1])
-            # self.g[7,:,-1] =-self.g[3,:,-1] + self.g[4,:,-1] - self.g[5,:,-1] \
-            #     + self.g[6,:,-1] + self.g[8,:,-1]
-
-            # Top b.c. ### local
-            self.g[self.bot[:],0,:]  = self.g[self.ns[self.bot[:]],0,:]
-
-            # Bottom b.c. ### local
-            self.g[self.top[:],-1,:] = self.g[self.ns[self.top[:]],-1,:]
-
-            # # Obstacle b.c. ### local
-            # for q in range(self.q):
-            #     self.g[q,self.lattice] = self.g[self.ns[q], self.lattice]
+                self.g[q,self.lattice] = self.g[self.ns[q], self.lattice]
 
             # Output view ### NOT local : need to reconstruct before output
             if (it%freq==0): # Visualization
@@ -144,7 +149,8 @@ class Lattice:
                            vmin = 0.0,
                            vmax = u_in)
                 plt.colorbar()
-                plt.savefig(self.png_dir+"vel."+str(it)+".png")
+                plt.savefig(self.png_dir+"vel."+str(self.output_it)+".png")
+                self.output_it += 1
 
             # Increment bar
             bar.next()
