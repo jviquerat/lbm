@@ -65,7 +65,8 @@ shape = Shape(shape_name,
               n_pts,
               n_sampling_pts,
               radius,
-              edgy)
+              edgy,
+              output_dir)
 
 # Generate shape
 shape.generate()

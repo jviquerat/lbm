@@ -25,19 +25,13 @@ class Shape:
     ### ************************************************
     ### Constructor
     def __init__(self,
-                 name          =None,
-                 control_pts   =None,
-                 n_control_pts =None,
-                 n_sampling_pts=None,
-                 radius        =None,
-                 edgy          =None):
-
-        if (name           is None): name           = 'shape'
-        if (control_pts    is None): control_pts    = np.array([])
-        if (n_control_pts  is None): n_control_pts  = 0
-        if (n_sampling_pts is None): n_sampling_pts = 0
-        if (radius         is None): radius         = np.array([])
-        if (edgy           is None): edgy           = np.array([])
+                 name,
+                 control_pts,
+                 n_control_pts,
+                 n_sampling_pts,
+                 radius,
+                 edgy,
+                 output_dir):
 
         self.name           = name
         self.control_pts    = control_pts
@@ -49,6 +43,9 @@ class Shape:
         self.size_y         = 0.0
         self.radius         = radius
         self.edgy           = edgy
+        self.output_dir     = output_dir
+
+        if (not os.path.exists(self.output_dir)): os.makedirs(self.output_dir)
 
     ### ************************************************
     ### Reset object
@@ -173,7 +170,7 @@ class Shape:
                     alpha=0.5)
 
         # Save image
-        filename = self.name+'.png'
+        filename = self.output_dir+self.name+'.png'
 
         plt.savefig(filename,
                     dpi=200)
@@ -184,7 +181,7 @@ class Shape:
     ### ************************************************
     ### Write csv
     def write_csv(self):
-        filename = self.name+'.csv'
+        filename = self.output_dir+self.name+'.csv'
         with open(filename,'w') as file:
             # Write header
             file.write('{} {}\n'.format(self.n_control_pts,
