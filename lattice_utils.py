@@ -95,7 +95,7 @@ class Lattice:
     ### Output 2D flow view
     def output_view(self, it, freq, u_in):
 
-        if (it%freq==0): # Visualization
+        if (it%freq==0):
             plt.clf()
             plt.imshow(np.sqrt(self.u[0]**2+self.u[1]**2),
                        cmap = 'Blues',
@@ -103,7 +103,8 @@ class Lattice:
                        vmax = u_in)
             filename = self.png_dir+'vel_'+str(self.output_it)+'.png'
             plt.axis('off')
-            plt.savefig(filename)
+            plt.savefig(filename,
+                        dpi=200)
             self.trim_white(filename)
             self.output_it += 1
 
