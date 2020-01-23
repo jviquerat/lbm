@@ -48,37 +48,22 @@ class Lattice:
         self.u_in  = u_in*np.fromfunction(self.poiseuille,
                                           (2, self.ny, self.nx))
 
-        #self.u[:,:,0] = self.u_in[:,:,0]
         self.u                 = self.u_in
         self.u[:,self.lattice] = 0.0
 
         # Initial distribution
         self.equilibrium(self.g, self.rho, self.u)
 
-        # Solve with progress bar
+        # Solve
         bar = progress.bar.Bar('Solving...', max=it_max)
         for it in range(it_max+1):
-
-            # Sizes
-            lx = self.nx-1
-            ly = self.ny-1
 
             # Compute macroscopic fields ### local
             self.macro()
 
-            # Inflow b.c. : Zou-He, macro part ### local
-            self.u[:,:,0] = self.u_in[:,:,0]
-            self.rho[:,0] = 1.0/(1.0-self.u[0,:,0])*( \
-                np.sum(self.g[self.mid, :,0],axis=0)  \
-                + 2.0*np.sum(self.g[self.left,:,0],axis=0))
-
-            # Outflow b.c. : Zou-He, macro part ### local
-            self.u[1,:,lx] = 0.0
-            self.rho[:,lx] = 1.0
-            self.u[0,:,lx] =-1.0 + np.sum(self.g[self.mid,:,lx],axis=0) \
-                + 2.0*np.sum(self.g[self.right,:,lx],axis=0)
-
-            # Obstacle b.c. : macro part ### local but need to cut and distribute lattice
+            # Macro boundary conditions
+            self.zou_he_inlet_macro()
+            self.zou_he_outlet_macro()
             self.u[:,self.lattice] = 0.0
 
             # Compute equilibrium state ### local
@@ -88,75 +73,121 @@ class Lattice:
             self.g_up = self.g - (1.0/self.tau)*(self.g - self.g_eq)
 
             # Streaming ### NOT local : use extended arrays for artificial boundaries
-                        ###             and then just stream normally ?
+            self.stream()
 
-            # Stream 0
-            self.g[0, :, :]           = self.g_up[0, :, :]
-
-            # Stream +x and -x
-            self.g[1, 1:ly-1, 1:lx]   = self.g_up[1, 1:ly-1, 0:lx-1]
-            self.g[2, 1:ly-1, 0:lx-1] = self.g_up[2, 1:ly-1, 1:lx]
-
-            # Stream +y and -y
-            self.g[3, 0:ly-1, 1:lx-1] = self.g_up[3, 1:ly,   1:lx-1]
-            self.g[4, 1:ly,   1:lx-1] = self.g_up[4, 0:ly-1, 1:lx-1]
-
-            # Stream +x+y and -x-y
-            self.g[5, 0:ly-1, 1:lx]   = self.g_up[5, 1:ly,   0:lx-1]
-            self.g[6, 1:ly,   0:lx-1] = self.g_up[6, 0:ly-1, 1:lx]
-
-            # Stream -x+y and +x-y
-            self.g[7, 0:ly-1, 0:lx-1] = self.g_up[7, 1:ly,   1:lx]
-            self.g[8, 1:ly,   1:lx]   = self.g_up[8, 0:ly-1, 0:lx-1]
-
-            # Inflow b.c. : Zou-He, micro part ### local
-            self.g[1,:,0] = self.g_eq[1,:,0] + self.g[2,:,0] - self.g_eq[2,:,0]
-            self.g[5,:,0] = 0.5*(self.rho[:,0]*self.u[0,:,0] - self.g[1,:,0] \
-                + self.g[2,:,0] - self.g[3,:,0] + self.g[4,:,0] + 2.0*self.g[6,:,0])
-            self.g[8,:,0] = self.g[3,:,0] - self.g[4,:,0] + self.g[5,:,0] \
-                - self.g[6,:,0] + self.g[7,:,0]
-
-            # Outflow b.c. : Zou-He, micro part ### local
-            self.g[2,:,lx] = self.g_eq[2,:,lx] + self.g[1,:,lx] - self.g_eq[1,:,lx]
-            self.g[6,:,lx] =-0.5*(self.rho[:,lx]*self.u[0,:,lx] - self.g[1,:,lx] \
-                + self.g[2,:,lx] - self.g[3,:,lx] + self.g[4,:,lx] - 2.0*self.g[5,:,lx])
-            self.g[7,:,lx] =-self.g[3,:,lx] + self.g[4,:,lx] - self.g[5,:,lx] \
-                + self.g[6,:,lx] + self.g[8,:,lx]
-
-            # Top b.c. : Zou-He, micro part ### local
-            self.g[4,0,:] = self.g_eq[4,0,:] + self.g[3,0,:] - self.g_eq[3,0,:]
-            self.g[6,0,:] = 0.5*(self.g[1,0,:] + self.g[3,0,:] - self.g[2,0,:] \
-                - self.g[4,0,:] + 2.0*self.g[5,0,:])
-            self.g[8,0,:] = self.g[3,0,:] - self.g[4,0,:] + self.g[5,0,:] \
-                - self.g[6,0,:] + self.g[7,0,:]
-
-            # Bottom b.c. : Zou-He, micro part ### local
-            self.g[3,ly,:] = self.g_eq[3,ly,:] + self.g[4,ly,:] - self.g_eq[4,ly,:]
-            self.g[5,ly,:] = 0.5*(2.0*self.g[6,ly,:] - self.g[1,ly,:] - self.g[3,ly,:] \
-                + self.g[2,ly,:] + self.g[4,ly,:])
-            self.g[7,ly,:] = self.g[8,ly,:] - self.g[3,ly,:] + self.g[4,ly,:] \
-                - self.g[5,ly,:] + self.g[6,ly,:]
-
-            # Obstacle b.c. ### local
-            for q in range(self.q):
-                self.g[q,self.lattice] = self.g[self.ns[q], self.lattice]
+            # Micro boundary conditions
+            self.zou_he_inlet()
+            self.zou_he_outlet()
+            self.zou_he_top_wall()
+            self.zou_he_bottom_wall()
+            self.bounce_back_obstacle()
 
             # Output view ### NOT local : need to reconstruct before output
-            if (it%freq==0): # Visualization
-                plt.clf()
-                plt.imshow(np.sqrt(self.u[0]**2+self.u[1]**2),
-                           cmap = 'Blues',
-                           vmin = 0.0,
-                           vmax = u_in)
-                plt.colorbar()
-                plt.savefig(self.png_dir+"vel."+str(self.output_it)+".png")
-                self.output_it += 1
+            self.output_view(it, freq, u_in)
 
             # Increment bar
             bar.next()
 
         # End bar
         bar.finish()
+
+    ### ************************************************
+    ### Output 2D flow view
+    def output_view(self, it, freq, u_in):
+
+        if (it%freq==0): # Visualization
+            plt.clf()
+            plt.imshow(np.sqrt(self.u[0]**2+self.u[1]**2),
+                       cmap = 'Blues',
+                       vmin = 0.0,
+                       vmax = u_in)
+            plt.colorbar()
+            plt.savefig(self.png_dir+'vel_'+str(self.output_it)+'.png')
+            self.output_it += 1
+
+    ### ************************************************
+    ### Zou-He inlet macro b.c.
+    def zou_he_inlet_macro(self):
+
+        self.u[:,:,0] = self.u_in[:,:,0]
+        self.rho[:,0] = 1.0/(1.0-self.u[0,:,0])*( \
+            np.sum(self.g[self.mid, :,0],axis=0)  \
+            + 2.0*np.sum(self.g[self.left,:,0],axis=0))
+
+    ### ************************************************
+    ### Zou-He outlet macro b.c.
+    def zou_he_outlet_macro(self):
+
+        lx             = self.nx-1
+        self.u[1,:,lx] = 0.0
+        self.rho[:,lx] = 1.0
+        self.u[0,:,lx] =-1.0 + np.sum(self.g[self.mid,:,lx],axis=0) \
+            + 2.0*np.sum(self.g[self.right,:,lx],axis=0)
+
+    ### ************************************************
+    ### Zou-He inlet b.c.
+    def zou_he_inlet(self):
+
+        self.g[1,:,0] = self.g_eq[1,:,0] + self.g[2,:,0] - self.g_eq[2,:,0]
+        self.g[5,:,0] = 0.5*(self.rho[:,0]*self.u[0,:,0] - self.g[1,:,0] \
+            + self.g[2,:,0] - self.g[3,:,0] + self.g[4,:,0] + 2.0*self.g[6,:,0])
+        self.g[8,:,0] = self.g[3,:,0] - self.g[4,:,0] + self.g[5,:,0]    \
+            - self.g[6,:,0] + self.g[7,:,0]
+
+    ### ************************************************
+    ### Zou-He outlet b.c.
+    def zou_he_outlet(self):
+
+        lx             = self.nx-1
+        self.g[2,:,lx] = self.g_eq[2,:,lx] + self.g[1,:,lx] - self.g_eq[1,:,lx]
+        self.g[6,:,lx] =-0.5*(self.rho[:,lx]*self.u[0,:,lx] - self.g[1,:,lx] \
+            + self.g[2,:,lx] - self.g[3,:,lx] + self.g[4,:,lx] - 2.0*self.g[5,:,lx])
+        self.g[7,:,lx] =-self.g[3,:,lx] + self.g[4,:,lx] - self.g[5,:,lx] \
+            + self.g[6,:,lx] + self.g[8,:,lx]
+
+    ### ************************************************
+    ### Zou-He no-slip top wall b.c.
+    def zou_he_top_wall(self):
+
+        self.g[4,0,:] = self.g_eq[4,0,:] + self.g[3,0,:] - self.g_eq[3,0,:]
+        self.g[6,0,:] = 0.5*(self.g[1,0,:] + self.g[3,0,:] - self.g[2,0,:] \
+            - self.g[4,0,:] + 2.0*self.g[5,0,:])
+        self.g[8,0,:] = self.g[3,0,:] - self.g[4,0,:] + self.g[5,0,:] \
+            - self.g[6,0,:] + self.g[7,0,:]
+
+    ### ************************************************
+    ### Zou-He no-slip bottom wall b.c.
+    def zou_he_bottom_wall(self):
+
+        ly             = self.ny-1
+        self.g[3,ly,:] = self.g_eq[3,ly,:] + self.g[4,ly,:] - self.g_eq[4,ly,:]
+        self.g[5,ly,:] = 0.5*(2.0*self.g[6,ly,:] - self.g[1,ly,:] - self.g[3,ly,:] \
+            + self.g[2,ly,:] + self.g[4,ly,:])
+        self.g[7,ly,:] = self.g[8,ly,:] - self.g[3,ly,:] + self.g[4,ly,:] \
+            - self.g[5,ly,:] + self.g[6,ly,:]
+
+    ### ************************************************
+    ### Obstacle bounce-back no-slip b.c.
+    def bounce_back_obstacle(self):
+
+        for q in range(self.q):
+            self.g[q,self.lattice] = self.g[self.ns[q], self.lattice]
+
+    ### ************************************************
+    ### Stream distribution
+    def stream(self):
+
+        lx                        = self.nx - 1
+        ly                        = self.ny - 1
+        self.g[0, :, :]           = self.g_up[0, :, :]           # center
+        self.g[1, 1:ly-1, 1:lx]   = self.g_up[1, 1:ly-1, 0:lx-1] # +x
+        self.g[2, 1:ly-1, 0:lx-1] = self.g_up[2, 1:ly-1, 1:lx]   # -x
+        self.g[3, 0:ly-1, 1:lx-1] = self.g_up[3, 1:ly,   1:lx-1] # +y
+        self.g[4, 1:ly,   1:lx-1] = self.g_up[4, 0:ly-1, 1:lx-1] # -y
+        self.g[5, 0:ly-1, 1:lx]   = self.g_up[5, 1:ly,   0:lx-1] # +x+y
+        self.g[6, 1:ly,   0:lx-1] = self.g_up[6, 0:ly-1, 1:lx]   # -x-y
+        self.g[7, 0:ly-1, 0:lx-1] = self.g_up[7, 1:ly,   1:lx]   # -x+y
+        self.g[8, 1:ly,   1:lx]   = self.g_up[8, 0:ly-1, 0:lx-1] # +x-y
 
     ### ************************************************
     ### Compute equilibrium state

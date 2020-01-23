@@ -21,11 +21,11 @@ u              = 0.5
 nu             = 0.01
 q              = 9
 x_min          =-5.0
-x_max          = 15.0
-y_min          =-3.0
-y_max          = 3.0
+x_max          = 10.0
+y_min          =-5.0
+y_max          = 5.0
 Re             = u*(y_max-y_min)/nu
-nx             = 1000
+nx             = 500
 ny             = math.floor(nx*(y_max-y_min)/(x_max-x_min))
 dx             = (x_max-x_min)/nx
 cs             = 1.0/math.sqrt(3.0)
@@ -50,7 +50,7 @@ print('# dt       = '+str(dt))
 print('# it       = '+str(it_max))
 
 # Output parameters
-output_freq    = 500
+output_freq    = 50
 time           = datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S')
 results_dir    = './results/'
 output_dir     = results_dir+str(time)+'/'
@@ -62,6 +62,7 @@ if (shape_type == 'cylinder'):
     radius         = (1.0/math.sqrt(2))*np.ones((n_pts))
     edgy           = 1.0*np.ones((n_pts))
     ctrl_pts       = generate_cylinder_pts(n_pts)
+    ctrl_pts[:,1] += 0.25
 
 if (shape_type == 'random'):
     radius         = np.random.uniform(low=0.0, high=1.0, size=n_pts)
