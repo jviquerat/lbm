@@ -101,8 +101,10 @@ class Lattice:
                        cmap = 'Blues',
                        vmin = 0.0,
                        vmax = u_in)
-            plt.colorbar()
-            plt.savefig(self.png_dir+'vel_'+str(self.output_it)+'.png')
+            filename = self.png_dir+'vel_'+str(self.output_it)+'.png'
+            plt.axis('off')
+            plt.savefig(filename)
+            self.trim_white(filename)
             self.output_it += 1
 
     ### ************************************************
@@ -263,8 +265,9 @@ class Lattice:
 
         # Because we loop on the lattice left-right and top-down,
         # we need to flip the polygon up-down
-        poly        = polygon.copy()
-        poly[:,1]  *= -1.0
+        poly         = polygon.copy()
+        poly[:,1]   *= -1.0
+        self.polygon = poly
 
         # Compute polygon bounds
         poly_bounds    = np.zeros((4))

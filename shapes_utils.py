@@ -8,17 +8,6 @@ import matplotlib
 import numpy             as np
 import matplotlib.pyplot as plt
 
-# Imports with probable installation required
-try:
-    import pygmsh, meshio
-except ImportError:
-    print('*** Missing required packages, I will install them for you ***')
-    os.system('pip3 install pygmsh meshio')
-    import pygmsh, meshio
-
-# Custom imports
-from meshes_utils import *
-
 ### ************************************************
 ### Class defining shape object
 class Shape:
