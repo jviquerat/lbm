@@ -280,12 +280,12 @@ class Lattice:
         poly[:,1]   *= -1.0
         self.polygon = poly
 
-        # Compute polygon bounds
-        poly_bounds    = np.zeros((4))
-        poly_bounds[0] = np.amin(poly[:,0])
-        poly_bounds[1] = np.amax(poly[:,0])
-        poly_bounds[2] = np.amin(poly[:,1])
-        poly_bounds[3] = np.amax(poly[:,1])
+        # Compute polygon bnds
+        poly_bnds    = np.zeros((4))
+        poly_bnds[0] = np.amin(poly[:,0])
+        poly_bnds[1] = np.amax(poly[:,0])
+        poly_bnds[2] = np.amin(poly[:,1])
+        poly_bnds[3] = np.amax(poly[:,1])
 
         # Declare lattice array
         self.lattice = np.zeros((self.ny, self.nx), dtype=bool)
@@ -298,8 +298,8 @@ class Lattice:
                 inside = False
 
                 # Check if pt is inside polygon bbox
-                if ((pt[0] > poly_bounds[0]) and (pt[0] < poly_bounds[1])):
-                    if ((pt[1] > poly_bounds[2]) and (pt[1] < poly_bounds[3])):
+                if ((pt[0] > poly_bnds[0]) and (pt[0] < poly_bnds[1])):
+                    if ((pt[1] > poly_bnds[2]) and (pt[1] < poly_bnds[3])):
                         inside = self.is_inside(poly, pt)
 
                 # Fill lattice
