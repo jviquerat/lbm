@@ -11,12 +11,12 @@ import matplotlib.pyplot as plt
 class Lattice:
     ### ************************************************
     ### Constructor
-    def __init__(self, name,
-                 xmin, xmax,
-                 ymin, ymax,
-                 nx,   ny,
-                 q,    tau,
-                 output_dir):
+    def __init__(self,       name,
+                 xmin,       xmax,
+                 ymin,       ymax,
+                 nx,         ny,
+                 q,          tau,
+                 output_dir, dpi):
 
         self.name       = name
         self.xmin       = xmin
@@ -30,6 +30,7 @@ class Lattice:
         self.output_dir = output_dir
         self.png_dir    = self.output_dir+'./png/'
         self.output_it  = 0
+        self.dpi        = dpi
 
         if (not os.path.exists(self.output_dir)): os.makedirs(self.output_dir)
         if (not os.path.exists(self.png_dir)):    os.makedirs(self.png_dir)
@@ -104,7 +105,7 @@ class Lattice:
             filename = self.png_dir+'vel_'+str(self.output_it)+'.png'
             plt.axis('off')
             plt.savefig(filename,
-                        dpi=100)
+                        dpi=self.dpi)
             self.trim_white(filename)
             self.output_it += 1
 

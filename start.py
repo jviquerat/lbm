@@ -14,28 +14,29 @@ from lattice_utils import *
 shape_name     = 'shape'
 n_pts          = 6
 n_sampling_pts = 50
-shape_type     = 'cylinder' # 'cylinder' or 'random'
+shape_type     = 'random' # 'cylinder' or 'random'
 
 ### LBM parameters
-u              = 0.5
+u              = 1.0
 nu             = 0.01
 q              = 9
 x_min          =-5.0
-x_max          = 10.0
-y_min          =-5.0
-y_max          = 5.0
+x_max          = 15.0
+y_min          =-2.0
+y_max          = 2.0
 Re             = u*(y_max-y_min)/nu
-nx             = 500
+nx             = 1000
 ny             = math.floor(nx*(y_max-y_min)/(x_max-x_min))
 dx             = (x_max-x_min)/nx
 cs             = 1.0/math.sqrt(3.0)
-tau            = 0.6
+tau            = 0.55
 nu_lbm         = (tau - 0.5)*cs**2
 dt             = (nu_lbm/nu)*dx**2
 u_lbm          = u*(dt/dx)
 rho            = 1.0
 lattice_name   = 'lattice'
-it_max         = 1*nx
+it_max         = 20*nx
+dpi            = 200
 
 # Printings
 print('### LBM solver ###')
@@ -83,11 +84,11 @@ shape.write_csv()
 
 # Initialize lattice
 lattice = Lattice(lattice_name,
-                  x_min, x_max,
-                  y_min, y_max,
-                  nx,    ny,
-                  q,     tau,
-                  output_dir)
+                  x_min,      x_max,
+                  y_min,      y_max,
+                  nx,         ny,
+                  q,          tau,
+                  output_dir, dpi)
 
 # Generate lattice from shape closed curve
 lattice.generate(shape.curve_pts)
