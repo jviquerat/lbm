@@ -104,7 +104,7 @@ class Lattice:
             filename = self.png_dir+'vel_'+str(self.output_it)+'.png'
             plt.axis('off')
             plt.savefig(filename,
-                        dpi=200)
+                        dpi=100)
             self.trim_white(filename)
             self.output_it += 1
 
@@ -207,9 +207,6 @@ class Lattice:
     ### ************************************************
     ### Compute equilibrium state
     def equilibrium(self, g, rho, u):
-
-        # Reset distribution
-        g[:,:,:] = 0.0
 
         # Compute velocity term
         v = (3.0/2.0)*(u[0,:,:]**2 + u[1,:,:]**2)

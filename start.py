@@ -35,7 +35,7 @@ dt             = (nu_lbm/nu)*dx**2
 u_lbm          = u*(dt/dx)
 rho            = 1.0
 lattice_name   = 'lattice'
-it_max         = 50*nx
+it_max         = 1*nx
 
 # Printings
 print('### LBM solver ###')
