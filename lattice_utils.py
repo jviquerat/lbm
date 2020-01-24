@@ -144,15 +144,16 @@ class Lattice:
     ### Zou-He outlet b.c.
     def zou_he_outlet(self):
 
-        l             = self.nx-1
-        self.g[2,:,l] = self.g_eq[2,:,l] + self.g[1,:,l] - self.g_eq[1,:,l]
-        self.g[6,:,l] =-0.5*(  self.rho[:,l]*self.u[0,:,l]   \
-                             - self.g[1,:,l] + self.g[2,:,l] \
-                             - self.g[3,:,l] + self.g[4,:,l] \
-                             - 2.0*self.g[5,:,l])
-        self.g[7,:,l] =-self.g[3,:,l] + self.g[4,:,l] \
-                      - self.g[5,:,l] + self.g[6,:,l] \
-                      + self.g[8,:,l]
+        lx             = self.nx-1
+        self.g[2,:,lx] = self.g_eq[2,:,lx] + self.g[1,:,lx] \
+                       - self.g_eq[1,:,lx]
+        self.g[6,:,lx] =-0.5*( self.rho[:,lx]*self.u[0,:,lx]   \
+                             - self.g[1,:,lx] + self.g[2,:,lx] \
+                             - self.g[3,:,lx] + self.g[4,:,lx] \
+                             - 2.0*self.g[5,:,lx])
+        self.g[7,:,lx] =-self.g[3,:,lx] + self.g[4,:,lx] \
+                       - self.g[5,:,lx] + self.g[6,:,lx] \
+                       + self.g[8,:,lx]
 
     ### ************************************************
     ### Zou-He no-slip top wall b.c.
@@ -170,14 +171,15 @@ class Lattice:
     ### Zou-He no-slip bottom wall b.c.
     def zou_he_bottom_wall(self):
 
-        l             = self.ny-1
-        self.g[3,l,:] = self.g_eq[3,l,:] + self.g[4,l,:] - self.g_eq[4,l,:]
-        self.g[5,l,:] = 0.5*(2.0*self.g[6,l,:] - self.g[1,l,:] \
-                               - self.g[3,l,:] + self.g[2,l,:] \
-                               + self.g[4,l,:])
-        self.g[7,l,:] = self.g[8,l,:] - self.g[3,l,:] \
-                      + self.g[4,l,:] - self.g[5,l,:] \
-                      + self.g[6,l,:]
+        ly             = self.ny-1
+        self.g[3,ly,:] = self.g_eq[3,ly,:] + self.g[4,ly,:] \
+                       - self.g_eq[4,ly,:]
+        self.g[5,ly,:] = 0.5*(2.0*self.g[6,ly,:] - self.g[1,ly,:] \
+                                - self.g[3,ly,:] + self.g[2,ly,:] \
+                                + self.g[4,ly,:])
+        self.g[7,ly,:] = self.g[8,ly,:] - self.g[3,ly,:] \
+                       + self.g[4,ly,:] - self.g[5,ly,:] \
+                       + self.g[6,ly,:]
 
     ### ************************************************
     ### Obstacle bounce-back no-slip b.c.
