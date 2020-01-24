@@ -58,7 +58,7 @@ class Lattice:
         bar = progress.bar.Bar('Solving...', max=it_max)
         for it in range(it_max+1):
 
-            # Compute macroscopic fields ### local
+            # Compute macroscopic fields
             self.macro()
 
             # Macro boundary conditions
@@ -66,13 +66,13 @@ class Lattice:
             self.zou_he_outlet_macro()
             self.u[:,self.lattice] = 0.0
 
-            # Compute equilibrium state ### local
+            # Compute equilibrium state
             self.equilibrium(self.g_eq, self.rho, self.u)
 
-            # Collisions ### local
+            # Collisions
             self.g_up = self.g - (1.0/self.tau)*(self.g - self.g_eq)
 
-            # Streaming ### NOT local : use extended arrays for artificial boundaries
+            # Streaming
             self.stream()
 
             # Micro boundary conditions
@@ -82,7 +82,7 @@ class Lattice:
             self.zou_he_bottom_wall()
             self.bounce_back_obstacle()
 
-            # Output view ### NOT local : need to reconstruct before output
+            # Output view
             self.output_view(it, freq, u_in)
 
             # Increment bar
