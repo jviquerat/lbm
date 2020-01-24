@@ -1,7 +1,6 @@
 # lbm
 A simple lattice-Boltzmann code for 2D channel flows
 
-![animation (1)](https://user-images.githubusercontent.com/44053700/73071737-e0cfbc00-3eb3-11ea-95f2-fa98053c8fa4.gif)
-
+![animation](https://user-images.githubusercontent.com/44053700/73072734-0bbb0f80-3eb6-11ea-8703-15145838ede7.gif)
 
 ```convert -delay 10 -loop 0 'vel.%d.png'[0-100] animation.gif```
