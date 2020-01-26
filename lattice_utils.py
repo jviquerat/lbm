@@ -166,8 +166,6 @@ class Lattice:
                 df        = self.g[q,j,i] + self.g[q,jj,ii]
                 force[:] += dc[:]*(1.0-w)*df
 
-        print(force)
-
     ### ************************************************
     ### Zou-He inlet macro b.c.
     def zou_he_inlet_macro(self):
@@ -312,6 +310,7 @@ class Lattice:
 
         # Declare lattice arrays
         self.lattice  = np.zeros((self.ny, self.nx), dtype=bool)
+        obstacle      = np.empty((0,2),              dtype=int)
         self.obstacle = np.empty((0,2),              dtype=int)
 
         # Fill lattice
@@ -327,15 +326,27 @@ class Lattice:
                         inside = self.is_inside(poly, pt)
 
                         if (inside):
-                            self.obstacle = np.append(self.obstacle,
-                                                      np.array([[i,j]]),
-                                                      axis=0)
+                            obstacle = np.append(obstacle,
+                                                 np.array([[i,j]]),
+                                                 axis=0)
 
                 # Fill lattice
                 self.lattice[j,i] = inside
 
                 bar.next()
         bar.finish()
+
+        print('Found '+str(obstacle.shape[0])+' locations in obstacle')
+
+        # Re-process obstacle to keep boundary
+        for k in range(len(obstacle)):
+            i = obstacle[k,0]
+            j = obstacle[k,1]
+            if (not self.lattice[j,i+1] or not self.lattice[j,i-1] or
+                not self.lattice[j+1,i] or not self.lattice[j-1,i]):
+                self.obstacle = np.append(self.obstacle,
+                                          np.array([[i,j]]),
+                                          axis=0)
 
         # Printings
         print('Found '+str(self.obstacle.shape[0])+' locations in obstacle')
