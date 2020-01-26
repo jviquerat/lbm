@@ -73,6 +73,9 @@ class Lattice:
             # Collisions
             self.g_up = self.g - (1.0/self.tau)*(self.g - self.g_eq)
 
+            # Drag and lift
+            #self.drag_lift()
+
             # Streaming
             self.stream()
 
@@ -108,6 +111,11 @@ class Lattice:
                         dpi=self.dpi)
             self.trim_white(filename)
             self.output_it += 1
+
+    ### ************************************************
+    ### Compute drag and lift
+    #def drag_lift()
+
 
     ### ************************************************
     ### Zou-He inlet macro b.c.
@@ -287,8 +295,9 @@ class Lattice:
         poly_bnds[2] = np.amin(poly[:,1])
         poly_bnds[3] = np.amax(poly[:,1])
 
-        # Declare lattice array
-        self.lattice = np.zeros((self.ny, self.nx), dtype=bool)
+        # Declare lattice arrays
+        self.lattice  = np.zeros((self.ny, self.nx), dtype=bool)
+        self.obstacle = np.empty((0,2),              dtype=int)
 
         # Fill lattice
         bar = progress.bar.Bar('Generating...', max=self.nx*self.ny)
@@ -302,11 +311,19 @@ class Lattice:
                     if ((pt[1] > poly_bnds[2]) and (pt[1] < poly_bnds[3])):
                         inside = self.is_inside(poly, pt)
 
+                        if (inside):
+                            self.obstacle = np.append(self.obstacle,
+                                                      np.array([[i,j]]),
+                                                      axis=0)
+
                 # Fill lattice
                 self.lattice[j,i] = inside
 
                 bar.next()
         bar.finish()
+
+        # Printings
+        print('Found '+str(self.obstacle.shape[0])+' locations in obstacle')
 
     ### ************************************************
     ### Get lattice coordinates from integers
