@@ -108,7 +108,7 @@ class Lattice:
             self.g_up = self.g - (1.0/self.tau)*(self.g - self.g_eq)
 
             # Drag and lift
-            self.drag_lift()
+            self.drag_lift(it)
 
             # Streaming
             self.stream()
@@ -148,7 +148,7 @@ class Lattice:
 
     ### ************************************************
     ### Compute drag and lift
-    def drag_lift(self):
+    def drag_lift(self, it):
 
         # Initialize
         force = np.zeros((2))
@@ -165,6 +165,11 @@ class Lattice:
                 w         = self.lattice[jj,ii]
                 df        = self.g[q,j,i] + self.g[q,jj,ii]
                 force[:] += dc[:]*(1.0-w)*df
+
+        # Write to file
+        filename = self.output_dir+'drag_lift'
+        with open(filename, 'a') as f:
+            f.write('{} {} {}\n'.format(it, force[0], force[1]))
 
     ### ************************************************
     ### Zou-He inlet macro b.c.
