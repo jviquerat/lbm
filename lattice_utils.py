@@ -74,7 +74,7 @@ class Lattice:
             self.g_up = self.g - (1.0/self.tau)*(self.g - self.g_eq)
 
             # Drag and lift
-            #self.drag_lift()
+            self.drag_lift()
 
             # Streaming
             self.stream()
@@ -114,8 +114,25 @@ class Lattice:
 
     ### ************************************************
     ### Compute drag and lift
-    #def drag_lift()
+    def drag_lift(self):
 
+        # Initialize
+        force = np.zeros((2))
+
+        # Loop over obstacle array
+        for k in range(len(self.obstacle)):
+            i = self.obstacle[k,0]
+            j = self.obstacle[k,1]
+            for q in range(1,self.q):
+                dc        = self.c[q,         :]
+                ic        = self.c[self.ns[q],:]
+                ii        = i + ic[0]
+                jj        = j + ic[1]
+                w         = self.lattice[jj,ii]
+                df        = self.g[q,j,i] + self.g[q,jj,ii]
+                force[:] += dc[:]*(1.0-w)*df
+
+        print(force)
 
     ### ************************************************
     ### Zou-He inlet macro b.c.

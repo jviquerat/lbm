@@ -14,7 +14,7 @@ from lattice_utils import *
 shape_name     = 'shape'
 n_pts          = 6
 n_sampling_pts = 50
-shape_type     = 'random' # 'cylinder' or 'random'
+shape_type     = 'cylinder' # 'cylinder' or 'random'
 
 ### LBM parameters
 u              = 1.0
