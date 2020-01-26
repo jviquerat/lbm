@@ -37,7 +37,7 @@ class Lattice:
 
     ### ************************************************
     ### Initialize lattice
-    def init_lattice(self):
+    def init_lattice(self, rho):
 
         # D2Q9 Velocities
         self.c  = np.array([ [ 0, 0],
@@ -58,16 +58,12 @@ class Lattice:
 
         # Boundary conditions
         # Velocities on which to apply the different BC
-        self.right = np.arange(self.q)[np.asarray([ci[0] >0
-                                                   for ci in self.c])]
-        self.left  = np.arange(self.q)[np.asarray([ci[0] <0
-                                                   for ci in self.c])]
-        self.mid   = np.arange(self.q)[np.asarray([ci[0]==0
-                                                   for ci in self.c])]
-        self.top   = np.arange(self.q)[np.asarray([ci[1] >0
-                                                   for ci in self.c])]
-        self.bot   = np.arange(self.q)[np.asarray([ci[1] <0
-                                                   for ci in self.c])]
+        c          = self.c
+        self.right = np.arange(self.q)[np.asarray([ci[0] >0 for ci in c])]
+        self.left  = np.arange(self.q)[np.asarray([ci[0] <0 for ci in c])]
+        self.mid   = np.arange(self.q)[np.asarray([ci[0]==0 for ci in c])]
+        self.top   = np.arange(self.q)[np.asarray([ci[1] >0 for ci in c])]
+        self.bot   = np.arange(self.q)[np.asarray([ci[1] <0 for ci in c])]
         self.ns    = np.asarray([self.c.tolist().index(
             (-self.c[i]).tolist()) for i in range(self.q)])
 
@@ -83,7 +79,7 @@ class Lattice:
     def solve(self, it_max, u_in, rho, freq):
 
         # Initialize lattice
-        self.init_lattice()
+        self.init_lattice(rho)
 
         # Input velocity profile
         self.u_in = u_in*np.fromfunction(self.poiseuille,(2,self.ny,self.nx))
