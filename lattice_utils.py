@@ -36,19 +36,57 @@ class Lattice:
         if (not os.path.exists(self.png_dir)):    os.makedirs(self.png_dir)
 
     ### ************************************************
-    ### Solve LBM
-    def solve(self, it_max, u_in, rho, freq):
+    ### Initialize lattice
+    def init_lattice(self):
 
+        # D2Q9 Velocities
+        self.c  = np.array([ [ 0, 0],
+                             [ 1, 0], [-1, 0],
+                             [ 0, 1], [ 0,-1],
+                             [ 1, 1], [-1,-1],
+                             [-1, 1], [ 1,-1]])
+
+        # Weights
+        # Cardinal values, then extra-cardinal values, then central value
+        idx_card       = [np.linalg.norm(ci)<1.1 for ci in self.c]
+        idx_extra_card = [np.linalg.norm(ci)>1.1 for ci in self.c]
+
+        self.w                             = np.ones(self.q)
+        self.w[np.asarray(idx_card)]       = 1./9.
+        self.w[np.asarray(idx_extra_card)] = 1./36.
+        self.w[0]                          = 4./9.
+
+        # Boundary conditions
+        # Velocities on which to apply the different BC
+        self.right = np.arange(self.q)[np.asarray([ci[0] >0
+                                                   for ci in self.c])]
+        self.left  = np.arange(self.q)[np.asarray([ci[0] <0
+                                                   for ci in self.c])]
+        self.mid   = np.arange(self.q)[np.asarray([ci[0]==0
+                                                   for ci in self.c])]
+        self.top   = np.arange(self.q)[np.asarray([ci[1] >0
+                                                   for ci in self.c])]
+        self.bot   = np.arange(self.q)[np.asarray([ci[1] <0
+                                                   for ci in self.c])]
+        self.ns    = np.asarray([self.c.tolist().index(
+            (-self.c[i]).tolist()) for i in range(self.q)])
+
+        # Allocate arrays
         self.g    = np.zeros((self.q,  self.ny, self.nx))
         self.g_eq = np.zeros((self.q,  self.ny, self.nx))
         self.g_up = np.zeros((self.q,  self.ny, self.nx))
         self.rho  = np.ones ((self.ny, self.nx))*rho
         self.u    = np.zeros((2,       self.ny, self.nx))
 
-        # Input velocity profile
-        self.u_in  = u_in*np.fromfunction(self.poiseuille,
-                                          (2, self.ny, self.nx))
+    ### ************************************************
+    ### Solve LBM
+    def solve(self, it_max, u_in, rho, freq):
 
+        # Initialize lattice
+        self.init_lattice()
+
+        # Input velocity profile
+        self.u_in = u_in*np.fromfunction(self.poiseuille,(2,self.ny,self.nx))
         self.u                 = self.u_in
         self.u[:,self.lattice] = 0.0
 
@@ -258,42 +296,6 @@ class Lattice:
 
         self.u[0,:,:] /= self.rho[:,:]
         self.u[1,:,:] /= self.rho[:,:]
-
-    ### ************************************************
-    ### Initialize computation
-    def init_computation(self):
-
-        # D2Q9 Velocities
-        self.c  = np.array([ [ 0, 0],
-                             [ 1, 0], [-1, 0],
-                             [ 0, 1], [ 0,-1],
-                             [ 1, 1], [-1,-1],
-                             [-1, 1], [ 1,-1]])
-
-        # Weights
-        # Cardinal values, then extra-cardinal values, then central value
-        idx_card       = [np.linalg.norm(ci)<1.1 for ci in self.c]
-        idx_extra_card = [np.linalg.norm(ci)>1.1 for ci in self.c]
-
-        self.w                             = np.ones(self.q)
-        self.w[np.asarray(idx_card)]       = 1./9.
-        self.w[np.asarray(idx_extra_card)] = 1./36.
-        self.w[0]                          = 4./9.
-
-        # Boundary conditions
-        # Velocities on which to apply the different BC
-        self.right = np.arange(self.q)[np.asarray([ci[0] >0
-                                                   for ci in self.c])]
-        self.left  = np.arange(self.q)[np.asarray([ci[0] <0
-                                                   for ci in self.c])]
-        self.mid   = np.arange(self.q)[np.asarray([ci[0]==0
-                                                   for ci in self.c])]
-        self.top   = np.arange(self.q)[np.asarray([ci[1] >0
-                                                   for ci in self.c])]
-        self.bot   = np.arange(self.q)[np.asarray([ci[1] <0
-                                                   for ci in self.c])]
-        self.ns    = np.asarray([self.c.tolist().index(
-            (-self.c[i]).tolist()) for i in range(self.q)])
 
     ### ************************************************
     ### Generate lattice

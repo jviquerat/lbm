@@ -93,5 +93,4 @@ lattice = Lattice(lattice_name,
 # Generate lattice from shape closed curve
 lattice.generate(shape.curve_pts)
 lattice.generate_image()
-lattice.init_computation()
 lattice.solve(it_max, u_lbm, rho, output_freq)
