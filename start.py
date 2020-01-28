@@ -14,18 +14,18 @@ from lattice_utils import *
 shape_name     = 'shape'
 n_pts          = 6
 n_sampling_pts = 50
-shape_type     = 'cylinder' # 'cylinder' or 'random'
+shape_type     = 'random' # 'cylinder' or 'random'
 
 ### LBM parameters
 u              = 1.0
 nu             = 0.01
 q              = 9
 x_min          =-5.0
-x_max          = 15.0
+x_max          = 10.0
 y_min          =-2.0
 y_max          = 2.0
 Re             = u*(y_max-y_min)/nu
-nx             = 1000
+nx             = 500
 ny             = math.floor(nx*(y_max-y_min)/(x_max-x_min))
 dx             = (x_max-x_min)/nx
 cs             = 1.0/math.sqrt(3.0)
@@ -35,7 +35,7 @@ dt             = (nu_lbm/nu)*dx**2
 u_lbm          = u*(dt/dx)
 rho            = 1.0
 lattice_name   = 'lattice'
-it_max         = 20*nx
+it_max         = 50*nx
 dpi            = 200
 
 # Printings
@@ -51,7 +51,7 @@ print('# dt       = '+str(dt))
 print('# it       = '+str(it_max))
 
 # Output parameters
-output_freq    = 50
+output_freq    = 500
 time           = datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S')
 results_dir    = './results/'
 output_dir     = results_dir+str(time)+'/'

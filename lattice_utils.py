@@ -133,9 +133,12 @@ class Lattice:
     ### Output 2D flow view
     def output_view(self, it, freq, u_in):
 
+        v = self.u.copy()
+        v[:,self.obstacle[:,1],self.obstacle[:,0]] = 1.0
+
         if (it%freq==0):
             plt.clf()
-            plt.imshow(np.sqrt(self.u[0]**2+self.u[1]**2),
+            plt.imshow(np.sqrt(v[0]**2+v[1]**2),
                        cmap = 'Blues',
                        vmin = 0.0,
                        vmax = u_in)
