@@ -76,7 +76,8 @@ class Lattice:
 
     ### ************************************************
     ### Solve LBM
-    def solve(self, it_max, u_in, rho, freq):
+    def solve(self, it_max, u_in, rho,
+              U_ref, L_ref, dx, dt, freq):
 
         # Initialize lattice
         self.init_lattice(rho)
@@ -107,9 +108,6 @@ class Lattice:
             # Collisions
             self.g_up = self.g - (1.0/self.tau)*(self.g - self.g_eq)
 
-            # Drag and lift
-            self.drag_lift(it)
-
             # Streaming
             self.stream()
 
@@ -119,6 +117,9 @@ class Lattice:
             self.zou_he_top_wall()
             self.zou_he_bottom_wall()
             self.bounce_back_obstacle()
+
+            # Drag and lift
+            self.drag_lift(it, rho, U_ref, L_ref, dx, dt)
 
             # Output view
             self.output_view(it, freq, u_in)
@@ -151,7 +152,7 @@ class Lattice:
 
     ### ************************************************
     ### Compute drag and lift
-    def drag_lift(self, it):
+    def drag_lift(self, it, rho, U_ref, L_ref, dx, dt):
 
         # Initialize
         force = np.zeros((2))
@@ -160,14 +161,23 @@ class Lattice:
         for k in range(len(self.obstacle)):
             i = self.obstacle[k,0]
             j = self.obstacle[k,1]
-            for q in range(1,self.q):
-                dc        = self.c[q,         :]
-                ic        = self.c[self.ns[q],:]
+            for q in range(0,self.q):
+                qb        = self.ns[q]
+                dc        = self.c[q, :]
+                ic        = self.c[qb,:]
                 ii        = i + ic[0]
                 jj        = j + ic[1]
                 w         = self.lattice[jj,ii]
-                df        = self.g[q,j,i] + self.g[q,jj,ii]
+                #df        = self.g[q,j,i] + self.g[qb,jj,ii]
+                df        = 2.0*self.g[qb,jj,ii]
+                #df        = 2.0*self.g[q,j,i]
+                #force[:] += dc[:]*(1.0-w)*df
                 force[:] += dc[:]*(1.0-w)*df
+
+
+        #Normalize coefficient
+        #force *= dx/dt
+        force *= 2.0/(rho*L_ref*U_ref**2)
 
         # Write to file
         filename = self.output_dir+'drag_lift'
@@ -350,8 +360,10 @@ class Lattice:
         for k in range(len(obstacle)):
             i = obstacle[k,0]
             j = obstacle[k,1]
-            if (not self.lattice[j,i+1] or not self.lattice[j,i-1] or
-                not self.lattice[j+1,i] or not self.lattice[j-1,i]):
+            if (not self.lattice[j,  i+1] or not self.lattice[j,  i-1] or
+                not self.lattice[j+1,i]   or not self.lattice[j-1,i]   or
+                not self.lattice[j+1,i+1] or not self.lattice[j+1,i-1] or
+                not self.lattice[j-1,i+1] or not self.lattice[j-1,i-1]):
                 self.obstacle = np.append(self.obstacle,
                                           np.array([[i,j]]),
                                           axis=0)
@@ -366,8 +378,8 @@ class Lattice:
         # Compute and return the coordinates of the lattice node (i,j)
         dx = (self.xmax - self.xmin)/(self.nx - 1)
         dy = (self.ymax - self.ymin)/(self.ny - 1)
-        x  = self.xmin + i*dx
-        y  = self.ymin + j*dy
+        x  = self.xmin + (i+0.5)*dx
+        y  = self.ymin + (j+0.5)*dy
 
         return [x, y]
 
@@ -428,4 +440,5 @@ class Lattice:
     ### Poiseuille flow
     def poiseuille(self, d, y, x):
 
-        return (1.0-d)*(4.0*y/self.ny)*(1.0 - y/self.ny)
+        H = self.ny
+        return (1.0-d)*4.0*y*(H-y)/H**2
