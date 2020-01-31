@@ -161,7 +161,7 @@ class Lattice:
         for k in range(len(self.obstacle)):
             i = self.obstacle[k,0]
             j = self.obstacle[k,1]
-            for q in range(0,self.q):
+            for q in range(1,self.q):
                 qb        = self.ns[q]
                 dc        = self.c[q, :]
                 ic        = self.c[qb,:]
@@ -176,7 +176,7 @@ class Lattice:
 
 
         #Normalize coefficient
-        #force *= dx/dt
+        force *= dx/dt
         force *= 2.0/(rho*L_ref*U_ref**2)
 
         # Write to file
