@@ -168,15 +168,13 @@ class Lattice:
                 ii        = i + ic[0]
                 jj        = j + ic[1]
                 w         = self.lattice[jj,ii]
-                #df        = self.g[q,j,i] + self.g[qb,jj,ii]
                 df        = 2.0*self.g[qb,jj,ii]
-                #df        = 2.0*self.g[q,j,i]
-                #force[:] += dc[:]*(1.0-w)*df
                 force[:] += dc[:]*(1.0-w)*df
 
 
         #Normalize coefficient
-        force *= dx/dt
+        force *= (dx**2)/(dt**2)*(self.tau - 0.5)
+        force /= len(self.obstacle)
         force *= 2.0/(rho*L_ref*U_ref**2)
 
         # Write to file
