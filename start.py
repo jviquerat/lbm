@@ -12,26 +12,26 @@ from lattice_utils import *
 
 ### Shape parameters
 shape_name     = 'shape'
-n_pts          = 6
+n_pts          = 4
 n_sampling_pts = 50
-shape_type     = 'cylinder' # 'cylinder' or 'random'
+shape_type     = 'cylinder' # 'cylinder', 'square' or 'random'
 
 ### LBM parameters
 u_in           = 0.3
 nu             = 0.001
 q              = 9
 x_min          =-0.2
-x_max          = 1.0
+x_max          = 0.2
 y_min          =-0.2
 y_max          = 0.21
 U_ref          = 2.0*u_in/3.0
 L_ref          = 0.1
 Re             = U_ref*L_ref/nu
-nx             = 1000
+nx             = 300
 ny             = math.floor(nx*(y_max-y_min)/(x_max-x_min))
 dx             = (x_max-x_min)/nx
 cs             = 1.0/math.sqrt(3.0)
-tau            = 0.6
+tau            = 0.9
 nu_lbm         = (tau - 0.5)*cs**2
 dt             = (nu_lbm/nu)*dx**2
 u_lbm          = u_in*(dt/dx)
@@ -66,6 +66,12 @@ if (shape_type == 'cylinder'):
     radius         = (1.0/math.sqrt(2))*np.ones((n_pts))
     edgy           = 1.0*np.ones((n_pts))
     ctrl_pts       = generate_cylinder_pts(n_pts)
+    ctrl_pts[:,:] *= 0.05
+
+if (shape_type == 'square'):
+    radius         = np.zeros((n_pts))
+    edgy           = np.ones((n_pts))
+    ctrl_pts       = generate_square_pts(n_pts)
     ctrl_pts[:,:] *= 0.05
 
 if (shape_type == 'random'):

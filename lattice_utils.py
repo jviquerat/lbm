@@ -1,10 +1,11 @@
 # Generic imports
 import os
-import PIL
 import progress.bar
 import numpy             as np
 import matplotlib        as mplt
 import matplotlib.pyplot as plt
+import PIL
+from   PIL               import Image
 
 ### ************************************************
 ### Class defining lattice object
@@ -89,18 +90,14 @@ class Lattice:
 
         # Initial distribution
         self.equilibrium(self.g, self.rho, self.u)
+        self.macro()
 
         # Solve
         bar = progress.bar.Bar('Solving...', max=it_max)
         for it in range(it_max+1):
 
-            # Compute macroscopic fields
-            self.macro()
-
-            # Macro boundary conditions
-            self.zou_he_inlet_macro()
-            self.zou_he_outlet_macro()
-            self.u[:,self.lattice] = 0.0
+            # Drag and lift
+            self.drag_lift(it, rho, U_ref, L_ref, dx, dt)
 
             # Compute equilibrium state
             self.equilibrium(self.g_eq, self.rho, self.u)
@@ -111,15 +108,15 @@ class Lattice:
             # Streaming
             self.stream()
 
-            # Micro boundary conditions
-            self.zou_he_inlet()
-            self.zou_he_outlet()
-            self.zou_he_top_wall()
-            self.zou_he_bottom_wall()
-            self.bounce_back_obstacle()
+            # Boundary conditions
+            self.zou_he_inlet(self.g, self.g_eq, self.rho, self.u)
+            self.zou_he_outlet(self.g, self.g_eq, self.rho, self.u)
+            self.zou_he_top_wall(self.g)
+            self.zou_he_bottom_wall(self.g)
+            self.bounce_back_obstacle(self.g)
 
-            # Drag and lift
-            self.drag_lift(it, rho, U_ref, L_ref, dx, dt)
+            # Compute macroscopic fields
+            self.macro()
 
             # Output view
             self.output_view(it, freq, u_in)
@@ -129,26 +126,6 @@ class Lattice:
 
         # End bar
         bar.finish()
-
-    ### ************************************************
-    ### Output 2D flow view
-    def output_view(self, it, freq, u_in):
-
-        v = self.u.copy()
-        v[:,self.obstacle[:,1],self.obstacle[:,0]] = 1.0
-
-        if (it%freq==0):
-            plt.clf()
-            plt.imshow(np.sqrt(v[0]**2+v[1]**2),
-                       cmap = 'Blues',
-                       vmin = 0.0,
-                       vmax = u_in)
-            filename = self.png_dir+'vel_'+str(self.output_it)+'.png'
-            plt.axis('off')
-            plt.savefig(filename,
-                        dpi=self.dpi)
-            self.trim_white(filename)
-            self.output_it += 1
 
     ### ************************************************
     ### Compute drag and lift
@@ -161,21 +138,20 @@ class Lattice:
         for k in range(len(self.obstacle)):
             i = self.obstacle[k,0]
             j = self.obstacle[k,1]
+
             for q in range(1,self.q):
                 qb        = self.ns[q]
                 dc        = self.c[q, :]
                 ic        = self.c[qb,:]
-                ii        = i + ic[0]
-                jj        = j + ic[1]
+                ii        = i + dc[0]
+                jj        = j + dc[1]
                 w         = self.lattice[jj,ii]
-                df        = 2.0*self.g[qb,jj,ii]
+                df        = self.g[q,j,i] - self.g[qb,jj,ii]
                 force[:] += dc[:]*(1.0-w)*df
 
-
-        #Normalize coefficient
-        force *= (dx**2)/(dt**2)*(self.tau - 0.5)
-        force /= len(self.obstacle)
-        force *= 2.0/(rho*L_ref*U_ref**2)
+        # Normalize coefficient
+        force *= dx/dt
+        force *= 1.0/(rho*L_ref*U_ref**2)
 
         # Write to file
         filename = self.output_dir+'drag_lift'
@@ -183,55 +159,73 @@ class Lattice:
             f.write('{} {} {}\n'.format(it, force[0], force[1]))
 
     ### ************************************************
-    ### Zou-He inlet macro b.c.
-    def zou_he_inlet_macro(self):
+    ### Obstacle bounce-back no-slip b.c.
+    def bounce_back_obstacle(self, g):
 
-        self.u[:,:,0] = self.u_in[:,:,0]
-        self.rho[:,0] = 1.0/(1.0-self.u[0,:,0])*( \
-            np.sum(self.g[self.mid, :,0],axis=0)  \
-            + 2.0*np.sum(self.g[self.left,:,0],axis=0))
+        for k in range(len(self.obstacle)):
+            i = self.obstacle[k,0]
+            j = self.obstacle[k,1]
+            for q in range(1,self.q):
+                qb        = self.ns[q]
+                dc        = self.c[q, :]
+                ic        = self.c[qb,:]
+                ii        = i + dc[0]
+                jj        = j + dc[1]
+                w         = self.lattice[jj,ii]
+                if (not w): g[q,j,i] = g[qb,j,i]
+
+        # for q in range(self.q):
+        #     g[q,self.lattice] = g[self.ns[q], self.lattice]
 
     ### ************************************************
-    ### Zou-He outlet macro b.c.
-    def zou_he_outlet_macro(self):
+    ### Output 2D flow view
+    def output_view(self, it, freq, u_in):
 
-        lx             = self.nx-1
-        self.u[1,:,lx] = 0.0
-        self.rho[:,lx] = 1.0
-        self.u[0,:,lx] =-1.0 + np.sum(self.g[self.mid,:,lx],axis=0) \
-            + 2.0*np.sum(self.g[self.right,:,lx],axis=0)
+        v = self.u.copy()
+        v[:,self.obstacle[:,1],self.obstacle[:,0]] = 10.0
+
+        if (it%freq==0):
+            plt.clf()
+            plt.imshow(np.sqrt(v[0]**2+v[1]**2),
+                       cmap = 'RdBu',
+                       vmin = 0.0,
+                       vmax = u_in,
+                       interpolation = 'none')
+            filename = self.png_dir+'vel_'+str(self.output_it)+'.png'
+            plt.axis('off')
+            plt.savefig(filename,
+                        dpi=self.dpi)
+            self.trim_white(filename)
+            self.output_it += 1
 
     ### ************************************************
     ### Zou-He inlet b.c.
-    def zou_he_inlet(self):
+    def zou_he_inlet(self, g, g_eq, rho, u):
 
-        self.g[1,:,0] = self.g_eq[1,:,0] + self.g[2,:,0] - self.g_eq[2,:,0]
-        self.g[5,:,0] = 0.5*(  self.rho[:,0]*self.u[0,:,0]   \
-                             - self.g[1,:,0] + self.g[2,:,0] \
-                             - self.g[3,:,0] + self.g[4,:,0] \
-                             + 2.0*self.g[6,:,0])
-        self.g[8,:,0] = self.g[3,:,0] - self.g[4,:,0] \
-                      + self.g[5,:,0] - self.g[6,:,0] \
-                      + self.g[7,:,0]
+        g[1,:,0] = g_eq[1,:,0] + g[2,:,0] - g_eq[2,:,0]
+        g[5,:,0] = 0.5*(rho[:,0]*u[0,:,0] - g[1,:,0] + g[2,:,0] \
+                 - g[3,:,0] + g[4,:,0] + 2.0*g[6,:,0])
+        g[8,:,0] = g[3,:,0] - g[4,:,0] + g[5,:,0] \
+                 - g[6,:,0] + g[7,:,0]
 
     ### ************************************************
     ### Zou-He outlet b.c.
-    def zou_he_outlet(self):
+    def zou_he_outlet(self, g, g_eq, rho, u):
 
         lx             = self.nx-1
-        self.g[2,:,lx] = self.g_eq[2,:,lx] + self.g[1,:,lx] \
-                       - self.g_eq[1,:,lx]
-        self.g[6,:,lx] =-0.5*( self.rho[:,lx]*self.u[0,:,lx]   \
-                             - self.g[1,:,lx] + self.g[2,:,lx] \
-                             - self.g[3,:,lx] + self.g[4,:,lx] \
-                             - 2.0*self.g[5,:,lx])
-        self.g[7,:,lx] =-self.g[3,:,lx] + self.g[4,:,lx] \
-                       - self.g[5,:,lx] + self.g[6,:,lx] \
-                       + self.g[8,:,lx]
+        g[2,:,lx] = g_eq[2,:,lx] + g[1,:,lx] \
+                       - g_eq[1,:,lx]
+        g[6,:,lx] =-0.5*( rho[:,lx]*u[0,:,lx]   \
+                             - g[1,:,lx] + g[2,:,lx] \
+                             - g[3,:,lx] + g[4,:,lx] \
+                             - 2.0*g[5,:,lx])
+        g[7,:,lx] =-g[3,:,lx] + g[4,:,lx] \
+                       - g[5,:,lx] + g[6,:,lx] \
+                       + g[8,:,lx]
 
     ### ************************************************
     ### Zou-He no-slip top wall b.c.
-    def zou_he_top_wall(self):
+    def zou_he_top_wall(self, g):
 
         self.g[4,0,:] = self.g_eq[4,0,:] + self.g[3,0,:] - self.g_eq[3,0,:]
         self.g[6,0,:] = 0.5*(  self.g[1,0,:] + self.g[3,0,:] \
@@ -243,9 +237,10 @@ class Lattice:
 
     ### ************************************************
     ### Zou-He no-slip bottom wall b.c.
-    def zou_he_bottom_wall(self):
+    def zou_he_bottom_wall(self, g):
 
         ly             = self.ny-1
+
         self.g[3,ly,:] = self.g_eq[3,ly,:] + self.g[4,ly,:] \
                        - self.g_eq[4,ly,:]
         self.g[5,ly,:] = 0.5*(2.0*self.g[6,ly,:] - self.g[1,ly,:] \
@@ -254,13 +249,6 @@ class Lattice:
         self.g[7,ly,:] = self.g[8,ly,:] - self.g[3,ly,:] \
                        + self.g[4,ly,:] - self.g[5,ly,:] \
                        + self.g[6,ly,:]
-
-    ### ************************************************
-    ### Obstacle bounce-back no-slip b.c.
-    def bounce_back_obstacle(self):
-
-        for q in range(self.q):
-            self.g[q,self.lattice] = self.g[self.ns[q], self.lattice]
 
     ### ************************************************
     ### Stream distribution
@@ -355,19 +343,18 @@ class Lattice:
         print('Found '+str(obstacle.shape[0])+' locations in obstacle')
 
         # Re-process obstacle to keep boundary
-        for k in range(len(obstacle)):
-            i = obstacle[k,0]
-            j = obstacle[k,1]
-            if (not self.lattice[j,  i+1] or not self.lattice[j,  i-1] or
-                not self.lattice[j+1,i]   or not self.lattice[j-1,i]   or
-                not self.lattice[j+1,i+1] or not self.lattice[j+1,i-1] or
-                not self.lattice[j-1,i+1] or not self.lattice[j-1,i-1]):
-                self.obstacle = np.append(self.obstacle,
-                                          np.array([[i,j]]),
-                                          axis=0)
+        for k in range(obstacle.shape[0]):
+            i   = obstacle[k,0]
+            j   = obstacle[k,1]
+            for di in [-1, 0, 1]:
+                for dj in [-1, 0, 1]:
+                    if (not self.lattice[j+dj,i+di]):
+                        self.obstacle = np.append(self.obstacle,
+                                                  np.array([[i,j]]),
+                                                  axis=0)
 
         # Printings
-        print('Found '+str(self.obstacle.shape[0])+' locations in obstacle')
+        print('Found '+str(self.obstacle.shape[0])+' on obstacle boundary')
 
     ### ************************************************
     ### Get lattice coordinates from integers
@@ -376,8 +363,8 @@ class Lattice:
         # Compute and return the coordinates of the lattice node (i,j)
         dx = (self.xmax - self.xmin)/(self.nx - 1)
         dy = (self.ymax - self.ymin)/(self.ny - 1)
-        x  = self.xmin + (i+0.5)*dx
-        y  = self.ymin + (j+0.5)*dy
+        x  = self.xmin + i*dx
+        y  = self.ymin + (self.ny-j)*dy
 
         return [x, y]
 
@@ -417,7 +404,8 @@ class Lattice:
 
         plt.axis('off')
         plt.imshow(self.lattice,
-                   cmap=mplt.cm.inferno)
+                   cmap=mplt.cm.inferno,
+                   interpolation='none')
         plt.savefig(filename, dpi=200, bbox_inches='tight')
         plt.close()
         self.trim_white(filename)
@@ -427,8 +415,8 @@ class Lattice:
     def trim_white(self, filename):
 
         # Trim using PIL
-        im   = PIL.Image.open(filename)
-        bg   = PIL.Image.new(im.mode, im.size, (255,255,255))
+        im   = Image.open(filename)
+        bg   = Image.new(im.mode, im.size, (255,255,255))
         diff = PIL.ImageChops.difference(im, bg)
         bbox = diff.getbbox()
         cp   = im.crop(bbox)

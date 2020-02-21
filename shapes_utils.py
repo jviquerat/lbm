@@ -263,6 +263,21 @@ def generate_cylinder_pts(n_pts):
     return pts
 
 ### ************************************************
+### Generate square points
+def generate_square_pts(n_pts):
+    if (n_pts != 4):
+        print('You should have n_pts = 4 for square')
+        exit()
+
+    pts      = np.zeros([n_pts, 2])
+    pts[0,:] = [ 1.0, 1.0]
+    pts[1,:] = [-1.0, 1.0]
+    pts[2,:] = [-1.0,-1.0]
+    pts[3,:] = [ 1.0,-1.0]
+
+    return pts
+
+### ************************************************
 ### Remove duplicate points in input coordinates array
 ### WARNING : this routine is highly sub-optimal
 def remove_duplicate_pts(pts):
