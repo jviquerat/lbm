@@ -16,7 +16,10 @@ class Lattice:
                  xmin,       xmax,
                  ymin,       ymax,
                  nx,         ny,
-                 q,          tau,
+                 q,          tau_lbm,
+                 Cx,         Ct,
+                 Cr,         Cu,
+                 Cf,
                  output_dir, dpi):
 
         self.name       = name
@@ -27,7 +30,12 @@ class Lattice:
         self.nx         = nx
         self.ny         = ny
         self.q          = q
-        self.tau        = tau
+        self.tau_lbm    = tau_lbm
+        self.Cx         = Cx
+        self.Ct         = Ct
+        self.Cr         = Cr
+        self.Cu         = Cu
+        self.Cf         = Cf
         self.output_dir = output_dir
         self.png_dir    = self.output_dir+'./png/'
         self.output_it  = 0
@@ -38,7 +46,7 @@ class Lattice:
 
     ### ************************************************
     ### Initialize lattice
-    def init_lattice(self, rho):
+    def init_lattice(self, rho_lbm):
 
         # D2Q9 Velocities
         self.c  = np.array([ [ 0, 0],
@@ -72,19 +80,20 @@ class Lattice:
         self.g    = np.zeros((self.q,  self.ny, self.nx))
         self.g_eq = np.zeros((self.q,  self.ny, self.nx))
         self.g_up = np.zeros((self.q,  self.ny, self.nx))
-        self.rho  = np.ones ((self.ny, self.nx))*rho
+        self.rho  = np.ones ((self.ny, self.nx))*rho_lbm
         self.u    = np.zeros((2,       self.ny, self.nx))
 
     ### ************************************************
     ### Solve LBM
-    def solve(self, it_max, u_in, rho,
-              U_ref, L_ref, dx, dt, freq):
+    def solve(self, it_max, u_lbm, rho_lbm,
+                    R_ref,  U_ref, L_ref,
+                    freq):
 
         # Initialize lattice
-        self.init_lattice(rho)
+        self.init_lattice(rho_lbm)
 
         # Input velocity profile
-        self.u_in = u_in*np.fromfunction(self.poiseuille,(2,self.ny,self.nx))
+        self.u_in = u_lbm*np.fromfunction(self.poiseuille,(2,self.ny,self.nx))
         self.u                 = self.u_in
         self.u[:,self.lattice] = 0.0
 
@@ -96,14 +105,14 @@ class Lattice:
         bar = progress.bar.Bar('Solving...', max=it_max)
         for it in range(it_max+1):
 
-            # Drag and lift
-            self.drag_lift(it, rho, U_ref, L_ref, dx, dt)
+            # Output view
+            self.output_view(it, freq, u_lbm)
 
             # Compute equilibrium state
             self.equilibrium(self.g_eq, self.rho, self.u)
 
             # Collisions
-            self.g_up = self.g - (1.0/self.tau)*(self.g - self.g_eq)
+            self.g_up = self.g - (1.0/self.tau_lbm)*(self.g - self.g_eq)
 
             # Streaming
             self.stream()
@@ -113,13 +122,13 @@ class Lattice:
             self.zou_he_outlet(self.g, self.g_eq, self.rho, self.u)
             self.zou_he_top_wall(self.g)
             self.zou_he_bottom_wall(self.g)
-            self.bounce_back_obstacle(self.g)
+            self.bounce_back_obstacle(self.g, self.g_up)
 
             # Compute macroscopic fields
             self.macro()
 
-            # Output view
-            self.output_view(it, freq, u_in)
+            # Drag and lift
+            self.drag_lift(it, R_ref, U_ref, L_ref)
 
             # Increment bar
             bar.next()
@@ -129,7 +138,7 @@ class Lattice:
 
     ### ************************************************
     ### Compute drag and lift
-    def drag_lift(self, it, rho, U_ref, L_ref, dx, dt):
+    def drag_lift(self, it, R_ref, U_ref, L_ref):
 
         # Initialize
         force = np.zeros((2))
@@ -150,8 +159,8 @@ class Lattice:
                 force[:] += dc[:]*(1.0-w)*df
 
         # Normalize coefficient
-        force *= dx/dt
-        force *= 1.0/(rho*L_ref*U_ref**2)
+        force *= self.Cf
+        force *= 1.0/(0.5*R_ref*L_ref*U_ref**2)
 
         # Write to file
         filename = self.output_dir+'drag_lift'
@@ -159,8 +168,8 @@ class Lattice:
             f.write('{} {} {}\n'.format(it, force[0], force[1]))
 
     ### ************************************************
-    ### Obstacle bounce-back no-slip b.c.
-    def bounce_back_obstacle(self, g):
+    ### Obstacle halfway bounce-back no-slip b.c.
+    def bounce_back_obstacle(self, g, g_up):
 
         for k in range(len(self.obstacle)):
             i = self.obstacle[k,0]
@@ -172,31 +181,10 @@ class Lattice:
                 ii        = i + dc[0]
                 jj        = j + dc[1]
                 w         = self.lattice[jj,ii]
-                if (not w): g[q,j,i] = g[qb,j,i]
+                if (not w): g[q,j,i] = g_up[qb,j,i]
 
         # for q in range(self.q):
         #     g[q,self.lattice] = g[self.ns[q], self.lattice]
-
-    ### ************************************************
-    ### Output 2D flow view
-    def output_view(self, it, freq, u_in):
-
-        v = self.u.copy()
-        v[:,self.obstacle[:,1],self.obstacle[:,0]] = 10.0
-
-        if (it%freq==0):
-            plt.clf()
-            plt.imshow(np.sqrt(v[0]**2+v[1]**2),
-                       cmap = 'RdBu',
-                       vmin = 0.0,
-                       vmax = u_in,
-                       interpolation = 'none')
-            filename = self.png_dir+'vel_'+str(self.output_it)+'.png'
-            plt.axis('off')
-            plt.savefig(filename,
-                        dpi=self.dpi)
-            self.trim_white(filename)
-            self.output_it += 1
 
     ### ************************************************
     ### Zou-He inlet b.c.
@@ -294,6 +282,27 @@ class Lattice:
 
         self.u[0,:,:] /= self.rho[:,:]
         self.u[1,:,:] /= self.rho[:,:]
+
+    ### ************************************************
+    ### Output 2D flow view
+    def output_view(self, it, freq, u_in):
+
+        v = self.u.copy()
+        v[:,self.obstacle[:,1],self.obstacle[:,0]] = 10.0
+
+        if (it%freq==0):
+            plt.clf()
+            plt.imshow(np.sqrt(v[0]**2+v[1]**2),
+                       cmap = 'RdBu',
+                       vmin = 0.0,
+                       vmax = u_in,
+                       interpolation = 'none')
+            filename = self.png_dir+'vel_'+str(self.output_it)+'.png'
+            plt.axis('off')
+            plt.savefig(filename,
+                        dpi=self.dpi)
+            self.trim_white(filename)
+            self.output_it += 1
 
     ### ************************************************
     ### Generate lattice

@@ -16,36 +16,54 @@ n_pts          = 4
 n_sampling_pts = 50
 shape_type     = 'cylinder' # 'cylinder', 'square' or 'random'
 
-### LBM parameters
-u_in           = 0.3
-nu             = 0.001
-q              = 9
-x_min          =-0.2
-x_max          = 0.2
-y_min          =-0.2
-y_max          = 0.21
-U_ref          = 2.0*u_in/3.0
-L_ref          = 0.1
-Re             = U_ref*L_ref/nu
-nx             = 300
-ny             = math.floor(nx*(y_max-y_min)/(x_max-x_min))
-dx             = (x_max-x_min)/nx
-cs             = 1.0/math.sqrt(3.0)
-tau            = 0.9
-nu_lbm         = (tau - 0.5)*cs**2
-dt             = (nu_lbm/nu)*dx**2
-u_lbm          = u_in*(dt/dx)
-rho            = 1.0
-lattice_name   = 'lattice'
-it_max         = 50*nx
-dpi            = 200
+### Physical parameters
+u_in    = 0.3
+nu      = 0.001
+rho     = 1.0
+q       = 9
+x_min   =-0.2
+x_max   = 1.0
+y_min   =-0.2
+y_max   = 0.21
+U_ref   = 2.0*u_in/3.0
+L_ref   = 0.1
+R_ref   = rho
+Re      = U_ref*L_ref/nu
+nx      = 800
+ny      = math.floor(nx*(y_max-y_min)/(x_max-x_min))
+dx      = (x_max-x_min)/nx
+tau_lbm = 1.0
+
+### Parameters conversions
+###
+### All parameters in LBM units are postfixed with _lbm
+### All conversion parameters   are prefixed  with C
+### Conversions are assumed s.t. a = Ca * a_lbm
+###
+### Furthermore, we choose tau_lbm explicitely and deduce dt from it
+Cs      = 1.0/math.sqrt(3.0)
+nu_lbm  = (tau_lbm - 0.5)*Cs**2
+dt      = (nu_lbm/nu)*dx**2
+Cx      = dx
+Ct      = dt
+Cr      = rho
+rho_lbm = rho/Cr
+Cu      = Cx/Ct
+u_lbm   = u_in/Cu
+Cf      = Cr*Cx**3/Ct**2
+
+# Other parameters
+lattice_name = 'lattice'
+it_max       = 50*nx
+dpi          = 200
 
 # Printings
 print('### LBM solver ###')
 print('# u        = '+str(u_in))
 print('# u_lbm    = '+str(u_lbm)+' (should be < 0.05)')
-print('# tau      = '+str(tau))
+print('# tau_lbm  = '+str(tau_lbm))
 print('# Re       = '+str(Re))
+print('# Re_lbm   = '+str(Re))
 print('# nx       = '+str(nx))
 print('# ny       = '+str(ny))
 print('# dx       = '+str(dx))
@@ -96,11 +114,15 @@ lattice = Lattice(lattice_name,
                   x_min,      x_max,
                   y_min,      y_max,
                   nx,         ny,
-                  q,          tau,
+                  q,          tau_lbm,
+                  Cx,         Ct,
+                  Cr,         Cu,
+                  Cf,
                   output_dir, dpi)
 
 # Generate lattice from shape closed curve
 lattice.generate(shape.curve_pts)
 lattice.generate_image()
-lattice.solve(it_max, u_lbm, rho,
-              U_ref, L_ref, dx, dt, output_freq)
+lattice.solve(it_max, u_lbm, rho_lbm,
+              R_ref,  U_ref, L_ref,
+              output_freq)
