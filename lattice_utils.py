@@ -160,7 +160,7 @@ class Lattice:
 
         # Normalize coefficient
         force *= self.Cf
-        force *= 1.0/(0.5*R_ref*L_ref*U_ref**2)
+        force *= 1.0/(R_ref*L_ref*U_ref**2)
 
         # Write to file
         filename = self.output_dir+'drag_lift'

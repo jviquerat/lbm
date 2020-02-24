@@ -29,7 +29,7 @@ U_ref   = 2.0*u_in/3.0
 L_ref   = 0.1
 R_ref   = rho
 Re      = U_ref*L_ref/nu
-nx      = 800
+nx      = 1000
 ny      = math.floor(nx*(y_max-y_min)/(x_max-x_min))
 dx      = (x_max-x_min)/nx
 tau_lbm = 1.0
@@ -51,6 +51,7 @@ rho_lbm = rho/Cr
 Cu      = Cx/Ct
 u_lbm   = u_in/Cu
 Cf      = Cr*Cx**3/Ct**2
+#Cf      = Cr*Cx**2/Ct
 
 # Other parameters
 lattice_name = 'lattice'
