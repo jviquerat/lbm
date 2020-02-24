@@ -16,7 +16,7 @@ class Lattice:
                  xmin,       xmax,
                  ymin,       ymax,
                  nx,         ny,
-                 q,          tau_lbm,
+                 q,          tau_p_lbm, tau_m_lbm,
                  Cx,         Ct,
                  Cr,         Cu,
                  Cf,
@@ -30,7 +30,8 @@ class Lattice:
         self.nx         = nx
         self.ny         = ny
         self.q          = q
-        self.tau_lbm    = tau_lbm
+        self.tau_p_lbm = tau_p_lbm
+        self.tau_m_lbm = tau_m_lbm
         self.Cx         = Cx
         self.Ct         = Ct
         self.Cr         = Cr
@@ -79,6 +80,8 @@ class Lattice:
         # Allocate arrays
         self.g    = np.zeros((self.q,  self.ny, self.nx))
         self.g_eq = np.zeros((self.q,  self.ny, self.nx))
+        self.g_m  = np.zeros((self.q,  self.ny, self.nx))
+        self.g_p  = np.zeros((self.q,  self.ny, self.nx))
         self.g_up = np.zeros((self.q,  self.ny, self.nx))
         self.rho  = np.ones ((self.ny, self.nx))*rho_lbm
         self.u    = np.zeros((2,       self.ny, self.nx))
@@ -112,7 +115,8 @@ class Lattice:
             self.equilibrium(self.g_eq, self.rho, self.u)
 
             # Collisions
-            self.g_up = self.g - (1.0/self.tau_lbm)*(self.g - self.g_eq)
+            self.trt_collisions()
+            #self.g_up = self.g - (1.0/self.tau_lbm)*(self.g - self.g_eq)
 
             # Streaming
             self.stream()
@@ -135,6 +139,22 @@ class Lattice:
 
         # End bar
         bar.finish()
+
+    ### ************************************************
+    ### TRT collision operator
+    def trt_collisions(self):
+
+        # Compute g_p = g_p - g_eq_p
+        #     and g_m = g_m - g_eq_m
+        self.g_p = 0.5*(self.g[:,:,:]    + self.g[self.ns[:],:,:] \
+                      - (self.g_eq[:,:,:] + self.g_eq[self.ns[:],:,:]))
+        self.g_m = 0.5*(self.g[:,:,:]    - self.g[self.ns[:],:,:] \
+                      - (self.g_eq[:,:,:] - self.g_eq[self.ns[:],:,:]))
+        self.g_m[0,:,:] += 0.5*(self.g[0,:,:] - self.g_eq[0,:,:])
+
+        # Compute collisions
+        self.g_up = self.g - (1.0/self.tau_p_lbm)*self.g_p \
+                           - (1.0/self.tau_m_lbm)*self.g_m
 
     ### ************************************************
     ### Compute drag and lift
