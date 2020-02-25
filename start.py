@@ -29,10 +29,10 @@ U_ref   = 2.0*u_in/3.0
 L_ref   = 0.1
 R_ref   = rho
 Re      = U_ref*L_ref/nu
-nx      = 1000
+nx      = 1200
 ny      = math.floor(nx*(y_max-y_min)/(x_max-x_min))
 dx      = (x_max-x_min)/nx
-tau_lbm = 1.0
+u_lim   = 0.03
 
 ### Parameters conversions
 ###
@@ -42,6 +42,7 @@ tau_lbm = 1.0
 ###
 ### Furthermore, we choose tau_lbm explicitely and deduce dt from it
 Cs      = 1.0/math.sqrt(3.0)
+tau_lbm = 0.5 + (u_lim*nu)/(u_in*dx*Cs**2)
 nu_lbm  = (tau_lbm - 0.5)*Cs**2
 dt      = (nu_lbm/nu)*dx**2
 Cx      = dx
@@ -50,12 +51,14 @@ Cr      = rho
 rho_lbm = rho/Cr
 Cu      = Cx/Ct
 u_lbm   = u_in/Cu
-Cf      = Cr*Cx**3/Ct**2
+#Cf      = Cr*Cx**4/Ct**2
 #Cf      = Cr*Cx**2/Ct
+Cf = 1.0
 
 # Other parameters
 lattice_name = 'lattice'
-it_max       = 50*nx
+t_max        = 1.0
+it_max       = math.floor(t_max/dt) + 1
 dpi          = 200
 
 # Printings
