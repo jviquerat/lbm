@@ -100,7 +100,6 @@ class Lattice:
         self.u                 = self.u_in
         self.u[:,self.lattice] = 0.0
 
-        # Initial distribution
         self.equilibrium(self.g, self.rho, self.u)
         self.macro()
 
@@ -118,6 +117,9 @@ class Lattice:
             self.trt_collisions()
             #self.g_up = self.g - (1.0/self.tau_lbm)*(self.g - self.g_eq)
 
+            # Drag and lift
+            self.drag_lift(it, R_ref, U_ref, L_ref)
+
             # Streaming
             self.stream()
 
@@ -131,8 +133,7 @@ class Lattice:
             # Compute macroscopic fields
             self.macro()
 
-            # Drag and lift
-            self.drag_lift(it, R_ref, U_ref, L_ref)
+
 
             # Increment bar
             bar.next()
@@ -175,12 +176,13 @@ class Lattice:
                 ii        = i + dc[0]
                 jj        = j + dc[1]
                 w         = self.lattice[jj,ii]
-                df        = self.g[q,j,i] - self.g[qb,jj,ii]
-                force[:] += dc[:]*(1.0-w)*df
+                #df        = self.g[q,j,i] - self.g[qb,jj,ii]
+                df        = self.g[q,j,i] + self.g_up[qb,j,i]
+                force[:] += ic[:]*(1.0-w)*df
 
         # Normalize coefficient
         force *= self.Cf
-        force *= 1.0/(R_ref*L_ref*U_ref**2)
+        force *= 1.0/(0.5*R_ref*L_ref*U_ref**2)
 
         # Write to file
         filename = self.output_dir+'drag_lift'
@@ -290,8 +292,19 @@ class Lattice:
     ### Compute macroscopic fields
     def macro(self):
 
+        self.macro_density()
+        self.macro_velocity()
+
+    ### ************************************************
+    ### Compute macroscopic density
+    def macro_density(self):
+
         # Compute density
         self.rho = np.sum(self.g, axis=0)
+
+    ### ************************************************
+    ### Compute macroscopic velocity
+    def macro_velocity(self):
 
         # Compute velocity
         self.u[:,:,:] = 0.0
@@ -369,9 +382,18 @@ class Lattice:
                 bar.next()
         bar.finish()
 
+        # Check area of obstacle
+        self.area = 0.0
+
+        for i in range(self.nx):
+            for j in range(self.ny):
+                if (self.lattice[j,i]): self.area += self.Cx**2
+
+        print('Obstacle area: '+str(self.area))
+
         print('Found '+str(obstacle.shape[0])+' locations in obstacle')
 
-        # Re-process obstacle to keep boundary
+        # Re-process obstacle to keep first solid nodes only
         for k in range(obstacle.shape[0]):
             i   = obstacle[k,0]
             j   = obstacle[k,1]

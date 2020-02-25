@@ -29,7 +29,7 @@ U_ref      = 2.0*u_in/3.0
 L_ref      = 0.1
 R_ref      = rho
 Re         = U_ref*L_ref/nu
-nx         = 400
+nx         = 300
 ny         = math.floor(nx*(y_max-y_min)/(x_max-x_min))
 dx         = (x_max-x_min)/nx
 u_lim      = 0.03
@@ -41,8 +41,7 @@ u_lim      = 0.03
 ### Conversions are assumed s.t. a = Ca * a_lbm
 ###
 ### Furthermore, we choose tau_p_lbm explicitely and deduce dt from it
-Cs      = 1.0/math.sqrt(3.0)
-
+Cs         = 1.0/math.sqrt(3.0)
 tau_p_lbm  = 0.5 + (u_lim*nu)/(u_in*dx*Cs**2) # TRT relaxation parameters
 lambda_trt = 0.25 # Constant TRT parameter
 tau_m_lbm  = lambda_trt/(tau_p_lbm - 0.5) + 0.5
@@ -55,12 +54,11 @@ rho_lbm = rho/Cr
 Cu      = Cx/Ct
 u_lbm   = u_in/Cu
 #Cf      = Cr*Cx**4/Ct**2
-#Cf      = Cr*Cx**2/Ct
-Cf = 1.0
+Cf      = Cr*Cx**2/Ct
 
 # Other parameters
 lattice_name = 'lattice'
-t_max        = 1.0
+t_max        = 5.0
 it_max       = math.floor(t_max/dt) + 1
 dpi          = 200
 
@@ -80,7 +78,7 @@ print('# dx/dt      = '+str(dx/dt))
 print('# it         = '+str(it_max))
 
 # Output parameters
-output_freq    = 500
+output_freq    = 10
 time           = datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S')
 results_dir    = './results/'
 output_dir     = results_dir+str(time)+'/'

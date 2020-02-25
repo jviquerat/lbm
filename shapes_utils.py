@@ -258,7 +258,7 @@ def generate_cylinder_pts(n_pts):
     pts = np.zeros([n_pts, 2])
     ang = 2.0*math.pi/n_pts
     for i in range(0,n_pts):
-        pts[i,:] = [math.cos(float(i)*ang),math.sin(float(i)*ang)]
+        pts[i,:] = [1.02*math.cos(float(i)*ang),1.02*math.sin(float(i)*ang)]
 
     return pts
 
