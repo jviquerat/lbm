@@ -79,6 +79,7 @@ class Lattice:
 
         # Allocate arrays
         self.g    = np.zeros((self.q,  self.ny, self.nx))
+        self.g_s  = np.zeros((self.q,  self.ny, self.nx))
         self.g_eq = np.zeros((self.q,  self.ny, self.nx))
         self.g_m  = np.zeros((self.q,  self.ny, self.nx))
         self.g_p  = np.zeros((self.q,  self.ny, self.nx))
@@ -115,10 +116,8 @@ class Lattice:
 
             # Collisions
             self.trt_collisions()
-            #self.g_up = self.g - (1.0/self.tau_lbm)*(self.g - self.g_eq)
 
-            # Drag and lift
-            self.drag_lift(it, R_ref, U_ref, L_ref)
+            self.g_s = self.g.copy()
 
             # Streaming
             self.stream()
@@ -132,6 +131,9 @@ class Lattice:
 
             # Compute macroscopic fields
             self.macro()
+
+            # Drag and lift
+            self.drag_lift(it, R_ref, U_ref, L_ref)
 
 
 
@@ -176,9 +178,8 @@ class Lattice:
                 ii        = i + dc[0]
                 jj        = j + dc[1]
                 w         = self.lattice[jj,ii]
-                #df        = self.g[q,j,i] - self.g[qb,jj,ii]
-                df        = self.g[q,j,i] + self.g_up[qb,j,i]
-                force[:] += ic[:]*(1.0-w)*df
+                df        =-self.g[qb,j,i]*ic[:] + self.g_up[q,j,i]*dc[:]
+                force[:] += w*df
 
         # Normalize coefficient
         force *= self.Cf
@@ -203,10 +204,7 @@ class Lattice:
                 ii        = i + dc[0]
                 jj        = j + dc[1]
                 w         = self.lattice[jj,ii]
-                if (not w): g[q,j,i] = g_up[qb,j,i]
-
-        # for q in range(self.q):
-        #     g[q,self.lattice] = g[self.ns[q], self.lattice]
+                if w: g[qb,j,i] = g_up[q,j,i]
 
     ### ************************************************
     ### Zou-He inlet b.c.
@@ -276,6 +274,8 @@ class Lattice:
         self.g[7, 0:ly-1, 0:lx-1] = self.g_up[7, 1:ly,   1:lx]   # -x+y
         self.g[8, 1:ly,   1:lx]   = self.g_up[8, 0:ly-1, 0:lx-1] # +x-y
 
+        self.g[:,self.lattice] = self.g_s[:,self.lattice]
+
     ### ************************************************
     ### Compute equilibrium state
     def equilibrium(self, g, rho, u):
@@ -321,6 +321,7 @@ class Lattice:
     def output_view(self, it, freq, u_in):
 
         v = self.u.copy()
+        v[:,:,:] = 0.0
         v[:,self.obstacle[:,1],self.obstacle[:,0]] = 10.0
 
         if (it%freq==0):
@@ -329,7 +330,7 @@ class Lattice:
                        cmap = 'RdBu',
                        vmin = 0.0,
                        vmax = u_in,
-                       interpolation = 'none')
+                       interpolation = 'nearest')
             filename = self.png_dir+'vel_'+str(self.output_it)+'.png'
             plt.axis('off')
             plt.savefig(filename,
@@ -367,20 +368,22 @@ class Lattice:
                 inside = False
 
                 # Check if pt is inside polygon bbox
-                if ((pt[0] > poly_bnds[0]) and (pt[0] < poly_bnds[1])):
-                    if ((pt[1] > poly_bnds[2]) and (pt[1] < poly_bnds[3])):
-                        inside = self.is_inside(poly, pt)
+                if ((pt[0] > poly_bnds[0]) and
+                    (pt[0] < poly_bnds[1]) and
+                    (pt[1] > poly_bnds[2]) and
+                    (pt[1] < poly_bnds[3])):
 
-                        if (inside):
-                            obstacle = np.append(obstacle,
-                                                 np.array([[i,j]]),
-                                                 axis=0)
+                    if (self.is_inside(poly, pt)):
+                        obstacle = np.append(obstacle,
+                                             np.array([[i,j]]), axis=0)
 
                 # Fill lattice
                 self.lattice[j,i] = inside
 
                 bar.next()
         bar.finish()
+
+        print('Found '+str(obstacle.shape[0])+' locations in obstacle')
 
         # Check area of obstacle
         self.area = 0.0
@@ -391,17 +394,17 @@ class Lattice:
 
         print('Obstacle area: '+str(self.area))
 
-        print('Found '+str(obstacle.shape[0])+' locations in obstacle')
+
 
         # Re-process obstacle to keep first solid nodes only
         for k in range(obstacle.shape[0]):
-            i   = obstacle[k,0]
-            j   = obstacle[k,1]
+            i = obstacle[k,0]
+            j = obstacle[k,1]
             for di in [-1, 0, 1]:
                 for dj in [-1, 0, 1]:
                     if (not self.lattice[j+dj,i+di]):
                         self.obstacle = np.append(self.obstacle,
-                                                  np.array([[i,j]]),
+                                                  np.array([[i+di,j+dj]]),
                                                   axis=0)
 
         # Printings

@@ -14,7 +14,7 @@ from lattice_utils import *
 shape_name     = 'shape'
 n_pts          = 4
 n_sampling_pts = 50
-shape_type     = 'cylinder' # 'cylinder', 'square' or 'random'
+shape_type     = 'square' # 'cylinder', 'square' or 'random'
 
 ### Physical parameters
 u_in       = 0.3
@@ -29,7 +29,7 @@ U_ref      = 2.0*u_in/3.0
 L_ref      = 0.1
 R_ref      = rho
 Re         = U_ref*L_ref/nu
-nx         = 300
+nx         = 600
 ny         = math.floor(nx*(y_max-y_min)/(x_max-x_min))
 dx         = (x_max-x_min)/nx
 u_lim      = 0.03
@@ -43,7 +43,7 @@ u_lim      = 0.03
 ### Furthermore, we choose tau_p_lbm explicitely and deduce dt from it
 Cs         = 1.0/math.sqrt(3.0)
 tau_p_lbm  = 0.5 + (u_lim*nu)/(u_in*dx*Cs**2) # TRT relaxation parameters
-lambda_trt = 0.25 # Constant TRT parameter
+lambda_trt = 1.0/4.0 # Constant TRT parameter
 tau_m_lbm  = lambda_trt/(tau_p_lbm - 0.5) + 0.5
 nu_lbm  = (tau_p_lbm - 0.5)*Cs**2
 dt      = (nu_lbm/nu)*dx**2
@@ -78,7 +78,7 @@ print('# dx/dt      = '+str(dx/dt))
 print('# it         = '+str(it_max))
 
 # Output parameters
-output_freq    = 10
+output_freq    = 500
 time           = datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S')
 results_dir    = './results/'
 output_dir     = results_dir+str(time)+'/'
