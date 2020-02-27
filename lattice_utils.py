@@ -19,7 +19,7 @@ class Lattice:
                  q,          tau_p_lbm, tau_m_lbm,
                  Cx,         Ct,
                  Cr,         Cu,
-                 Cf,
+                 Cf,         dx, dt,
                  output_dir, dpi):
 
         self.name       = name
@@ -32,6 +32,8 @@ class Lattice:
         self.q          = q
         self.tau_p_lbm = tau_p_lbm
         self.tau_m_lbm = tau_m_lbm
+        self.dx         = dx
+        self.dt         = dt
         self.Cx         = Cx
         self.Ct         = Ct
         self.Cr         = Cr
@@ -108,16 +110,23 @@ class Lattice:
         bar = progress.bar.Bar('Solving...', max=it_max)
         for it in range(it_max+1):
 
-            # Output view
-            self.output_view(it, freq, u_lbm)
+            # Drag and lift
+            self.drag_lift(it, R_ref, U_ref, L_ref)
+
+            # Compute macroscopic fields
+            self.macro()
 
             # Compute equilibrium state
             self.equilibrium(self.g_eq, self.rho, self.u)
+
+            # Output view
+            self.output_view(it, freq, u_lbm)
 
             # Collisions
             self.trt_collisions()
 
             self.g_s = self.g.copy()
+            self.bounce_back_obstacle(self.g, self.g_up)
 
             # Streaming
             self.stream()
@@ -127,15 +136,6 @@ class Lattice:
             self.zou_he_outlet(self.g, self.g_eq, self.rho, self.u)
             self.zou_he_top_wall(self.g)
             self.zou_he_bottom_wall(self.g)
-            self.bounce_back_obstacle(self.g, self.g_up)
-
-            # Compute macroscopic fields
-            self.macro()
-
-            # Drag and lift
-            self.drag_lift(it, R_ref, U_ref, L_ref)
-
-
 
             # Increment bar
             bar.next()
@@ -167,9 +167,9 @@ class Lattice:
         force = np.zeros((2))
 
         # Loop over obstacle array
-        for k in range(len(self.obstacle)):
-            i = self.obstacle[k,0]
-            j = self.obstacle[k,1]
+        for k in range(len(self.boundary)):
+            i = self.boundary[k,0]
+            j = self.boundary[k,1]
 
             for q in range(1,self.q):
                 qb        = self.ns[q]
@@ -188,23 +188,25 @@ class Lattice:
         # Write to file
         filename = self.output_dir+'drag_lift'
         with open(filename, 'a') as f:
-            f.write('{} {} {}\n'.format(it, force[0], force[1]))
+            f.write('{} {} {}\n'.format(it*self.dt, force[0], force[1]))
 
     ### ************************************************
     ### Obstacle halfway bounce-back no-slip b.c.
     def bounce_back_obstacle(self, g, g_up):
 
-        for k in range(len(self.obstacle)):
-            i = self.obstacle[k,0]
-            j = self.obstacle[k,1]
+        for k in range(len(self.boundary)):
+            i = self.boundary[k,0]
+            j = self.boundary[k,1]
             for q in range(1,self.q):
-                qb        = self.ns[q]
-                dc        = self.c[q, :]
-                ic        = self.c[qb,:]
-                ii        = i + dc[0]
-                jj        = j + dc[1]
-                w         = self.lattice[jj,ii]
-                if w: g[qb,j,i] = g_up[q,j,i]
+                qb = self.ns[q]
+                dc = self.c[q, :]
+                ic = self.c[qb,:]
+                ii = i + dc[0]
+                jj = j + dc[1]
+                w  = self.lattice[jj,ii]
+
+                # Apply if neighbor is solid
+                if w: self.g[qb,j,i] = self.g[q,j,i]
 
     ### ************************************************
     ### Zou-He inlet b.c.
@@ -274,7 +276,7 @@ class Lattice:
         self.g[7, 0:ly-1, 0:lx-1] = self.g_up[7, 1:ly,   1:lx]   # -x+y
         self.g[8, 1:ly,   1:lx]   = self.g_up[8, 0:ly-1, 0:lx-1] # +x-y
 
-        self.g[:,self.lattice] = self.g_s[:,self.lattice]
+        self.g[:,self.lattice]    = self.g_s[:,self.lattice]
 
     ### ************************************************
     ### Compute equilibrium state
@@ -321,8 +323,7 @@ class Lattice:
     def output_view(self, it, freq, u_in):
 
         v = self.u.copy()
-        v[:,:,:] = 0.0
-        v[:,self.obstacle[:,1],self.obstacle[:,0]] = 10.0
+        v[:,self.boundary[:,1],self.boundary[:,0]] = 10.0
 
         if (it%freq==0):
             plt.clf()
@@ -358,14 +359,13 @@ class Lattice:
         # Declare lattice arrays
         self.lattice  = np.zeros((self.ny, self.nx), dtype=bool)
         obstacle      = np.empty((0,2),              dtype=int)
-        self.obstacle = np.empty((0,2),              dtype=int)
+        self.boundary = np.empty((0,2),              dtype=int)
 
         # Fill lattice
         bar = progress.bar.Bar('Generating...', max=self.nx*self.ny)
         for i in range(self.nx):
             for j in range(self.ny):
-                pt     = self.lattice_coords(j, i)
-                inside = False
+                pt = self.lattice_coords(j, i)
 
                 # Check if pt is inside polygon bbox
                 if ((pt[0] > poly_bnds[0]) and
@@ -376,9 +376,7 @@ class Lattice:
                     if (self.is_inside(poly, pt)):
                         obstacle = np.append(obstacle,
                                              np.array([[i,j]]), axis=0)
-
-                # Fill lattice
-                self.lattice[j,i] = inside
+                        self.lattice[j,i] = True
 
                 bar.next()
         bar.finish()
@@ -390,11 +388,9 @@ class Lattice:
 
         for i in range(self.nx):
             for j in range(self.ny):
-                if (self.lattice[j,i]): self.area += self.Cx**2
+                if (self.lattice[j,i]): self.area += self.dx**2
 
         print('Obstacle area: '+str(self.area))
-
-
 
         # Re-process obstacle to keep first solid nodes only
         for k in range(obstacle.shape[0]):
@@ -403,12 +399,12 @@ class Lattice:
             for di in [-1, 0, 1]:
                 for dj in [-1, 0, 1]:
                     if (not self.lattice[j+dj,i+di]):
-                        self.obstacle = np.append(self.obstacle,
+                        self.boundary = np.append(self.boundary,
                                                   np.array([[i+di,j+dj]]),
                                                   axis=0)
 
         # Printings
-        print('Found '+str(self.obstacle.shape[0])+' on obstacle boundary')
+        print('Found '+str(self.boundary.shape[0])+' on obstacle boundary')
 
     ### ************************************************
     ### Get lattice coordinates from integers
@@ -453,12 +449,19 @@ class Lattice:
     ### Generate lattice image
     def generate_image(self):
 
+        # Add obstacle border
+        lat = self.lattice.copy()
+        lat = lat.astype(float)
+        lat[self.boundary[:,1],self.boundary[:,0]] += 2.0
+
         # Plot and save image of lattice
         filename = self.output_dir+self.name+'.png'
 
         plt.axis('off')
-        plt.imshow(self.lattice,
-                   cmap=mplt.cm.inferno,
+        plt.imshow(lat,
+                   cmap = mplt.cm.inferno,
+                   vmin = 0.0,
+                   vmax = 2.0,
                    interpolation='none')
         plt.savefig(filename, dpi=200, bbox_inches='tight')
         plt.close()
