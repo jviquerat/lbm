@@ -11,12 +11,12 @@ from lattice_utils import *
 
 ### Domain
 x_min      =-0.2
-x_max      = 2.0
+x_max      = 1.0
 y_min      =-0.2
 y_max      = 0.2
 
 ### Free parameters
-nx         = 400
+nx         = 200
 u_lbm      = 0.05
 Re         = 10.0
 nu         = 0.001
@@ -53,9 +53,15 @@ tau_p_lbm  = 0.5 + nu_lbm/(Cs**2)
 lambda_trt = 1.0/4.0 # Constant TRT parameter
 tau_m_lbm  = lambda_trt/(tau_p_lbm - 0.5) + 0.5
 
+# Output parameters
+output_freq    = 500
+time           = datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S')
+results_dir    = './results/'
+output_dir     = results_dir+str(time)+'/'
+
 # Other parameters
 lattice_name = 'lattice'
-t_max        = 10.0
+t_max        = 100.0
 it_max       = math.floor(t_max/dt) + 1
 dpi          = 200
 
@@ -74,12 +80,6 @@ print('# dt         = '+str(dt))
 print('# dx/dt      = '+str(dx/dt))
 print('# it         = '+str(it_max))
 
-# Output parameters
-output_freq    = 500
-time           = datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S')
-results_dir    = './results/'
-output_dir     = results_dir+str(time)+'/'
-
 if (not os.path.exists(results_dir)): os.makedirs(results_dir)
 
 # Initialize lattice
@@ -88,7 +88,7 @@ lattice = Lattice(lattice_name,
                   y_min,      y_max,
                   nx,         ny,
                   tau_p_lbm, tau_m_lbm,
-                  Cx,         Ct,
+                  Cx,         Ct, Cs,
                   Cr,         Cu,
                   Cf,         dx, dt,
                   output_dir, dpi)

@@ -17,7 +17,7 @@ class Lattice:
                  ymin,       ymax,
                  nx,         ny,
                  tau_p_lbm, tau_m_lbm,
-                 Cx,         Ct,
+                 Cx,         Ct, Cs,
                  Cr,         Cu,
                  Cf,         dx, dt,
                  output_dir, dpi):
@@ -36,6 +36,7 @@ class Lattice:
         self.dt         = dt
         self.Cx         = Cx
         self.Ct         = Ct
+        self.Cs         = Cs
         self.Cr         = Cr
         self.Cu         = Cu
         self.Cf         = Cf
@@ -43,6 +44,8 @@ class Lattice:
         self.png_dir    = self.output_dir+'./png/'
         self.output_it  = 0
         self.dpi        = dpi
+        self.lx         = self.nx - 1
+        self.ly         = self.ny - 1
 
         if (not os.path.exists(self.output_dir)):
             os.makedirs(self.output_dir)
@@ -78,15 +81,22 @@ class Lattice:
             (-self.c[i]).tolist()) for i in range(self.q)])
 
         # Allocate arrays
-        self.g       = np.zeros((self.q,  self.ny, self.nx))
-        self.g_s     = np.zeros((self.q,  self.ny, self.nx))
-        self.g_eq    = np.zeros((self.q,  self.ny, self.nx))
-        self.g_m     = np.zeros((self.q,  self.ny, self.nx))
-        self.g_p     = np.zeros((self.q,  self.ny, self.nx))
-        self.g_up    = np.zeros((self.q,  self.ny, self.nx))
-        self.rho     = np.ones ((self.ny, self.nx))
-        self.u       = np.zeros((2,       self.ny, self.nx))
-        self.lattice = np.zeros((self.ny, self.nx), dtype=bool)
+        # Lattice array is oriented as follows :
+        # +x     = left-right
+        # +y     = bottom-top
+        # origin = bottom left
+        self.g       = np.zeros((self.q,  self.nx, self.ny))
+        #self.g_s     = np.zeros((self.q,  self.nx, self.ny))
+        self.g_eq    = np.zeros((self.q,  self.nx, self.ny))
+        #self.g_m     = np.zeros((self.q,  self.nx, self.ny))
+        #self.g_p     = np.zeros((self.q,  self.nx, self.ny))
+        self.g_up    = np.zeros((self.q,  self.nx, self.ny))
+
+        # Lattice array is oriented as follows :
+        # +x     = left-right
+        # +y     = bottom-top
+        # origin = bottom left
+        self.lattice = np.zeros((self.nx, self.ny), dtype=bool)
 
     ### ************************************************
     ### Solve LBM
@@ -94,14 +104,17 @@ class Lattice:
                     R_ref,  U_ref, L_ref,
                     freq):
 
-        # Input profiles
-        self.u_in = u_lbm*np.fromfunction(self.poiseuille,
-                                          (2,self.ny,self.nx))
-        #self.u[:,:,0]                 = self.u_in[:,:,0]
-        #self.u[:,self.lattice] = 0.0
-        self.rho              *= rho_lbm
+        self.rho     = np.ones ((   self.nx, self.ny))
+        self.u       = np.zeros((2, self.nx, self.ny))
 
-        self.equilibrium(self.g, self.rho, self.u)
+        # Input profiles
+        self.input_velocity(u_lbm)
+        self.u[:,0,:] = self.u_in[:,:]
+        self.rho     *= rho_lbm
+        #self.u[:,self.lattice] = 0.0
+
+        self.equilibrium()
+        self.g = self.g_eq
 
         # Solve
         bar = progress.bar.Bar('Solving...', max=it_max)
@@ -114,7 +127,7 @@ class Lattice:
             self.macro()
 
             # Compute equilibrium state
-            self.equilibrium(self.g_eq, self.rho, self.u)
+            self.equilibrium()
 
             # Output view
             self.output_view(it, freq, u_lbm)
@@ -122,17 +135,21 @@ class Lattice:
             # Collisions
             self.trt_collisions()
 
-            self.g_s = self.g.copy()
+            #self.g_s = self.g.copy()
             #self.bounce_back_obstacle(self.g, self.g_up)
 
             # Streaming
             self.stream()
 
             # Boundary conditions
-            self.zou_he_inlet(self.g, self.g_eq, self.rho, self.u)
-            self.zou_he_outlet(self.g, self.g_eq, self.rho, self.u)
-            self.zou_he_top_wall(self.g)
-            self.zou_he_bottom_wall(self.g)
+            self.zou_he_top_wall()
+            self.zou_he_bottom_wall()
+            self.zou_he_inlet()
+            self.zou_he_outlet(rho_lbm)
+            self.zou_he_bottom_left_corner()
+            self.zou_he_top_left_corner()
+            self.zou_he_top_right_corner()
+            self.zou_he_bottom_right_corner()
 
             # Increment bar
             bar.next()
@@ -144,19 +161,29 @@ class Lattice:
     ### TRT collision operator
     def trt_collisions(self):
 
-        self.g_up = self.g - (1.0/self.tau_p_lbm)*(self.g - self.g_eq)
+        #self.g_up = self.g - (1.0/self.tau_p_lbm)*(self.g - self.g_eq)
 
         # Compute g_p = g_p - g_eq_p
         #     and g_m = g_m - g_eq_m
-        # self.g_p = 0.5*(self.g[:,:,:]    + self.g[self.ns[:],:,:] \
-        #               - (self.g_eq[:,:,:] + self.g_eq[self.ns[:],:,:]))
-        # self.g_m = 0.5*(self.g[:,:,:]    - self.g[self.ns[:],:,:] \
-        #               - (self.g_eq[:,:,:] - self.g_eq[self.ns[:],:,:]))
-        # self.g_m[0,:,:] += 0.5*(self.g[0,:,:] - self.g_eq[0,:,:])
+        self.g_p = 0.5*(self.g[:,:,:]    + self.g[self.ns[:],:,:] \
+                     - (self.g_eq[:,:,:] + self.g_eq[self.ns[:],:,:]))
+        self.g_m = 0.5*(self.g[:,:,:]    - self.g[self.ns[:],:,:] \
+                     - (self.g_eq[:,:,:] - self.g_eq[self.ns[:],:,:]))
+        self.g_m[0,:,:] += 0.5*(self.g[0,:,:] - self.g_eq[0,:,:])
 
         # Compute collisions
-        # self.g_up = self.g - (1.0/self.tau_p_lbm)*self.g_p \
-        #                    - (1.0/self.tau_m_lbm)*self.g_m
+        self.g_up = self.g - (1.0/self.tau_p_lbm)*self.g_p \
+                          - (1.0/self.tau_m_lbm)*self.g_m
+
+    ### ************************************************
+    ### Compute input velocity
+    def input_velocity(self, u_lbm):
+
+        self.u_in = np.zeros((2, self.ny))
+
+        for j in range(self.ny):
+            pt             = self.lattice_coords(0, j)
+            self.u_in[:,j] = u_lbm*self.poiseuille(pt)
 
     ### ************************************************
     ### Compute drag and lift
@@ -176,8 +203,8 @@ class Lattice:
                 ic        = self.c[qb,:]
                 ii        = i + dc[0]
                 jj        = j + dc[1]
-                w         = self.lattice[jj,ii]
-                df        =-self.g[qb,j,i]*ic[:] + self.g_up[q,j,i]*dc[:]
+                w         = self.lattice[ii,jj]
+                df        =-self.g[qb,i,j]*ic[:] + self.g_up[q,i,j]*dc[:]
                 force[:] += w*df
 
         # Normalize coefficient
@@ -202,194 +229,341 @@ class Lattice:
                 ic = self.c[qb,:]
                 ii = i + dc[0]
                 jj = j + dc[1]
-                w  = self.lattice[jj,ii]
+                w  = self.lattice[ii,jj]
 
                 # Apply if neighbor is solid
-                if w: self.g[qb,j,i] = self.g[q,j,i]
+                if w: self.g[qb,i,j] = self.g[q,i,j]
 
     ### ************************************************
     ### Zou-He inlet b.c.
-    def zou_he_inlet(self, g, g_eq, rho, u):
+    def zou_he_inlet(self):
 
-        # g[1,:,0] = g_eq[1,:,0] + g[2,:,0] - g_eq[2,:,0]
-        # g[5,:,0] = 0.5*(rho[:,0]*u[0,:,0] - g[1,:,0] + g[2,:,0] \
-        #          - g[3,:,0] + g[4,:,0] + 2.0*g[6,:,0])
-        # g[8,:,0] = g[3,:,0] - g[4,:,0] + g[5,:,0] \
-        #          - g[6,:,0] + g[7,:,0]
-
-        self.rho[:,0] = (self.g[0,:,0] +
-                         self.g[3,:,0] +
-                         self.g[4,:,0] +
-                     2.0*self.g[2,:,0] +
-                     2.0*self.g[6,:,0] +
-                     2.0*self.g[7,:,0] )/(1.0 - self.u_in[0,:,0])
-        #- self.u[1,0,:]
-
-        self.g[1,:,0] = (self.g_eq[1,:,0] +
-                         self.g[2,:,0]    -
-                         self.g_eq[2,:,0] )
-
-        self.g[5,:,0] =-0.5*(self.g[1,:,0] -
-                             self.g[2,:,0] +
-                             self.g[3,:,0] -
-                             self.g[4,:,0] -
-                         2.0*self.g[6,:,0] -
-                             self.rho[:,0]*self.u_in[0,:,0] -
-                             self.rho[:,0]*self.u_in[1,:,0])
-        #- self.u[0,0,:] - self.u[1,0,:]
-
-        self.g[8,:,0] =-0.5*(self.g[1,:,0] -
-                             self.g[2,:,0] -
-                             self.g[3,:,0] -
-                             self.g[4,:,0] -
-                         2.0*self.g[7,:,0] -
-                             self.rho[:,0]*self.u_in[0,:,0] +
-                             self.rho[:,0]*self.u_in[1,:,0])
-
-    ### ************************************************
-    ### Zou-He outlet b.c.
-    def zou_he_outlet(self, g, g_eq, rho, u):
-
-        lx             = self.nx-1
-        # g[2,:,lx] = g_eq[2,:,lx] + g[1,:,lx] - g_eq[1,:,lx]
-        # g[6,:,lx] =-0.5*( rho[:,lx]*u[0,:,lx]   \
-        #                      - g[1,:,lx] + g[2,:,lx] \
-        #                      - g[3,:,lx] + g[4,:,lx] \
-        #                      - 2.0*g[5,:,lx])
-        # g[7,:,lx] =-g[3,:,lx] + g[4,:,lx] \
-        #                - g[5,:,lx] + g[6,:,lx] \
-        #                + g[8,:,lx]
-
-        g[:,:,lx] = 2.0*g[:,:,lx-1] - g[:,:,lx-2]
-
-    ### ************************************************
-    ### Zou-He no-slip top wall b.c.
-    def zou_he_top_wall(self, g):
-
-        # self.g[4,0,:] = self.g_eq[4,0,:] + self.g[3,0,:] - self.g_eq[3,0,:]
-        # self.g[6,0,:] = 0.5*(  self.g[1,0,:] + self.g[3,0,:] \
-        #                      - self.g[2,0,:] - self.g[4,0,:] \
-        #                      + 2.0*self.g[5,0,:])
-        # self.g[8,0,:] = self.g[3,0,:] - self.g[4,0,:] \
-        #               + self.g[5,0,:] - self.g[6,0,:] \
-        #               + self.g[7,0,:]
-
-        #self.rho[0,:] = 0.0
-        #for i in range(self.q):
-        #    self.rho[0,:] += self.g[i,0,:]
-        u_x = 0.0
-        u_y = 0.0
+        self.u[0,0,:] = self.u_in[0,:]
+        self.u[1,0,:] = self.u_in[1,:]
 
         self.rho[0,:] = (self.g[0,0,:] +
-                         self.g[1,0,:] +
-                         self.g[2,0,:] +
-                     2.0*self.g[3,0,:] +
-                     2.0*self.g[5,0,:] +
-                     2.0*self.g[7,0,:] )/(1.0 + u_y)
-        #- self.u[1,0,:]
+                         self.g[3,0,:] +
+                         self.g[4,0,:] +
+                     2.0*self.g[2,0,:] +
+                     2.0*self.g[6,0,:] +
+                     2.0*self.g[7,0,:] )/(1.0 - self.u_in[0,:])
 
-        self.g[4,0,:] = (self.g_eq[4,0,:] +
-                         self.g[3,0,:]    -
-                         self.g_eq[3,0,:] )
+        self.g[1,0,:] = (self.g_eq[1,0,:] +
+                         self.g[2,0,:]    -
+                         self.g_eq[2,0,:] )
 
-        self.g[6,0,:] = 0.5*(self.g[1,0,:] -
+        self.g[5,0,:] =-0.5*(self.g[1,0,:] -
                              self.g[2,0,:] +
                              self.g[3,0,:] -
-                             self.g[4,0,:] +
-                         2.0*self.g[5,0,:] -
-                             self.rho[0,:]*u_x -
-                             self.rho[0,:]*u_y)
-        #- self.u[0,0,:] - self.u[1,0,:]
+                             self.g[4,0,:] -
+                         2.0*self.g[6,0,:] -
+                             self.rho[0,:]*self.u_in[0,:] -
+                             self.rho[0,:]*self.u_in[1,:])
 
         self.g[8,0,:] =-0.5*(self.g[1,0,:] -
                              self.g[2,0,:] -
                              self.g[3,0,:] +
                              self.g[4,0,:] -
                          2.0*self.g[7,0,:] -
-                             self.rho[0,:]*u_x +
-                             self.rho[0,:]*u_y)
+                             self.rho[0,:]*self.u_in[0,:] +
+                             self.rho[0,:]*self.u_in[1,:])
+
+    ### ************************************************
+    ### Zou-He outlet b.c.
+    def zou_he_outlet(self, rho_lbm):
+
+        lx = self.lx
+
+        self.rho[lx,:] = rho_lbm
+        self.u[1,lx,:] = 0.0
+
+        self.u[0,lx,:] = (self.g[0,lx,:] +
+                          self.g[3,lx,:] +
+                          self.g[4,lx,:] +
+                      2.0*self.g[1,lx,:] +
+                      2.0*self.g[5,lx,:] +
+                      2.0*self.g[8,lx,:])/self.rho[lx,:] - 1.0
+
+        self.g[2,lx,:] = (self.g_eq[2,lx,:] +
+                          self.g[1,lx,:]    -
+                          self.g_eq[1,lx,:])
+
+        self.g[6,lx,:] = 0.5*(self.g[1,lx,:] -
+                              self.g[2,lx,:] +
+                              self.g[3,lx,:] -
+                              self.g[4,lx,:] +
+                          2.0*self.g[5,lx,:] -
+                              self.rho[lx,:]*self.u[0,lx,:] -
+                              self.rho[lx,:]*self.u[1,lx,:])
+
+        self.g[7,lx,:] = 0.5*(self.g[1,lx,:] -
+                              self.g[2,lx,:] -
+                              self.g[3,lx,:] +
+                              self.g[4,lx,:] +
+                          2.0*self.g[8,lx,:] -
+                              self.rho[lx,:]*self.u[0,lx,:] +
+                              self.rho[lx,:]*self.u[1,lx,:])
+
+    ### ************************************************
+    ### Zou-He no-slip top wall b.c.
+    def zou_he_top_wall(self):
+
+        ly = self.ny - 1
+
+        u_x = 0.0
+        u_y = 0.0
+        self.u[0,:,ly] = u_x
+        self.u[1,:,ly] = u_y
+
+        self.rho[:,ly] = (self.g[0,:,ly] +
+                          self.g[1,:,ly] +
+                          self.g[2,:,ly] +
+                      2.0*self.g[3,:,ly] +
+                      2.0*self.g[5,:,ly] +
+                      2.0*self.g[7,:,ly] )/(1.0 + u_y)
+
+        self.g[4,:,ly] = (self.g_eq[4,:,ly] +
+                          self.g[3,:,ly]    -
+                          self.g_eq[3,:,ly] )
+
+        self.g[6,:,ly] = 0.5*(self.g[1,:,ly] -
+                              self.g[2,:,ly] +
+                              self.g[3,:,ly] -
+                              self.g[4,:,ly] +
+                          2.0*self.g[5,:,ly] -
+                              self.rho[:,ly]*u_x -
+                              self.rho[:,ly]*u_y)
+
+        self.g[8,:,ly] =-0.5*(self.g[1,:,ly] -
+                              self.g[2,:,ly] -
+                              self.g[3,:,ly] +
+                              self.g[4,:,ly] -
+                          2.0*self.g[7,:,ly] -
+                              self.rho[:,ly]*u_x +
+                              self.rho[:,ly]*u_y)
 
 
     ### ************************************************
     ### Zou-He no-slip bottom wall b.c.
-    def zou_he_bottom_wall(self, g):
-
-        ly             = self.ny-1
-
-        # self.g[3,ly,:] = self.g_eq[3,ly,:] + self.g[4,ly,:] \
-        #                - self.g_eq[4,ly,:]
-        # self.g[5,ly,:] = 0.5*(2.0*self.g[6,ly,:] - self.g[1,ly,:] \
-        #                         - self.g[3,ly,:] + self.g[2,ly,:] \
-        #                         + self.g[4,ly,:])
-        # self.g[7,ly,:] = self.g[8,ly,:] - self.g[3,ly,:] \
-        #                + self.g[4,ly,:] - self.g[5,ly,:] \
-        #                + self.g[6,ly,:]
-
-        # self.rho[ly,:] = 0.0
-        # for i in range(self.q):
-        #     self.rho[ly,:] += self.g[i,ly,:]
+    def zou_he_bottom_wall(self):
 
         u_x = 0.0
         u_y = 0.0
+        self.u[0,:,0] = u_x
+        self.u[1,:,0] = u_y
 
-        self.rho[ly,:] = (self.g[0,ly,:] +
-                          self.g[1,ly,:] +
-                          self.g[2,ly,:] +
-                      2.0*self.g[4,ly,:] +
-                      2.0*self.g[6,ly,:] +
-                      2.0*self.g[8,ly,:] )/(1.0 - u_x)
-        #- self.u[1,0,:]
+        self.rho[:,0] = (self.g[0,:,0] +
+                         self.g[1,:,0] +
+                         self.g[2,:,0] +
+                     2.0*self.g[4,:,0] +
+                     2.0*self.g[6,:,0] +
+                     2.0*self.g[8,:,0] )/(1.0 - u_x)
 
-        self.g[3,ly,:] = (self.g_eq[3,ly,:] +
-                          self.g[4,ly,:]    -
-                          self.g_eq[4,ly,:] )
+        self.g[3,:,0] = (self.g_eq[3,:,0] +
+                         self.g[4,:,0]    -
+                         self.g_eq[4,:,0] )
 
-        self.g[5,ly,:] =-0.5*(self.g[1,ly,:] -
-                              self.g[2,ly,:] +
-                              self.g[3,ly,:] -
-                              self.g[4,ly,:] -
-                          2.0*self.g[6,ly,:] -
-                              self.rho[ly,:]*u_x -
-                              self.rho[ly,:]*u_y)
-        #- self.u[0,0,:] - self.u[1,0,:]
+        self.g[5,:,0] =-0.5*(self.g[1,:,0] -
+                             self.g[2,:,0] +
+                             self.g[3,:,0] -
+                             self.g[4,:,0] -
+                         2.0*self.g[6,:,0] -
+                             self.rho[:,0]*u_x -
+                             self.rho[:,0]*u_y)
 
-        self.g[7,ly,:] = 0.5*(self.g[1,ly,:] -
-                              self.g[2,ly,:] -
-                              self.g[3,ly,:] +
-                              self.g[4,ly,:] +
-                          2.0*self.g[8,ly,:] -
-                              self.rho[ly,:]*u_x +
-                              self.rho[ly,:]*u_y)
+        self.g[7,:,0] = 0.5*(self.g[1,:,0] -
+                             self.g[2,:,0] -
+                             self.g[3,:,0] +
+                             self.g[4,:,0] +
+                         2.0*self.g[8,:,0] -
+                             self.rho[:,0]*u_x +
+                             self.rho[:,0]*u_y)
+
+    ### ************************************************
+    ### Zou-He bottom left corner
+    def zou_he_bottom_left_corner(self):
+
+        u_x = 0.0
+        u_y = 0.0
+        self.u[0,0,0] = u_x
+        self.u[1,0,0] = u_y
+
+        self.rho[0,0] = self.rho[1,0]
+
+        self.g[1,0,0] = (self.g_eq[1,0,0] +
+                         self.g[2,0,0]    -
+                         self.g_eq[2,0,0] )
+
+        self.g[3,0,0] = (self.g_eq[3,0,0] +
+                         self.g[4,0,0]    -
+                         self.g_eq[4,0,0] )
+
+        self.g[5,0,0] = (self.g_eq[5,0,0] +
+                         self.g[6,0,0]    -
+                         self.g_eq[6,0,0] )
+
+        self.g[7,0,0] = 0.0
+        self.g[8,0,0] = 0.0
+
+        self.g[0,0,0] = (self.rho[0,0] -
+                         self.g[1,0,0] -
+                         self.g[2,0,0] -
+                         self.g[3,0,0] -
+                         self.g[4,0,0] -
+                         self.g[5,0,0] -
+                         self.g[6,0,0] -
+                         self.g[7,0,0] -
+                         self.g[8,0,0] )
+
+    ### ************************************************
+    ### Zou-He top left corner
+    def zou_he_top_left_corner(self):
+
+        ly = self.ly
+
+        u_x = 0.0
+        u_y = 0.0
+        self.u[0,0,ly] = u_x
+        self.u[1,0,ly] = u_y
+
+        self.rho[0,ly] = self.rho[1,ly]
+
+        self.g[1,0,ly] = (self.g_eq[1,0,ly] +
+                          self.g[2,0,ly]    -
+                          self.g_eq[2,0,ly] )
+
+        self.g[4,0,ly] = (self.g_eq[4,0,ly] +
+                          self.g[3,0,ly]    -
+                          self.g_eq[3,0,ly] )
+
+        self.g[8,0,ly] = (self.g_eq[8,0,ly] +
+                          self.g[7,0,ly]    -
+                          self.g_eq[7,0,ly] )
+
+        self.g[5,0,ly] = 0.0
+        self.g[6,0,ly] = 0.0
+
+        self.g[0,0,ly] = (self.rho[0,ly] -
+                          self.g[1,0,ly] -
+                          self.g[2,0,ly] -
+                          self.g[3,0,ly] -
+                          self.g[4,0,ly] -
+                          self.g[5,0,ly] -
+                          self.g[6,0,ly] -
+                          self.g[7,0,ly] -
+                          self.g[8,0,ly] )
+
+    ### ************************************************
+    ### Zou-He top right corner
+    def zou_he_top_right_corner(self):
+
+        lx = self.lx
+        ly = self.ly
+
+        #u_y = 0.0
+        self.u[0,lx,ly] = self.u[0,lx-1,ly]
+        self.u[1,lx,ly] = self.u[1,lx-1,ly]
+        self.rho[lx,ly] = self.rho[lx-1,ly]
+
+        self.g[2,lx,ly] = (self.g_eq[2,lx,ly] +
+                          self.g[1,lx,ly]    -
+                          self.g_eq[1,lx,ly] )
+
+        self.g[4,lx,ly] = (self.g_eq[4,lx,ly] +
+                          self.g[3,lx,ly]    -
+                          self.g_eq[3,lx,ly] )
+
+        self.g[6,lx,ly] = (self.g_eq[6,lx,ly] +
+                          self.g[5,lx,ly]    -
+                          self.g_eq[5,lx,ly] )
+
+        self.g[7,lx,ly] = 0.0
+        self.g[8,lx,ly] = 0.0
+
+        self.g[0,lx,ly] = (self.rho[lx,ly] -
+                           self.g[1,lx,ly] -
+                           self.g[2,lx,ly] -
+                           self.g[3,lx,ly] -
+                           self.g[4,lx,ly] -
+                           self.g[5,lx,ly] -
+                           self.g[6,lx,ly] -
+                           self.g[7,lx,ly] -
+                           self.g[8,lx,ly] )
+
+    ### ************************************************
+    ### Zou-He bottom right corner
+    def zou_he_bottom_right_corner(self):
+
+        lx = self.lx
+
+        #u_y = 0.0
+        self.u[0,lx,0] = self.u[0,lx-1,0]
+        self.u[1,lx,0] = self.u[1,lx-1,0]
+        self.rho[lx,0] = self.rho[lx-1,0]
+
+        self.g[2,lx,0] = (self.g_eq[2,lx,0] +
+                          self.g[1,lx,0]    -
+                          self.g_eq[1,lx,0] )
+
+        self.g[3,lx,0] = (self.g_eq[3,lx,0] +
+                          self.g[4,lx,0]    -
+                          self.g_eq[4,lx,0] )
+
+        self.g[7,lx,0] = (self.g_eq[7,lx,0] +
+                          self.g[8,lx,0]    -
+                          self.g_eq[8,lx,0] )
+
+        self.g[5,lx,0] = 0.0
+        self.g[6,lx,0] = 0.0
+
+        self.g[0,lx,0] = (self.rho[lx,0] -
+                          self.g[1,lx,0] -
+                          self.g[2,lx,0] -
+                          self.g[3,lx,0] -
+                          self.g[4,lx,0] -
+                          self.g[5,lx,0] -
+                          self.g[6,lx,0] -
+                          self.g[7,lx,0] -
+                          self.g[8,lx,0] )
 
     ### ************************************************
     ### Stream distribution
     def stream(self):
 
-        lx                        = self.nx - 1
-        ly                        = self.ny - 1
-        self.g[0, :, :]           = self.g_up[0, :, :]           # center
-        self.g[1, 0:ly,   1:lx]   = self.g_up[1, 0:ly,   0:lx-1] # +x
-        self.g[2, 0:ly,   0:lx-1] = self.g_up[2, 0:ly,   1:lx]   # -x
-        self.g[3, 0:ly-1, 0:lx]   = self.g_up[3, 1:ly,   0:lx]   # +y
-        self.g[4, 1:ly,   0:lx]   = self.g_up[4, 0:ly-1, 0:lx]   # -y
-        self.g[5, 0:ly-1, 1:lx]   = self.g_up[5, 1:ly,   0:lx-1] # +x+y
-        self.g[6, 1:ly,   0:lx-1] = self.g_up[6, 0:ly-1, 1:lx]   # -x-y
-        self.g[7, 0:ly-1, 0:lx-1] = self.g_up[7, 1:ly,   1:lx]   # -x+y
-        self.g[8, 1:ly,   1:lx]   = self.g_up[8, 0:ly-1, 0:lx-1] # +x-y
+        for q in range(self.q):
+            self.g[q,:,:] = np.roll(
+                            np.roll(
+                                self.g_up[q,:,:],self.c[q,0],axis=0),
+                                                 self.c[q,1],axis=1)
 
-        self.g[:,self.lattice]    = self.g_s[:,self.lattice]
+
+        # lx                        = self.lx
+        # ly                        = self.ly
+        # self.g[0, :, :]           = self.g_up[0, :, :]           # center
+        # self.g[1, 1:lx,   0:ly]   = self.g_up[1, 0:lx-1, 0:ly]   # +x
+        # self.g[2, 0:lx-1, 0:ly]   = self.g_up[2, 1:lx,   0:ly]   # -x
+        # self.g[3, 0:lx,   1:ly]   = self.g_up[3, 0:lx,   0:ly-1] # +y
+        # self.g[4, 0:lx,   0:ly-1] = self.g_up[4, 0:lx,   1:ly]   # -y
+        # self.g[5, 1:lx,   1:ly]   = self.g_up[5, 0:lx-1, 0:ly-1] # +x+y
+        # self.g[6, 0:lx-1, 0:ly-1] = self.g_up[6, 1:lx,   1:ly]   # -x-y
+        # self.g[7, 0:lx-1, 1:ly]   = self.g_up[7, 1:lx,   0:ly-1] # -x+y
+        # self.g[8, 1:lx,   0:ly-1] = self.g_up[8, 0:lx-1, 1:ly]   # +x-y
+
+        # self.g[:,self.lattice]    = self.g_s[:,self.lattice]
 
     ### ************************************************
     ### Compute equilibrium state
-    def equilibrium(self, g, rho, u):
+    def equilibrium(self):
 
         # Compute velocity term
-        v = (3.0/2.0)*(u[0,:,:]**2 + u[1,:,:]**2)
+        v = (3.0/2.0)*(self.u[0,:,:]**2 + self.u[1,:,:]**2)
 
         # Compute equilibrium
         for q in range(self.q):
-            t        = 3.0*(u[0,:,:]*self.c[q,0] + u[1,:,:]*self.c[q,1])
-            g[q,:,:] = rho*self.w[q]*(1.0 + t + 0.5*t**2 - v)
+            t                 = 3.0*(self.u[0,:,:]*self.c[q,0] +
+                                     self.u[1,:,:]*self.c[q,1])
+            self.g_eq[q,:,:]  = (1.0 + t + 0.5*t**2 - v)
+            self.g_eq[q,:,:] *= self.rho[:,:]*self.w[q]
 
     ### ************************************************
     ### Compute macroscopic fields
@@ -428,7 +602,7 @@ class Lattice:
 
         if (it%freq==0):
             plt.clf()
-            plt.imshow(v[0],
+            plt.imshow(np.rot90(v[0]),
                        cmap = 'coolwarm',
                        vmin = 0.0,
                        vmax = u_in,
@@ -447,7 +621,7 @@ class Lattice:
         # Because we loop on the lattice left-right and top-down,
         # we need to flip the polygon up-down
         poly         = polygon.copy()
-        poly[:,1]   *= -1.0
+        #poly[:,1]   *= -1.0
         self.polygon = poly
 
         # Compute polygon bnds
@@ -465,7 +639,7 @@ class Lattice:
         bar = progress.bar.Bar('Generating...', max=self.nx*self.ny)
         for i in range(self.nx):
             for j in range(self.ny):
-                pt = self.lattice_coords(j, i)
+                pt = self.lattice_coords(i, j)
 
                 # Check if pt is inside polygon bbox
                 if ((pt[0] > poly_bnds[0]) and
@@ -476,7 +650,7 @@ class Lattice:
                     if (self.is_inside(poly, pt)):
                         obstacle = np.append(obstacle,
                                              np.array([[i,j]]), axis=0)
-                        self.lattice[j,i] = True
+                        self.lattice[i,j] = True
 
                 bar.next()
         bar.finish()
@@ -488,7 +662,7 @@ class Lattice:
 
         for i in range(self.nx):
             for j in range(self.ny):
-                if (self.lattice[j,i]): self.area += self.dx**2
+                if (self.lattice[i,j]): self.area += self.dx**2
 
         print('Obstacle area: '+str(self.area))
 
@@ -498,7 +672,7 @@ class Lattice:
             j = obstacle[k,1]
             for di in [-1, 0, 1]:
                 for dj in [-1, 0, 1]:
-                    if (not self.lattice[j+dj,i+di]):
+                    if (not self.lattice[i+di,j+dj]):
                         self.boundary = np.append(self.boundary,
                                                   np.array([[i+di,j+dj]]),
                                                   axis=0)
@@ -508,13 +682,13 @@ class Lattice:
 
     ### ************************************************
     ### Get lattice coordinates from integers
-    def lattice_coords(self, j, i):
+    def lattice_coords(self, i, j):
 
         # Compute and return the coordinates of the lattice node (i,j)
         dx = (self.xmax - self.xmin)/(self.nx - 1)
         dy = (self.ymax - self.ymin)/(self.ny - 1)
-        x  = self.xmin + i*dx
-        y  = self.ymin + (self.ny-j)*dy
+        x  = i*dx
+        y  = j*dy
 
         return [x, y]
 
@@ -558,7 +732,7 @@ class Lattice:
         filename = self.output_dir+self.name+'.png'
 
         plt.axis('off')
-        plt.imshow(lat,
+        plt.imshow(np.transpose(lat),
                    cmap = mplt.cm.inferno,
                    vmin = 0.0,
                    vmax = 2.0,
@@ -581,7 +755,12 @@ class Lattice:
 
     ### ************************************************
     ### Poiseuille flow
-    def poiseuille(self, d, y, x):
+    def poiseuille(self, pt):
 
-        H = self.ny
-        return (1.0-d)*4.0*y*(H-y)/H**2
+        x    = pt[0]
+        y    = pt[1]
+        H    = self.ymax - self.ymin
+        u    = np.zeros(2)
+        u[0] = 4.0*y*(H-y)/H**2
+
+        return u
