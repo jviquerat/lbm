@@ -1,5 +1,6 @@
 # Generic imports
 import os
+import math
 import progress.bar
 import numpy             as np
 import matplotlib        as mplt
@@ -80,16 +81,11 @@ class Lattice:
         self.ns    = np.asarray([self.c.tolist().index(
             (-self.c[i]).tolist()) for i in range(self.q)])
 
-        # Allocate arrays
-        # Lattice array is oriented as follows :
-        # +x     = left-right
-        # +y     = bottom-top
-        # origin = bottom left
+        # Density arrays
         self.g       = np.zeros((self.q,  self.nx, self.ny))
-        #self.g_s     = np.zeros((self.q,  self.nx, self.ny))
         self.g_eq    = np.zeros((self.q,  self.nx, self.ny))
-        #self.g_m     = np.zeros((self.q,  self.nx, self.ny))
-        #self.g_p     = np.zeros((self.q,  self.nx, self.ny))
+        self.g_m     = np.zeros((self.q,  self.nx, self.ny))
+        self.g_p     = np.zeros((self.q,  self.nx, self.ny))
         self.g_up    = np.zeros((self.q,  self.nx, self.ny))
 
         # Lattice array is oriented as follows :
@@ -98,16 +94,17 @@ class Lattice:
         # origin = bottom left
         self.lattice = np.zeros((self.nx, self.ny), dtype=bool)
 
+        # Physical fields
+        self.rho     = np.ones ((   self.nx, self.ny))
+        self.u       = np.zeros((2, self.nx, self.ny))
+
     ### ************************************************
     ### Solve LBM
     def solve(self, it_max, u_lbm, rho_lbm,
                     R_ref,  U_ref, L_ref,
                     freq):
 
-        self.rho     = np.ones ((   self.nx, self.ny))
-        self.u       = np.zeros((2, self.nx, self.ny))
-
-        # Input profiles
+        # Initialize fields
         self.input_velocity(u_lbm)
         self.u[:,0,:] = self.u_in[:,:]
         self.rho     *= rho_lbm
@@ -176,14 +173,16 @@ class Lattice:
                           - (1.0/self.tau_m_lbm)*self.g_m
 
     ### ************************************************
-    ### Compute input velocity
-    def input_velocity(self, u_lbm):
+    ### Set inlet velocity with Poiseuille
+    def inlet_poiseuille(self, u_lbm):
 
         self.u_in = np.zeros((2, self.ny))
 
         for j in range(self.ny):
             pt             = self.lattice_coords(0, j)
             self.u_in[:,j] = u_lbm*self.poiseuille(pt)
+
+        self.u[:,0,:] = self.u_in[:,:]
 
     ### ************************************************
     ### Compute drag and lift
@@ -764,3 +763,26 @@ class Lattice:
         u[0] = 4.0*y*(H-y)/H**2
 
         return u
+
+    ### ************************************************
+    ### Poiseuille error in the middle of the domain
+    def poiseuille_error(self, u_lbm):
+
+        u_error = np.zeros((2,self.ny))
+        nx      = math.floor(self.nx/2)
+
+        for j in range(self.ny):
+            pt   = self.lattice_coords(nx,j)
+            u_ex = self.poiseuille(pt)
+            u    = self.u[:,nx,j]
+
+            u_error[0,j] = u[0]/u_lbm
+            u_error[1,j] = u_ex[0]
+
+        # Write to file
+        filename = self.output_dir+'poiseuille'
+        with open(filename, 'w') as f:
+            for j in range(self.ny):
+                f.write('{} {} {}\n'.format(j*self.dx,
+                                            u_error[0,j],
+                                            u_error[1,j]))
