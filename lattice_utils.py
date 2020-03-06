@@ -7,51 +7,64 @@ import matplotlib        as mplt
 import matplotlib.pyplot as plt
 import PIL
 from   PIL               import Image
+from   datetime          import datetime
 
 ### ************************************************
 ### Class defining lattice object
 class Lattice:
     ### ************************************************
     ### Constructor
-    def __init__(self,       name,
-                 xmin,       xmax,
-                 ymin,       ymax,
-                 nx,         ny,
-                 tau_p_lbm, tau_m_lbm,
-                 Cx,         Ct, Cs,
-                 Cr,         Cu,
-                 Cf,         dx, dt,
-                 output_dir, dpi):
+    def __init__(self, *args, **kwargs):
 
-        self.name       = name
-        self.xmin       = xmin
-        self.xmax       = xmax
-        self.ymin       = ymin
-        self.ymax       = ymax
-        self.nx         = nx
-        self.ny         = ny
-        self.q          = 9
-        self.tau_p_lbm = tau_p_lbm
-        self.tau_m_lbm = tau_m_lbm
-        self.dx         = dx
-        self.dt         = dt
-        self.Cx         = Cx
-        self.Ct         = Ct
-        self.Cs         = Cs
-        self.Cr         = Cr
-        self.Cu         = Cu
-        self.Cf         = Cf
-        self.output_dir = output_dir
-        self.png_dir    = self.output_dir+'./png/'
+        # Input parameters
+        self.name       = kwargs.get('name',     'lattice'                  )
+        self.x_min      = kwargs.get('x_min',     0.0                       )
+        self.x_max      = kwargs.get('x_max',     1.0                       )
+        self.y_min      = kwargs.get('y_min',     0.0                       )
+        self.y_max      = kwargs.get('y_max',     1.0                       )
+        self.nx         = kwargs.get('nx',        100                       )
+        self.ny         = kwargs.get('ny',        self.nx                   )
+        self.tau_lbm    = kwargs.get('tau_lbm',   1.0                       )
+        self.dx         = kwargs.get('dx',        1.0                       )
+        self.dt         = kwargs.get('dt',        1.0                       )
+        self.Cx         = kwargs.get('Cx',        self.dx                   )
+        self.Ct         = kwargs.get('Ct',        self.dt                   )
+        self.Cr         = kwargs.get('Cr',        1.0                       )
+        self.Cn         = kwargs.get('Cn',        self.Cx**2/self.Ct        )
+        self.Cu         = kwargs.get('Cu',        self.Cx/self.Ct           )
+        self.Cf         = kwargs.get('Cf',        self.Cr*self.Cx**2/self.Ct)
+        self.dpi        = kwargs.get('dpi',       100                       )
+        self.u_lbm      = kwargs.get('u_lbm',     0.05                      )
+        self.L_lbm      = kwargs.get('L_lbm',     100.0                     )
+        self.nu_lbm     = kwargs.get('nu_lbm',    0.01                      )
+        self.Re_lbm     = kwargs.get('Re_lbm',    100.0                     )
+        self.rho_lbm    = kwargs.get('rho_lbm',   1.0                       )
+
+        # Other parameters
         self.output_it  = 0
-        self.dpi        = dpi
         self.lx         = self.nx - 1
         self.ly         = self.ny - 1
+        self.q          = 9
+        self.Cs         = 1.0/math.sqrt(3.0)
+        self.Re_lbm     = self.u_lbm*self.L_lbm/self.nu_lbm
 
+        # Output dirs
+        time             = datetime.now().strftime('%Y-%m-%d_%H_%M_%S')
+        self.results_dir = './results/'
+        self.output_dir  = self.results_dir+str(time)+'/'
+        self.png_dir     = self.output_dir+'./png/'
+
+        if (not os.path.exists(self.results_dir)):
+            os.makedirs(self.results_dir)
         if (not os.path.exists(self.output_dir)):
             os.makedirs(self.output_dir)
         if (not os.path.exists(self.png_dir)):
             os.makedirs(self.png_dir)
+
+        # TRT parameters
+        self.tau_p_lbm  = self.tau_lbm
+        self.lambda_trt = 1.0/4.0 # Best for stability
+        self.tau_m_lbm  = self.lambda_trt/(self.tau_p_lbm - 0.5) + 0.5
 
         # D2Q9 Velocities
         self.c  = np.array([ [ 0, 0],
@@ -98,61 +111,58 @@ class Lattice:
         self.rho     = np.ones ((   self.nx, self.ny))
         self.u       = np.zeros((2, self.nx, self.ny))
 
+        # Printings
+        print('### LBM solver ###')
+        print('# u_lbm      = '+str(self.u_lbm))
+        print('# L_lbm      = '+str(self.L_lbm))
+        print('# nu_lbm     = '+str(self.nu_lbm))
+        print('# Re_lbm     = '+str(self.Re_lbm))
+        print('# tau_p_lbm  = '+str(self.tau_p_lbm))
+        print('# tau_m_lbm  = '+str(self.tau_m_lbm))
+
     ### ************************************************
-    ### Solve LBM
-    def solve(self, it_max, u_lbm, rho_lbm,
-                    R_ref,  U_ref, L_ref,
-                    freq):
+    ### Compute macroscopic fields
+    def macro(self):
 
-        # Initialize fields
-        self.input_velocity(u_lbm)
-        self.u[:,0,:] = self.u_in[:,:]
-        self.rho     *= rho_lbm
-        #self.u[:,self.lattice] = 0.0
+        self.macro_density()
+        self.macro_velocity()
 
-        self.equilibrium()
-        self.g = self.g_eq
+    ### ************************************************
+    ### Compute macroscopic density
+    def macro_density(self):
 
-        # Solve
-        bar = progress.bar.Bar('Solving...', max=it_max)
-        for it in range(it_max+1):
+        # Compute density
+        self.rho = np.sum(self.g, axis=0)
 
-            # Drag and lift
-            #self.drag_lift(it, R_ref, U_ref, L_ref)
+    ### ************************************************
+    ### Compute macroscopic velocity
+    def macro_velocity(self):
 
-            # Compute macroscopic fields
-            self.macro()
+        # Compute velocity
+        self.u[:,:,:] = 0.0
 
-            # Compute equilibrium state
-            self.equilibrium()
+        for q in range(self.q):
+            self.u[0,:,:] += self.c[q,0]*self.g[q,:,:]
+            self.u[1,:,:] += self.c[q,1]*self.g[q,:,:]
 
-            # Output view
-            self.output_view(it, freq, u_lbm)
+        self.u[0,:,:] /= self.rho[:,:]
+        self.u[1,:,:] /= self.rho[:,:]
 
-            # Collisions
-            self.trt_collisions()
+        #self.u[:,:,self.ly] = self.u_top[:,:]
 
-            #self.g_s = self.g.copy()
-            #self.bounce_back_obstacle(self.g, self.g_up)
+    ### ************************************************
+    ### Compute equilibrium state
+    def equilibrium(self):
 
-            # Streaming
-            self.stream()
+        # Compute velocity term
+        v = (3.0/2.0)*(self.u[0,:,:]**2 + self.u[1,:,:]**2)
 
-            # Boundary conditions
-            self.zou_he_top_wall()
-            self.zou_he_bottom_wall()
-            self.zou_he_inlet()
-            self.zou_he_outlet(rho_lbm)
-            self.zou_he_bottom_left_corner()
-            self.zou_he_top_left_corner()
-            self.zou_he_top_right_corner()
-            self.zou_he_bottom_right_corner()
-
-            # Increment bar
-            bar.next()
-
-        # End bar
-        bar.finish()
+        # Compute equilibrium
+        for q in range(self.q):
+            t                 = 3.0*(self.u[0,:,:]*self.c[q,0] +
+                                     self.u[1,:,:]*self.c[q,1])
+            self.g_eq[q,:,:]  = (1.0 + t + 0.5*t**2 - v)
+            self.g_eq[q,:,:] *= self.rho[:,:]*self.w[q]
 
     ### ************************************************
     ### TRT collision operator
@@ -168,21 +178,21 @@ class Lattice:
                      - (self.g_eq[:,:,:] - self.g_eq[self.ns[:],:,:]))
         self.g_m[0,:,:] += 0.5*(self.g[0,:,:] - self.g_eq[0,:,:])
 
-        # Compute collisions
+        # # Compute collisions
         self.g_up = self.g - (1.0/self.tau_p_lbm)*self.g_p \
                           - (1.0/self.tau_m_lbm)*self.g_m
 
     ### ************************************************
-    ### Set inlet velocity with Poiseuille
-    def inlet_poiseuille(self, u_lbm):
+    ### Stream distribution
+    def stream(self):
 
-        self.u_in = np.zeros((2, self.ny))
+        for q in range(self.q):
+            self.g[q,:,:] = np.roll(
+                            np.roll(
+                                self.g_up[q,:,:],self.c[q,0],axis=0),
+                                                 self.c[q,1],axis=1)
 
-        for j in range(self.ny):
-            pt             = self.lattice_coords(0, j)
-            self.u_in[:,j] = u_lbm*self.poiseuille(pt)
-
-        self.u[:,0,:] = self.u_in[:,:]
+        # self.g[:,self.lattice]    = self.g_s[:,self.lattice]
 
     ### ************************************************
     ### Compute drag and lift
@@ -234,18 +244,21 @@ class Lattice:
                 if w: self.g[qb,i,j] = self.g[q,i,j]
 
     ### ************************************************
-    ### Zou-He inlet b.c.
-    def zou_he_inlet(self):
+    ### Zou-He left wall velocity b.c.
+    def zou_he_left_wall_velocity(self):
 
-        self.u[0,0,:] = self.u_in[0,:]
-        self.u[1,0,:] = self.u_in[1,:]
+        lx = self.lx
+        ly = self.ly
+
+        self.u[0,0,:] = self.u_left[0,:]
+        self.u[1,0,:] = self.u_left[1,:]
 
         self.rho[0,:] = (self.g[0,0,:] +
                          self.g[3,0,:] +
                          self.g[4,0,:] +
                      2.0*self.g[2,0,:] +
                      2.0*self.g[6,0,:] +
-                     2.0*self.g[7,0,:] )/(1.0 - self.u_in[0,:])
+                     2.0*self.g[7,0,:] )/(1.0 - self.u[0,0,:])
 
         self.g[1,0,:] = (self.g_eq[1,0,:] +
                          self.g[2,0,:]    -
@@ -256,25 +269,63 @@ class Lattice:
                              self.g[3,0,:] -
                              self.g[4,0,:] -
                          2.0*self.g[6,0,:] -
-                             self.rho[0,:]*self.u_in[0,:] -
-                             self.rho[0,:]*self.u_in[1,:])
+                             self.rho[0,:]*self.u[0,0,:] -
+                             self.rho[0,:]*self.u[1,0,:])
 
         self.g[8,0,:] =-0.5*(self.g[1,0,:] -
                              self.g[2,0,:] -
                              self.g[3,0,:] +
                              self.g[4,0,:] -
                          2.0*self.g[7,0,:] -
-                             self.rho[0,:]*self.u_in[0,:] +
-                             self.rho[0,:]*self.u_in[1,:])
+                             self.rho[0,:]*self.u[0,0,:] +
+                             self.rho[0,:]*self.u[1,0,:])
 
     ### ************************************************
-    ### Zou-He outlet b.c.
-    def zou_he_outlet(self, rho_lbm):
+    ### Zou-He right wall velocity b.c.
+    def zou_he_right_wall_velocity(self):
 
         lx = self.lx
+        ly = self.ly
 
-        self.rho[lx,:] = rho_lbm
-        self.u[1,lx,:] = 0.0
+        self.u[0,lx,:] = self.u_right[0,:]
+        self.u[1,lx,:] = self.u_right[1,:]
+
+        self.rho[lx,:] = (self.g[0,lx,:] +
+                          self.g[3,lx,:] +
+                          self.g[4,lx,:] +
+                      2.0*self.g[1,lx,:] +
+                      2.0*self.g[5,lx,:] +
+                      2.0*self.g[8,lx,:])/(1.0 + self.u[0,lx,:])
+
+        self.g[2,lx,:] = (self.g_eq[2,lx,:] +
+                          self.g[1,lx,:]    -
+                          self.g_eq[1,lx,:])
+
+        self.g[6,lx,:] = 0.5*(self.g[1,lx,:] -
+                              self.g[2,lx,:] +
+                              self.g[3,lx,:] -
+                              self.g[4,lx,:] +
+                          2.0*self.g[5,lx,:] -
+                              self.rho[lx,:]*self.u[0,lx,:] -
+                              self.rho[lx,:]*self.u[1,lx,:])
+
+        self.g[7,lx,:] = 0.5*(self.g[1,lx,:] -
+                              self.g[2,lx,:] -
+                              self.g[3,lx,:] +
+                              self.g[4,lx,:] +
+                          2.0*self.g[8,lx,:] -
+                              self.rho[lx,:]*self.u[0,lx,:] +
+                              self.rho[lx,:]*self.u[1,lx,:])
+
+    ### ************************************************
+    ### Zou-He right wall pressure b.c.
+    def zou_he_right_wall_pressure(self, rho_lbm):
+
+        lx = self.lx
+        ly = self.ly
+
+        self.rho[lx,:] = self.rho_right[:]
+        self.u[1,lx,:] = self.u_right[1,:]
 
         self.u[0,lx,:] = (self.g[0,lx,:] +
                           self.g[3,lx,:] +
@@ -304,22 +355,21 @@ class Lattice:
                               self.rho[lx,:]*self.u[1,lx,:])
 
     ### ************************************************
-    ### Zou-He no-slip top wall b.c.
-    def zou_he_top_wall(self):
+    ### Zou-He no-slip top wall velocity b.c.
+    def zou_he_top_wall_velocity(self):
 
-        ly = self.ny - 1
+        lx = self.lx
+        ly = self.ly
 
-        u_x = 0.0
-        u_y = 0.0
-        self.u[0,:,ly] = u_x
-        self.u[1,:,ly] = u_y
+        self.u[0,:,ly] = self.u_top[0,:]
+        self.u[1,:,ly] = self.u_top[1,:]
 
         self.rho[:,ly] = (self.g[0,:,ly] +
                           self.g[1,:,ly] +
                           self.g[2,:,ly] +
                       2.0*self.g[3,:,ly] +
                       2.0*self.g[5,:,ly] +
-                      2.0*self.g[7,:,ly] )/(1.0 + u_y)
+                      2.0*self.g[7,:,ly] )/(1.0 + self.u[1,:,ly])
 
         self.g[4,:,ly] = (self.g_eq[4,:,ly] +
                           self.g[3,:,ly]    -
@@ -330,33 +380,34 @@ class Lattice:
                               self.g[3,:,ly] -
                               self.g[4,:,ly] +
                           2.0*self.g[5,:,ly] -
-                              self.rho[:,ly]*u_x -
-                              self.rho[:,ly]*u_y)
+                              self.rho[:,ly]*self.u[0,:,ly] -
+                              self.rho[:,ly]*self.u[1,:,ly])
 
         self.g[8,:,ly] =-0.5*(self.g[1,:,ly] -
                               self.g[2,:,ly] -
                               self.g[3,:,ly] +
                               self.g[4,:,ly] -
                           2.0*self.g[7,:,ly] -
-                              self.rho[:,ly]*u_x +
-                              self.rho[:,ly]*u_y)
+                              self.rho[:,ly]*self.u[0,:,ly] +
+                              self.rho[:,ly]*self.u[1,:,ly])
 
 
     ### ************************************************
-    ### Zou-He no-slip bottom wall b.c.
-    def zou_he_bottom_wall(self):
+    ### Zou-He no-slip bottom wall velocity b.c.
+    def zou_he_bottom_wall_velocity(self):
 
-        u_x = 0.0
-        u_y = 0.0
-        self.u[0,:,0] = u_x
-        self.u[1,:,0] = u_y
+        lx = self.lx
+        ly = self.ly
+
+        self.u[0,:,0] = self.u_bot[0,:]
+        self.u[1,:,0] = self.u_bot[1,:]
 
         self.rho[:,0] = (self.g[0,:,0] +
                          self.g[1,:,0] +
                          self.g[2,:,0] +
                      2.0*self.g[4,:,0] +
                      2.0*self.g[6,:,0] +
-                     2.0*self.g[8,:,0] )/(1.0 - u_x)
+                     2.0*self.g[8,:,0] )/(1.0 - self.u[0,:,0])
 
         self.g[3,:,0] = (self.g_eq[3,:,0] +
                          self.g[4,:,0]    -
@@ -367,26 +418,26 @@ class Lattice:
                              self.g[3,:,0] -
                              self.g[4,:,0] -
                          2.0*self.g[6,:,0] -
-                             self.rho[:,0]*u_x -
-                             self.rho[:,0]*u_y)
+                             self.rho[:,0]*self.u[0,:,0] -
+                             self.rho[:,0]*self.u[1,:,0])
 
         self.g[7,:,0] = 0.5*(self.g[1,:,0] -
                              self.g[2,:,0] -
                              self.g[3,:,0] +
                              self.g[4,:,0] +
                          2.0*self.g[8,:,0] -
-                             self.rho[:,0]*u_x +
-                             self.rho[:,0]*u_y)
+                             self.rho[:,0]*self.u[0,:,0] +
+                             self.rho[:,0]*self.u[1,:,0])
 
     ### ************************************************
     ### Zou-He bottom left corner
     def zou_he_bottom_left_corner(self):
 
-        u_x = 0.0
-        u_y = 0.0
-        self.u[0,0,0] = u_x
-        self.u[1,0,0] = u_y
+        lx = self.lx
+        ly = self.ly
 
+        self.u[0,0,0] = self.u[0,1,0]
+        self.u[1,0,0] = self.u[1,1,0]
         self.rho[0,0] = self.rho[1,0]
 
         self.g[1,0,0] = (self.g_eq[1,0,0] +
@@ -418,13 +469,11 @@ class Lattice:
     ### Zou-He top left corner
     def zou_he_top_left_corner(self):
 
+        lx = self.lx
         ly = self.ly
 
-        u_x = 0.0
-        u_y = 0.0
-        self.u[0,0,ly] = u_x
-        self.u[1,0,ly] = u_y
-
+        self.u[0,0,ly] = self.u[0,1,ly]
+        self.u[1,0,ly] = self.u[1,1,ly]
         self.rho[0,ly] = self.rho[1,ly]
 
         self.g[1,0,ly] = (self.g_eq[1,0,ly] +
@@ -459,7 +508,6 @@ class Lattice:
         lx = self.lx
         ly = self.ly
 
-        #u_y = 0.0
         self.u[0,lx,ly] = self.u[0,lx-1,ly]
         self.u[1,lx,ly] = self.u[1,lx-1,ly]
         self.rho[lx,ly] = self.rho[lx-1,ly]
@@ -494,8 +542,8 @@ class Lattice:
     def zou_he_bottom_right_corner(self):
 
         lx = self.lx
+        ly = self.ly
 
-        #u_y = 0.0
         self.u[0,lx,0] = self.u[0,lx-1,0]
         self.u[1,lx,0] = self.u[1,lx-1,0]
         self.rho[lx,0] = self.rho[lx-1,0]
@@ -526,86 +574,32 @@ class Lattice:
                           self.g[8,lx,0] )
 
     ### ************************************************
-    ### Stream distribution
-    def stream(self):
-
-        for q in range(self.q):
-            self.g[q,:,:] = np.roll(
-                            np.roll(
-                                self.g_up[q,:,:],self.c[q,0],axis=0),
-                                                 self.c[q,1],axis=1)
-
-
-        # lx                        = self.lx
-        # ly                        = self.ly
-        # self.g[0, :, :]           = self.g_up[0, :, :]           # center
-        # self.g[1, 1:lx,   0:ly]   = self.g_up[1, 0:lx-1, 0:ly]   # +x
-        # self.g[2, 0:lx-1, 0:ly]   = self.g_up[2, 1:lx,   0:ly]   # -x
-        # self.g[3, 0:lx,   1:ly]   = self.g_up[3, 0:lx,   0:ly-1] # +y
-        # self.g[4, 0:lx,   0:ly-1] = self.g_up[4, 0:lx,   1:ly]   # -y
-        # self.g[5, 1:lx,   1:ly]   = self.g_up[5, 0:lx-1, 0:ly-1] # +x+y
-        # self.g[6, 0:lx-1, 0:ly-1] = self.g_up[6, 1:lx,   1:ly]   # -x-y
-        # self.g[7, 0:lx-1, 1:ly]   = self.g_up[7, 1:lx,   0:ly-1] # -x+y
-        # self.g[8, 1:lx,   0:ly-1] = self.g_up[8, 0:lx-1, 1:ly]   # +x-y
-
-        # self.g[:,self.lattice]    = self.g_s[:,self.lattice]
-
-    ### ************************************************
-    ### Compute equilibrium state
-    def equilibrium(self):
-
-        # Compute velocity term
-        v = (3.0/2.0)*(self.u[0,:,:]**2 + self.u[1,:,:]**2)
-
-        # Compute equilibrium
-        for q in range(self.q):
-            t                 = 3.0*(self.u[0,:,:]*self.c[q,0] +
-                                     self.u[1,:,:]*self.c[q,1])
-            self.g_eq[q,:,:]  = (1.0 + t + 0.5*t**2 - v)
-            self.g_eq[q,:,:] *= self.rho[:,:]*self.w[q]
-
-    ### ************************************************
-    ### Compute macroscopic fields
-    def macro(self):
-
-        self.macro_density()
-        self.macro_velocity()
-
-    ### ************************************************
-    ### Compute macroscopic density
-    def macro_density(self):
-
-        # Compute density
-        self.rho = np.sum(self.g, axis=0)
-
-    ### ************************************************
-    ### Compute macroscopic velocity
-    def macro_velocity(self):
-
-        # Compute velocity
-        self.u[:,:,:] = 0.0
-
-        for q in range(self.q):
-            self.u[0,:,:] += self.c[q,0]*self.g[q,:,:]
-            self.u[1,:,:] += self.c[q,1]*self.g[q,:,:]
-
-        self.u[0,:,:] /= self.rho[:,:]
-        self.u[1,:,:] /= self.rho[:,:]
-
-    ### ************************************************
     ### Output 2D flow view
     def output_view(self, it, freq, u_in):
 
         v = self.u.copy()
-        #v[:,self.boundary[:,1],self.boundary[:,0]] = 10.0
 
         if (it%freq==0):
             plt.clf()
-            plt.imshow(np.rot90(v[0]),
-                       cmap = 'coolwarm',
-                       vmin = 0.0,
+            plt.imshow(np.rot90(np.sqrt(v[0,:,:]**2+v[1,:,:]**2)),
+                       cmap = 'RdBu',
+                       vmin = 0,
                        vmax = u_in,
                        interpolation = 'nearest')
+
+            # plt.imshow(np.rot90(v[0]),
+            #            cmap = 'hot',
+            #            vmin =-u_in,
+            #            vmax = u_in,
+            #            interpolation = 'nearest')
+            # x = np.linspace(0, 1, 100)
+            # y = np.linspace(0, 1, 100)
+            # plt.streamplot(x, y,
+            #                np.rot90(v[0],3),
+            #                np.rot90(v[1],3),
+            #                linewidth = 0.5,
+            #                arrowstyle = '-',
+            #                density = 4)
             filename = self.png_dir+'vel_'+str(self.output_it)+'.png'
             plt.axis('off')
             plt.savefig(filename,
@@ -753,6 +747,33 @@ class Lattice:
         cp.save(filename)
 
     ### ************************************************
+    ### Set inlet velocity for Poiseuille
+    def inlet_poiseuille(self, u_lbm):
+
+        self.u_in = np.zeros((2, self.ny))
+
+        for j in range(self.ny):
+            pt             = self.lattice_coords(0, j)
+            self.u_in[:,j] = u_lbm*self.poiseuille(pt)
+
+        self.u[:,0,:] = self.u_in[:,:]
+
+    ### ************************************************
+    ### Set driven cavity fields
+    def set_cavity(self, u_lbm):
+
+        lx              = self.lx
+        ly              = self.ly
+
+        self.u_left     = np.zeros((2, self.ny))
+        self.u_right    = np.zeros((2, self.ny))
+        self.u_top      = np.zeros((2, self.nx))
+        self.u_bot      = np.zeros((2, self.nx))
+
+        self.u_top[0,:] = u_lbm
+        self.u[0,:,ly]  = self.u_top[0,:]
+
+    ### ************************************************
     ### Poiseuille flow
     def poiseuille(self, pt):
 
@@ -786,3 +807,28 @@ class Lattice:
                 f.write('{} {} {}\n'.format(j*self.dx,
                                             u_error[0,j],
                                             u_error[1,j]))
+
+    ### ************************************************
+    ### Cavity error in the middle of the domain
+    def cavity_error(self, u_lbm):
+
+        ux_error = np.zeros((self.nx))
+        uy_error = np.zeros((self.ny))
+        nx       = math.floor(self.nx/2)
+        ny       = math.floor(self.ny/2)
+
+        for i in range(self.nx):
+            uy_error[i] = self.u[1,i,ny]/u_lbm
+
+        for j in range(self.ny):
+            ux_error[j] = self.u[0,nx,j]/u_lbm
+
+        # Write to files
+        filename = self.output_dir+'cavity_uy'
+        with open(filename, 'w') as f:
+            for i in range(self.nx):
+                f.write('{} {}\n'.format(i*self.dx, uy_error[i]))
+        filename = self.output_dir+'cavity_ux'
+        with open(filename, 'w') as f:
+            for j in range(self.ny):
+                f.write('{} {}\n'.format(j*self.dx, ux_error[j]))

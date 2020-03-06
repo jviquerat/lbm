@@ -6,11 +6,8 @@ from params        import *
 from lattice_utils import *
 
 ###############################################
-### LBM solver
+### LBM poiseuille
 ###############################################
-
-# Generate lattice from shape closed curve
-lattice.generate_image()
 
 # Initialize fields
 lattice.inlet_poiseuille(u_lbm)
