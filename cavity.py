@@ -11,8 +11,8 @@ from lattice_utils import *
 
 ### Free parameters
 Re_lbm      = 400.0
-u_lbm       = 0.05
-L_lbm       = 400
+u_lbm       = 0.1
+L_lbm       = 200
 
 # Deduce other parameters
 Cs          = 1.0/math.sqrt(3.0)
