@@ -148,8 +148,6 @@ class Lattice:
         self.u[0,:,:] /= self.rho[:,:]
         self.u[1,:,:] /= self.rho[:,:]
 
-        #self.u[:,:,self.ly] = self.u_top[:,:]
-
     ### ************************************************
     ### Compute equilibrium state
     def equilibrium(self):
@@ -168,19 +166,19 @@ class Lattice:
     ### TRT collision operator
     def trt_collisions(self):
 
-        #self.g_up = self.g - (1.0/self.tau_p_lbm)*(self.g - self.g_eq)
+        self.g_up = self.g - (1.0/self.tau_lbm)*(self.g - self.g_eq)
 
-        # Compute g_p = g_p - g_eq_p
-        #     and g_m = g_m - g_eq_m
-        self.g_p = 0.5*(self.g[:,:,:]    + self.g[self.ns[:],:,:] \
-                     - (self.g_eq[:,:,:] + self.g_eq[self.ns[:],:,:]))
-        self.g_m = 0.5*(self.g[:,:,:]    - self.g[self.ns[:],:,:] \
-                     - (self.g_eq[:,:,:] - self.g_eq[self.ns[:],:,:]))
-        self.g_m[0,:,:] += 0.5*(self.g[0,:,:] - self.g_eq[0,:,:])
+        # # Compute g_p = g_p - g_eq_p
+        # #     and g_m = g_m - g_eq_m
+        # self.g_p = 0.5*(self.g[:,:,:]    + self.g[self.ns[:],:,:] \
+        #              - (self.g_eq[:,:,:] + self.g_eq[self.ns[:],:,:]))
+        # self.g_m = 0.5*(self.g[:,:,:]    - self.g[self.ns[:],:,:] \
+        #              - (self.g_eq[:,:,:] - self.g_eq[self.ns[:],:,:]))
+        # self.g_m[0,:,:] += 0.5*(self.g[0,:,:] - self.g_eq[0,:,:])
 
         # # Compute collisions
-        self.g_up = self.g - (1.0/self.tau_p_lbm)*self.g_p \
-                          - (1.0/self.tau_m_lbm)*self.g_m
+        # self.g_up = self.g - (1.0/self.tau_p_lbm)*self.g_p \
+        #                   - (1.0/self.tau_m_lbm)*self.g_m
 
     ### ************************************************
     ### Stream distribution
@@ -371,25 +369,20 @@ class Lattice:
                       2.0*self.g[5,:,ly] +
                       2.0*self.g[7,:,ly] )/(1.0 + self.u[1,:,ly])
 
-        self.g[4,:,ly] = (self.g_eq[4,:,ly] +
-                          self.g[3,:,ly]    -
-                          self.g_eq[3,:,ly] )
+        self.g[4,:,ly] = (self.g[3,:,ly]    -
+                          (2.0/3.0)*self.rho[:,ly]*self.u[1,:,ly])
 
-        self.g[6,:,ly] = 0.5*(self.g[1,:,ly] -
-                              self.g[2,:,ly] +
-                              self.g[3,:,ly] -
-                              self.g[4,:,ly] +
-                          2.0*self.g[5,:,ly] -
-                              self.rho[:,ly]*self.u[0,:,ly] -
-                              self.rho[:,ly]*self.u[1,:,ly])
+        self.g[6,:,ly] = (self.g[5,:,ly] +
+                          0.5*self.g[1,:,ly] -
+                          0.5*self.g[2,:,ly] -
+                          0.5*self.rho[:,ly]*self.u[0,:,ly] -
+                          1.0/6.0*self.rho[:,ly]*self.u[1,:,ly])
 
-        self.g[8,:,ly] =-0.5*(self.g[1,:,ly] -
-                              self.g[2,:,ly] -
-                              self.g[3,:,ly] +
-                              self.g[4,:,ly] -
-                          2.0*self.g[7,:,ly] -
-                              self.rho[:,ly]*self.u[0,:,ly] +
-                              self.rho[:,ly]*self.u[1,:,ly])
+        self.g[8,:,ly] = (self.g[7,:,ly] -
+                          0.5*self.g[1,:,ly] +
+                          0.5*self.g[2,:,ly] +
+                          0.5*self.rho[:,ly]*self.u[0,:,ly] -
+                          1.0/6.0*self.rho[:,ly]*self.u[1,:,ly])
 
         # self.g[4,:,ly] = (self.g_eq[4,:,ly] +
         #                   self.g[3,:,ly]    -

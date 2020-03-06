@@ -10,7 +10,7 @@ from lattice_utils import *
 ###############################################
 
 ### Free parameters
-Re_lbm      = 500.0
+Re_lbm      = 1000.0
 u_lbm       = 0.05
 L_lbm       = 100
 
@@ -24,7 +24,7 @@ rho_lbm     = 1.0
 # Other parameters
 output_freq = 500
 dpi         = 200
-it_max      = 40000
+it_max      = 10000
 
 # Initialize lattice
 lattice = Lattice(nx      = nx,
@@ -33,6 +33,7 @@ lattice = Lattice(nx      = nx,
                   Re_lbm  = Re_lbm,
                   u_lbm   = u_lbm,
                   L_lbm   = L_lbm,
+                  nu_lbm  = nu_lbm,
                   rho_lbm = rho_lbm,
                   dpi     = dpi)
 
@@ -51,15 +52,6 @@ for it in range(it_max+1):
     # Compute macroscopic fields
     lattice.macro()
 
-    # Compute equilibrium state
-    lattice.equilibrium()
-
-    # Collisions
-    lattice.trt_collisions()
-
-    # Streaming
-    lattice.stream()
-
     # Boundary conditions
     lattice.zou_he_bottom_wall_velocity()
     lattice.zou_he_left_wall_velocity()
@@ -69,6 +61,15 @@ for it in range(it_max+1):
     lattice.zou_he_top_left_corner()
     lattice.zou_he_top_right_corner()
     lattice.zou_he_bottom_right_corner()
+
+    # Compute equilibrium state
+    lattice.equilibrium()
+
+    # Collisions
+    lattice.trt_collisions()
+
+    # Streaming
+    lattice.stream()
 
     # Output view
     lattice.output_view(it, output_freq, u_lbm)
