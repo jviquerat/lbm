@@ -166,19 +166,19 @@ class Lattice:
     ### TRT collision operator
     def trt_collisions(self):
 
-        self.g_up = self.g - (1.0/self.tau_lbm)*(self.g - self.g_eq)
+        #self.g_up = self.g - (1.0/self.tau_lbm)*(self.g - self.g_eq)
 
-        # # Compute g_p = g_p - g_eq_p
-        # #     and g_m = g_m - g_eq_m
-        # self.g_p = 0.5*(self.g[:,:,:]    + self.g[self.ns[:],:,:] \
-        #              - (self.g_eq[:,:,:] + self.g_eq[self.ns[:],:,:]))
-        # self.g_m = 0.5*(self.g[:,:,:]    - self.g[self.ns[:],:,:] \
-        #              - (self.g_eq[:,:,:] - self.g_eq[self.ns[:],:,:]))
-        # self.g_m[0,:,:] += 0.5*(self.g[0,:,:] - self.g_eq[0,:,:])
+        # Compute g_p = g_p - g_eq_p
+        #     and g_m = g_m - g_eq_m
+        self.g_p = 0.5*(self.g[:,:,:]    + self.g[self.ns[:],:,:] \
+                     - (self.g_eq[:,:,:] + self.g_eq[self.ns[:],:,:]))
+        self.g_m = 0.5*(self.g[:,:,:]    - self.g[self.ns[:],:,:] \
+                     - (self.g_eq[:,:,:] - self.g_eq[self.ns[:],:,:]))
+        self.g_m[0,:,:] += 0.5*(self.g[0,:,:] - self.g_eq[0,:,:])
 
-        # # Compute collisions
-        # self.g_up = self.g - (1.0/self.tau_p_lbm)*self.g_p \
-        #                   - (1.0/self.tau_m_lbm)*self.g_m
+        # Compute collisions
+        self.g_up = self.g - (1.0/self.tau_p_lbm)*self.g_p \
+                          - (1.0/self.tau_m_lbm)*self.g_m
 
     ### ************************************************
     ### Stream distribution
@@ -259,7 +259,7 @@ class Lattice:
                      2.0*self.g[7,0,:] )/(1.0 - self.u[0,0,:])
 
         self.g[1,0,:] = (self.g_eq[1,0,:] +
-                         self.g[2,0,:]    -
+                         self.g   [2,0,:] -
                          self.g_eq[2,0,:] )
 
         self.g[5,0,:] =-0.5*(self.g[1,0,:] -
@@ -296,7 +296,7 @@ class Lattice:
                       2.0*self.g[8,lx,:])/(1.0 + self.u[0,lx,:])
 
         self.g[2,lx,:] = (self.g_eq[2,lx,:] +
-                          self.g[1,lx,:]    -
+                          self.g   [1,lx,:] -
                           self.g_eq[1,lx,:])
 
         self.g[6,lx,:] = 0.5*(self.g[1,lx,:] -
@@ -333,7 +333,7 @@ class Lattice:
                       2.0*self.g[8,lx,:])/self.rho[lx,:] - 1.0
 
         self.g[2,lx,:] = (self.g_eq[2,lx,:] +
-                          self.g[1,lx,:]    -
+                          self.g   [1,lx,:] -
                           self.g_eq[1,lx,:])
 
         self.g[6,lx,:] = 0.5*(self.g[1,lx,:] -
@@ -362,47 +362,25 @@ class Lattice:
         self.u[0,:,ly] = self.u_top[0,:]
         self.u[1,:,ly] = self.u_top[1,:]
 
-        self.rho[:,ly] = (self.g[0,:,ly] +
-                          self.g[1,:,ly] +
-                          self.g[2,:,ly] +
-                      2.0*self.g[3,:,ly] +
-                      2.0*self.g[5,:,ly] +
-                      2.0*self.g[7,:,ly] )/(1.0 + self.u[1,:,ly])
+        self.g[4,:,ly] = (self.g_eq[4,:,ly] +
+                          self.g   [3,:,ly] -
+                          self.g_eq[3,:,ly] )
 
-        self.g[4,:,ly] = (self.g[3,:,ly]    -
-                          (2.0/3.0)*self.rho[:,ly]*self.u[1,:,ly])
+        self.g[6,:,ly] = 0.5*(self.g[1,:,ly] -
+                              self.g[2,:,ly] +
+                              self.g[3,:,ly] -
+                              self.g[4,:,ly] +
+                          2.0*self.g[5,:,ly] -
+                              self.rho[:,ly]*self.u[0,:,ly] -
+                              self.rho[:,ly]*self.u[1,:,ly])
 
-        self.g[6,:,ly] = (self.g[5,:,ly] +
-                          0.5*self.g[1,:,ly] -
-                          0.5*self.g[2,:,ly] -
-                          0.5*self.rho[:,ly]*self.u[0,:,ly] -
-                          1.0/6.0*self.rho[:,ly]*self.u[1,:,ly])
-
-        self.g[8,:,ly] = (self.g[7,:,ly] -
-                          0.5*self.g[1,:,ly] +
-                          0.5*self.g[2,:,ly] +
-                          0.5*self.rho[:,ly]*self.u[0,:,ly] -
-                          1.0/6.0*self.rho[:,ly]*self.u[1,:,ly])
-
-        # self.g[4,:,ly] = (self.g_eq[4,:,ly] +
-        #                   self.g[3,:,ly]    -
-        #                   self.g_eq[3,:,ly] )
-
-        # self.g[6,:,ly] = 0.5*(self.g[1,:,ly] -
-        #                       self.g[2,:,ly] +
-        #                       self.g[3,:,ly] -
-        #                       self.g[4,:,ly] +
-        #                   2.0*self.g[5,:,ly] -
-        #                       self.rho[:,ly]*self.u[0,:,ly] -
-        #                       self.rho[:,ly]*self.u[1,:,ly])
-
-        # self.g[8,:,ly] =-0.5*(self.g[1,:,ly] -
-        #                       self.g[2,:,ly] -
-        #                       self.g[3,:,ly] +
-        #                       self.g[4,:,ly] -
-        #                   2.0*self.g[7,:,ly] -
-        #                       self.rho[:,ly]*self.u[0,:,ly] +
-        #                       self.rho[:,ly]*self.u[1,:,ly])
+        self.g[8,:,ly] =-0.5*(self.g[1,:,ly] -
+                              self.g[2,:,ly] -
+                              self.g[3,:,ly] +
+                              self.g[4,:,ly] -
+                          2.0*self.g[7,:,ly] -
+                              self.rho[:,ly]*self.u[0,:,ly] +
+                              self.rho[:,ly]*self.u[1,:,ly])
 
 
     ### ************************************************
@@ -423,7 +401,7 @@ class Lattice:
                      2.0*self.g[8,:,0] )/(1.0 - self.u[0,:,0])
 
         self.g[3,:,0] = (self.g_eq[3,:,0] +
-                         self.g[4,:,0]    -
+                         self.g   [4,:,0] -
                          self.g_eq[4,:,0] )
 
         self.g[5,:,0] =-0.5*(self.g[1,:,0] -
@@ -454,15 +432,15 @@ class Lattice:
         self.rho[0,0] = self.rho[1,0]
 
         self.g[1,0,0] = (self.g_eq[1,0,0] +
-                         self.g[2,0,0]    -
+                         self.g   [2,0,0] -
                          self.g_eq[2,0,0] )
 
         self.g[3,0,0] = (self.g_eq[3,0,0] +
-                         self.g[4,0,0]    -
+                         self.g   [4,0,0] -
                          self.g_eq[4,0,0] )
 
         self.g[5,0,0] = (self.g_eq[5,0,0] +
-                         self.g[6,0,0]    -
+                         self.g   [6,0,0] -
                          self.g_eq[6,0,0] )
 
         self.g[7,0,0] = 0.0
@@ -490,15 +468,15 @@ class Lattice:
         self.rho[0,ly] = self.rho[1,ly]
 
         self.g[1,0,ly] = (self.g_eq[1,0,ly] +
-                          self.g[2,0,ly]    -
+                          self.g   [2,0,ly] -
                           self.g_eq[2,0,ly] )
 
         self.g[4,0,ly] = (self.g_eq[4,0,ly] +
-                          self.g[3,0,ly]    -
+                          self.g   [3,0,ly] -
                           self.g_eq[3,0,ly] )
 
         self.g[8,0,ly] = (self.g_eq[8,0,ly] +
-                          self.g[7,0,ly]    -
+                          self.g   [7,0,ly] -
                           self.g_eq[7,0,ly] )
 
         self.g[5,0,ly] = 0.0
@@ -526,16 +504,16 @@ class Lattice:
         self.rho[lx,ly] = self.rho[lx-1,ly]
 
         self.g[2,lx,ly] = (self.g_eq[2,lx,ly] +
-                          self.g[1,lx,ly]    -
-                          self.g_eq[1,lx,ly] )
+                           self.g   [1,lx,ly] -
+                           self.g_eq[1,lx,ly] )
 
         self.g[4,lx,ly] = (self.g_eq[4,lx,ly] +
-                          self.g[3,lx,ly]    -
-                          self.g_eq[3,lx,ly] )
+                           self.g   [3,lx,ly] -
+                           self.g_eq[3,lx,ly] )
 
         self.g[6,lx,ly] = (self.g_eq[6,lx,ly] +
-                          self.g[5,lx,ly]    -
-                          self.g_eq[5,lx,ly] )
+                           self.g   [5,lx,ly] -
+                           self.g_eq[5,lx,ly] )
 
         self.g[7,lx,ly] = 0.0
         self.g[8,lx,ly] = 0.0
@@ -562,15 +540,15 @@ class Lattice:
         self.rho[lx,0] = self.rho[lx-1,0]
 
         self.g[2,lx,0] = (self.g_eq[2,lx,0] +
-                          self.g[1,lx,0]    -
+                          self.g   [1,lx,0] -
                           self.g_eq[1,lx,0] )
 
         self.g[3,lx,0] = (self.g_eq[3,lx,0] +
-                          self.g[4,lx,0]    -
+                          self.g   [4,lx,0] -
                           self.g_eq[4,lx,0] )
 
         self.g[7,lx,0] = (self.g_eq[7,lx,0] +
-                          self.g[8,lx,0]    -
+                          self.g   [8,lx,0] -
                           self.g_eq[8,lx,0] )
 
         self.g[5,lx,0] = 0.0
@@ -591,10 +569,11 @@ class Lattice:
     def output_view(self, it, freq, u_in):
 
         v = self.u.copy()
+        v = np.sqrt(v[0,:,:]**2+v[1,:,:]**2)
 
         if (it%freq==0):
             plt.clf()
-            plt.imshow(np.rot90(np.sqrt(v[0,:,:]**2+v[1,:,:]**2)),
+            plt.imshow(np.rot90(v),
                        cmap = 'RdBu',
                        vmin = 0,
                        vmax = u_in,
@@ -785,6 +764,7 @@ class Lattice:
 
         self.u_top[0,:] = u_lbm
         self.u[0,:,ly]  = self.u_top[0,:]
+        self.u[1,:,ly]  = self.u_top[1,:]
 
     ### ************************************************
     ### Poiseuille flow

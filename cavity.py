@@ -10,9 +10,9 @@ from lattice_utils import *
 ###############################################
 
 ### Free parameters
-Re_lbm      = 1000.0
+Re_lbm      = 400.0
 u_lbm       = 0.05
-L_lbm       = 100
+L_lbm       = 400
 
 # Deduce other parameters
 Cs          = 1.0/math.sqrt(3.0)
@@ -24,7 +24,7 @@ rho_lbm     = 1.0
 # Other parameters
 output_freq = 500
 dpi         = 200
-it_max      = 10000
+it_max      = 30000
 
 # Initialize lattice
 lattice = Lattice(nx      = nx,
@@ -43,7 +43,7 @@ lattice.rho *= rho_lbm
 
 # Set initial distributions
 lattice.equilibrium()
-lattice.g = lattice.g_eq
+lattice.g = lattice.g_eq.copy()
 
 # Solve
 bar = progress.bar.Bar('Solving...', max=it_max)
