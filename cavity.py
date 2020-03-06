@@ -10,7 +10,7 @@ from lattice_utils import *
 ###############################################
 
 ### Free parameters
-Re_lbm      = 100.0
+Re_lbm      = 500.0
 u_lbm       = 0.05
 L_lbm       = 100
 

@@ -391,6 +391,26 @@ class Lattice:
                               self.rho[:,ly]*self.u[0,:,ly] +
                               self.rho[:,ly]*self.u[1,:,ly])
 
+        # self.g[4,:,ly] = (self.g_eq[4,:,ly] +
+        #                   self.g[3,:,ly]    -
+        #                   self.g_eq[3,:,ly] )
+
+        # self.g[6,:,ly] = 0.5*(self.g[1,:,ly] -
+        #                       self.g[2,:,ly] +
+        #                       self.g[3,:,ly] -
+        #                       self.g[4,:,ly] +
+        #                   2.0*self.g[5,:,ly] -
+        #                       self.rho[:,ly]*self.u[0,:,ly] -
+        #                       self.rho[:,ly]*self.u[1,:,ly])
+
+        # self.g[8,:,ly] =-0.5*(self.g[1,:,ly] -
+        #                       self.g[2,:,ly] -
+        #                       self.g[3,:,ly] +
+        #                       self.g[4,:,ly] -
+        #                   2.0*self.g[7,:,ly] -
+        #                       self.rho[:,ly]*self.u[0,:,ly] +
+        #                       self.rho[:,ly]*self.u[1,:,ly])
+
 
     ### ************************************************
     ### Zou-He no-slip bottom wall velocity b.c.
