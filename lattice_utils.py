@@ -565,39 +565,55 @@ class Lattice:
                           self.g[8,lx,0] )
 
     ### ************************************************
-    ### Output 2D flow view
-    def output_view(self, it, freq, u_in):
+    ### Output 2D flow amplitude
+    def output_fields(self, it, freq, *args, **kwargs):
 
+        # Handle inputs
+        u_norm   = kwargs.get('u_norm',   True)
+        u_stream = kwargs.get('u_stream', True)
+
+        # Exit if no plotting
+        if (it%freq != 0): return
+
+        # Compute norm
         v = self.u.copy()
         v = np.sqrt(v[0,:,:]**2+v[1,:,:]**2)
 
-        if (it%freq==0):
+        # Plot u norm
+        if (u_norm):
             plt.clf()
             plt.imshow(np.rot90(v),
                        cmap = 'RdBu',
                        vmin = 0,
-                       vmax = u_in,
+                       vmax = self.u_lbm,
                        interpolation = 'nearest')
 
-            # plt.imshow(np.rot90(v[0]),
-            #            cmap = 'hot',
-            #            vmin =-u_in,
-            #            vmax = u_in,
-            #            interpolation = 'nearest')
-            # x = np.linspace(0, 1, 100)
-            # y = np.linspace(0, 1, 100)
-            # plt.streamplot(x, y,
-            #                np.rot90(v[0],3),
-            #                np.rot90(v[1],3),
-            #                linewidth = 0.5,
-            #                arrowstyle = '-',
-            #                density = 4)
-            filename = self.png_dir+'vel_'+str(self.output_it)+'.png'
+            filename = self.png_dir+'u_norm_'+str(self.output_it)+'.png'
             plt.axis('off')
             plt.savefig(filename,
                         dpi=self.dpi)
             self.trim_white(filename)
-            self.output_it += 1
+
+        # Plot u streamlines
+        if (u_stream):
+            plt.clf()
+            x = np.linspace(0, 1, 100)
+            y = np.linspace(0, 1, 100)
+            plt.streamplot(x, y,
+                           np.rot90(self.u[0],3),
+                           np.rot90(self.u[1],3),
+                           linewidth = 0.5,
+                           arrowstyle = '-',
+                           density = 4)
+
+            filename = self.png_dir+'u_stream_'+str(self.output_it)+'.png'
+            plt.axis('off')
+            plt.savefig(filename,
+                        dpi=self.dpi)
+            self.trim_white(filename)
+
+        # Update counter
+        self.output_it += 1
 
     ### ************************************************
     ### Add obstacle

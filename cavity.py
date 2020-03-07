@@ -10,9 +10,9 @@ from lattice_utils import *
 ###############################################
 
 ### Free parameters
-Re_lbm      = 400.0
-u_lbm       = 0.1
-L_lbm       = 200
+Re_lbm      = 100.0
+u_lbm       = 0.03
+L_lbm       = 100#250
 
 # Deduce other parameters
 Cs          = 1.0/math.sqrt(3.0)
@@ -24,7 +24,7 @@ rho_lbm     = 1.0
 # Other parameters
 output_freq = 500
 dpi         = 200
-it_max      = 30000
+it_max      = 10000 #100000
 
 # Initialize lattice
 lattice = Lattice(nx      = nx,
@@ -72,7 +72,10 @@ for it in range(it_max+1):
     lattice.stream()
 
     # Output view
-    lattice.output_view(it, output_freq, u_lbm)
+    lattice.output_fields(it,
+                          output_freq,
+                          u_norm   = True,
+                          u_stream = True)
 
     # Increment bar
     bar.next()
