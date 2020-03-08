@@ -597,17 +597,24 @@ class Lattice:
         # Plot u streamlines
         if (u_stream):
             plt.clf()
-            x = np.linspace(0, 1, 100)
-            y = np.linspace(0, 1, 100)
-            plt.streamplot(x, y,
-                           np.rot90(self.u[0],3),
-                           np.rot90(self.u[1],3),
-                           linewidth = 0.5,
+            x = np.linspace(0, 1, self.nx)
+            y = np.linspace(0, 1, self.ny)
+            c = 0.5*np.ones((100))
+            w = np.linspace(0, 1, 100)
+            w = zip(w,c)
+            #print(list(w))
+            plt.streamplot(y, x,
+                           self.u[1],
+                           self.u[0],
+                           linewidth = 0.22,
+                           color='k',
                            arrowstyle = '-',
-                           density = 4)
+                           start_points=list(w),
+                           density = 30)
 
             filename = self.png_dir+'u_stream_'+str(self.output_it)+'.png'
             plt.axis('off')
+            plt.gca().set_aspect('equal')
             plt.savefig(filename,
                         dpi=self.dpi)
             self.trim_white(filename)
