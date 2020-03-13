@@ -775,7 +775,7 @@ class Lattice:
         self.rho_right *= rho_lbm
 
         for j in range(self.ny):
-            pt             = self.lattice_coords(0, j)
+            pt               = self.lattice_coords(0, j)
             self.u_left[:,j] = u_lbm*self.poiseuille(pt)
 
     ### ************************************************
