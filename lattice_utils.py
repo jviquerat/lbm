@@ -362,6 +362,13 @@ class Lattice:
         self.u[0,:,ly] = self.u_top[0,:]
         self.u[1,:,ly] = self.u_top[1,:]
 
+        self.rho[:,0] = (self.g[0,:,0] +
+                         self.g[1,:,0] +
+                         self.g[2,:,0] +
+                     2.0*self.g[3,:,0] +
+                     2.0*self.g[5,:,0] +
+                     2.0*self.g[7,:,0] )/(1.0 + self.u[1,:,ly])
+
         self.g[4,:,ly] = (self.g_eq[4,:,ly] +
                           self.g   [3,:,ly] -
                           self.g_eq[3,:,ly] )
@@ -398,7 +405,7 @@ class Lattice:
                          self.g[2,:,0] +
                      2.0*self.g[4,:,0] +
                      2.0*self.g[6,:,0] +
-                     2.0*self.g[8,:,0] )/(1.0 - self.u[0,:,0])
+                     2.0*self.g[8,:,0] )/(1.0 - self.u[1,:,0])
 
         self.g[3,:,0] = (self.g_eq[3,:,0] +
                          self.g   [4,:,0] -
