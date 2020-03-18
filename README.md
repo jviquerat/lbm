@@ -1,7 +1,7 @@
 # lbm
 A simple lattice-Boltzmann code for simple 2D channel applications
 
-![animation](https://user-images.githubusercontent.com/44053700/73072734-0bbb0f80-3eb6-11ea-8703-15145838ede7.gif)
+<!---- ![animation](https://user-images.githubusercontent.com/44053700/73072734-0bbb0f80-3eb6-11ea-8703-15145838ede7.gif) -->
 
 ## Contents
 
@@ -31,7 +31,7 @@ A simple driven cavity in unit square.
 
 ## Poiseuille with obstacle
 
-As of now, it is limited to channel flows with an obstacle. The ```Shape``` is used to generate random shapes (or cylinder, or any shape that can be read from an in-house ```.csv``` format, see here https://github.com/jviquerat/bezier_shapes). The lattice is then generated, the given shape being centered on ```(0,0)```.
+<!--- As of now, it is limited to channel flows with an obstacle. The ```Shape``` is used to generate random shapes (or cylinder, or any shape that can be read from an in-house ```.csv``` format, see here https://github.com/jviquerat/bezier_shapes). The lattice is then generated, the given shape being centered on ```(0,0)```. -->
 
 ## Running
 
