@@ -46,7 +46,7 @@ class Lattice:
         self.ly         = self.ny - 1
         self.q          = 9
         self.Cs         = 1.0/math.sqrt(3.0)
-        self.Re_lbm     = self.u_lbm*self.L_lbm/self.nu_lbm
+        #self.Re_lbm     = self.u_lbm*self.L_lbm/self.nu_lbm
 
         # Output dirs
         time             = datetime.now().strftime('%Y-%m-%d_%H_%M_%S')
@@ -119,6 +119,10 @@ class Lattice:
         print('# Re_lbm     = '+str(self.Re_lbm))
         print('# tau_p_lbm  = '+str(self.tau_p_lbm))
         print('# tau_m_lbm  = '+str(self.tau_m_lbm))
+        print('# dt         = '+str(self.dt))
+        print('# dx         = '+str(self.dx))
+        print('# nx         = '+str(self.nx))
+        print('# ny         = '+str(self.ny))
 
     ### ************************************************
     ### Compute macroscopic fields
@@ -132,7 +136,7 @@ class Lattice:
     def macro_density(self):
 
         # Compute density
-        self.rho = np.sum(self.g, axis=0)
+        self.rho[:,:] = np.sum(self.g[:,:,:], axis=0)
 
     ### ************************************************
     ### Compute macroscopic velocity
@@ -166,19 +170,22 @@ class Lattice:
     ### TRT collision operator
     def trt_collisions(self):
 
-        #self.g_up = self.g - (1.0/self.tau_lbm)*(self.g - self.g_eq)
+        # BGK, switch to it by de-commenting this line
+        # and commenting all lines below
+        self.g_up = self.g - (1.0/self.tau_lbm)*(self.g - self.g_eq)
 
         # Compute g_p = g_p - g_eq_p
         #     and g_m = g_m - g_eq_m
-        self.g_p = 0.5*(self.g[:,:,:]    + self.g[self.ns[:],:,:] \
-                     - (self.g_eq[:,:,:] + self.g_eq[self.ns[:],:,:]))
-        self.g_m = 0.5*(self.g[:,:,:]    - self.g[self.ns[:],:,:] \
-                     - (self.g_eq[:,:,:] - self.g_eq[self.ns[:],:,:]))
-        self.g_m[0,:,:] += 0.5*(self.g[0,:,:] - self.g_eq[0,:,:])
+        # self.g_p = 0.5*(self.g[:,:,:]    + self.g[self.ns[:],:,:] \
+        #              - (self.g_eq[:,:,:] + self.g_eq[self.ns[:],:,:]))
+        # self.g_m = 0.5*(self.g[:,:,:]    - self.g[self.ns[:],:,:] \
+        #              - (self.g_eq[:,:,:] - self.g_eq[self.ns[:],:,:]))
+        # self.g_p[0,:,:] = 0.5*(self.g[0,:,:] - self.g_eq[0,:,:])
+        # self.g_m[0,:,:] = 0.0
 
-        # Compute collisions
-        self.g_up = self.g - (1.0/self.tau_p_lbm)*self.g_p \
-                          - (1.0/self.tau_m_lbm)*self.g_m
+        # # Compute collisions
+        # self.g_up = self.g - (1.0/self.tau_p_lbm)*self.g_p \
+        #                    - (1.0/self.tau_m_lbm)*self.g_m
 
     ### ************************************************
     ### Stream distribution
@@ -225,7 +232,7 @@ class Lattice:
 
     ### ************************************************
     ### Obstacle halfway bounce-back no-slip b.c.
-    def bounce_back_obstacle(self, g, g_up):
+    def bounce_back_obstacle(self):
 
         for k in range(len(self.boundary)):
             i = self.boundary[k,0]
@@ -239,7 +246,7 @@ class Lattice:
                 w  = self.lattice[ii,jj]
 
                 # Apply if neighbor is solid
-                if w: self.g[qb,i,j] = self.g[q,i,j]
+                if w: self.g[qb,i,j] = self.g_up[q,i,j]
 
     ### ************************************************
     ### Zou-He left wall velocity b.c.
@@ -322,7 +329,7 @@ class Lattice:
         lx = self.lx
         ly = self.ly
 
-        self.rho[lx,:] = self.rho_right[:]
+        #self.rho[lx,:] = self.rho_right[:]
         self.u[1,lx,:] = self.u_right[1,:]
 
         self.u[0,lx,:] = (self.g[0,lx,:] +
@@ -632,10 +639,8 @@ class Lattice:
     ### Add obstacle
     def add_obstacle(self, polygon):
 
-        # Because we loop on the lattice left-right and top-down,
-        # we need to flip the polygon up-down
+        # Copy input polygon
         poly         = polygon.copy()
-        #poly[:,1]   *= -1.0
         self.polygon = poly
 
         # Compute polygon bnds
@@ -701,8 +706,8 @@ class Lattice:
         # Compute and return the coordinates of the lattice node (i,j)
         dx = (self.x_max - self.x_min)/(self.nx - 1)
         dy = (self.y_max - self.y_min)/(self.ny - 1)
-        x  = i*dx
-        y  = j*dy
+        x  = self.x_min + i*dx
+        y  = self.y_min + j*dy
 
         return [x, y]
 

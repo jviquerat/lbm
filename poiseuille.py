@@ -10,27 +10,31 @@ from lattice_utils import *
 ###############################################
 
 # Domain size
-x_min       = 0.0
-x_max       = 5.0
-y_min       = 0.0
-y_max       = 1.0
+x_min       =-0.2
+x_max       = 1.0
+y_min       =-0.2
+y_max       = 0.2
 
-### Free parameters
+# Free parameters
+# L_lbm corresponds to y   length
+# u_lbm corresponds to max velocity
 Re_lbm      = 10.0
-u_lbm       = 0.05
-L_lbm       = 500
+u_lbm       = 0.03
+L_lbm       = 100
 t_max       = 2.0
 
 # Deduce other parameters
 Cs          = 1.0/math.sqrt(3.0)
-nx          = L_lbm
-nu_lbm      = u_lbm*L_lbm/Re_lbm
+ny          = L_lbm
+u_avg       = 2.0*u_lbm/3.0
+nu_lbm      = u_avg*L_lbm/Re_lbm
 tau_lbm     = 0.5 + nu_lbm/(Cs**2)
 rho_lbm     = 1.0
 dt          = Re_lbm*nu_lbm/L_lbm**2
 it_max      = math.floor(t_max/dt)
-dx          = (x_max-x_min)/nx
-ny          = math.floor(nx*(y_max-y_min)/(x_max-x_min))
+dx          = (y_max-y_min)/ny
+dy          = dx
+nx          = math.floor(ny*(x_max-x_min)/(y_max-y_min))
 
 # Other parameters
 output_freq = 500
