@@ -1,7 +1,7 @@
 # lbm
 A simple lattice-Boltzmann code for simple 2D channel applications
 
-![animation](https://user-images.githubusercontent.com/44053700/73072734-0bbb0f80-3eb6-11ea-8703-15145838ede7.gif)
+<!---- ![animation](https://user-images.githubusercontent.com/44053700/73072734-0bbb0f80-3eb6-11ea-8703-15145838ede7.gif) -->
 
 ## Contents
 
