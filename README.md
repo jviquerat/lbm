@@ -15,7 +15,7 @@ Below are some examples ran with the code. The related cases are available in th
 
 ## Lid-driven cavity
 
-A simple driven cavity in unit square.
+A simple driven cavity in unit square. Launch it by running ```python3 cavity.py```
 
 *Top*: Re=100  
 *Bottom*: Re=1000  
@@ -28,6 +28,8 @@ A simple driven cavity in unit square.
 <img width="280" alt="" src="https://user-images.githubusercontent.com/44053700/76447194-8ab5ca00-63c8-11ea-8d80-0fc7f9c17ed2.gif"> <img width="280" alt="" src="https://user-images.githubusercontent.com/44053700/76447230-9a351300-63c8-11ea-8722-35e1eb2151c0.png"> <img width="280" alt="" src="https://user-images.githubusercontent.com/44053700/76447238-9e613080-63c8-11ea-8e60-6f77248518a2.png">
 
 ## Poiseuille flow
+
+Launch it by running ```python3 poiseuille.py```
 
 ## Poiseuille with obstacle
 
