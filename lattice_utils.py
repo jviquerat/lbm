@@ -172,20 +172,20 @@ class Lattice:
 
         # BGK, switch to it by de-commenting this line
         # and commenting all lines below
-        self.g_up = self.g - (1.0/self.tau_lbm)*(self.g - self.g_eq)
+        #self.g_up = self.g - (1.0/self.tau_lbm)*(self.g - self.g_eq)
 
         # Compute g_p = g_p - g_eq_p
         #     and g_m = g_m - g_eq_m
-        # self.g_p = 0.5*(self.g[:,:,:]    + self.g[self.ns[:],:,:] \
-        #              - (self.g_eq[:,:,:] + self.g_eq[self.ns[:],:,:]))
-        # self.g_m = 0.5*(self.g[:,:,:]    - self.g[self.ns[:],:,:] \
-        #              - (self.g_eq[:,:,:] - self.g_eq[self.ns[:],:,:]))
-        # self.g_p[0,:,:] = 0.5*(self.g[0,:,:] - self.g_eq[0,:,:])
-        # self.g_m[0,:,:] = 0.0
+        self.g_p = 0.5*(self.g[:,:,:]    + self.g[self.ns[:],:,:] \
+                     - (self.g_eq[:,:,:] + self.g_eq[self.ns[:],:,:]))
+        self.g_m = 0.5*(self.g[:,:,:]    - self.g[self.ns[:],:,:] \
+                     - (self.g_eq[:,:,:] - self.g_eq[self.ns[:],:,:]))
+        self.g_p[0,:,:] = 0.5*(self.g[0,:,:] - self.g_eq[0,:,:])
+        self.g_m[0,:,:] = 0.0
 
-        # # Compute collisions
-        # self.g_up = self.g - (1.0/self.tau_p_lbm)*self.g_p \
-        #                    - (1.0/self.tau_m_lbm)*self.g_m
+        # Compute collisions
+        self.g_up = self.g - (1.0/self.tau_p_lbm)*self.g_p \
+                           - (1.0/self.tau_m_lbm)*self.g_m
 
     ### ************************************************
     ### Stream distribution
@@ -329,7 +329,7 @@ class Lattice:
         lx = self.lx
         ly = self.ly
 
-        #self.rho[lx,:] = self.rho_right[:]
+        self.rho[lx,:] = self.rho_right[:]
         self.u[1,lx,:] = self.u_right[1,:]
 
         self.u[0,lx,:] = (self.g[0,lx,:] +

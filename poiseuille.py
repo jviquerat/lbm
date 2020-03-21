@@ -20,13 +20,13 @@ y_max       = 0.2
 # u_lbm corresponds to max velocity
 Re_lbm      = 10.0
 u_lbm       = 0.03
-L_lbm       = 100
+L_lbm       = 150
 t_max       = 2.0
 
 # Deduce other parameters
 Cs          = 1.0/math.sqrt(3.0)
 ny          = L_lbm
-u_avg       = 2.0*u_lbm/3.0
+u_avg       = u_lbm/2.0
 nu_lbm      = u_avg*L_lbm/Re_lbm
 tau_lbm     = 0.5 + nu_lbm/(Cs**2)
 rho_lbm     = 1.0
