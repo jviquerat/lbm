@@ -18,10 +18,10 @@ y_max       = 0.2
 # Free parameters
 # L_lbm corresponds to y   length
 # u_lbm corresponds to max velocity
-Re_lbm      = 10.0
-u_lbm       = 0.03
+Re_lbm      = 100.0
+u_lbm       = 0.1
 L_lbm       = 100
-t_max       = 5.0
+t_max       = 10.0
 
 # Deduce other parameters
 Cs          = 1.0/math.sqrt(3.0)
@@ -40,6 +40,9 @@ nx          = math.floor(ny*(x_max-x_min)/(y_max-y_min))
 output_freq = 500
 dpi         = 200
 
+# Poiseuille imposition time
+sigma       = math.floor(it_max/10)
+
 # Initialize lattice
 lattice = Lattice(nx      = nx,
                   ny      = ny,
@@ -54,7 +57,7 @@ lattice = Lattice(nx      = nx,
                   dpi     = dpi)
 
 # Initialize fields
-lattice.set_poiseuille(u_lbm, rho_lbm)
+lattice.set_poiseuille(u_lbm, rho_lbm, 0, sigma)
 
 # Set initial distributions
 lattice.equilibrium()
@@ -63,6 +66,8 @@ lattice.g = lattice.g_eq.copy()
 # Solve
 bar = progress.bar.Bar('Solving...', max=it_max)
 for it in range(it_max+1):
+
+    lattice.set_poiseuille(u_lbm, rho_lbm, it, sigma)
 
     # Compute macroscopic fields
     lattice.macro()
@@ -82,6 +87,9 @@ for it in range(it_max+1):
     # Streaming
     lattice.stream()
 
+    # Compute equilibrium state
+    lattice.equilibrium()
+
     # Boundary conditions
     lattice.zou_he_bottom_wall_velocity()
     lattice.zou_he_left_wall_velocity()
@@ -91,22 +99,6 @@ for it in range(it_max+1):
     lattice.zou_he_top_left_corner()
     lattice.zou_he_top_right_corner()
     lattice.zou_he_bottom_right_corner()
-
-    lx = lattice.lx
-    ly = lattice.ly
-
-    if(any(lattice.g[1, 0,  :] == -1.0)): print('stop')
-    if(any(lattice.g[2, lx, :]  == -1.0)): print('stop')
-    if(any(lattice.g[3, :,  0]  == -1.0)): print('stop')
-    if(any(lattice.g[4, :,  ly] == -1.0)): print('stop')
-    if(any(lattice.g[5, 0,  :]  == -1.0)): print('stop')
-    if(any(lattice.g[5, :,  0]  == -1.0)): print('stop')
-    if(any(lattice.g[6, lx, :]  == -1.0)): print('stop')
-    if(any(lattice.g[6, :,  ly] == -1.0)): print('stop')
-    if(any(lattice.g[7, lx, :]  == -1.0)): print('stop')
-    if(any(lattice.g[7, :,  0]  == -1.0)): print('stop')
-    if(any(lattice.g[8, 0,  :]  == -1.0)): print('stop')
-    if(any(lattice.g[8, :,  ly] == -1.0)): print('stop')
 
     # Increment bar
     bar.next()

@@ -198,24 +198,6 @@ class Lattice:
                                 self.g_up[q,:,:],self.c[q,0],axis=0),
                                                  self.c[q,1],axis=1)
 
-        # Safeguard : set to 0 the distributions that require
-        # a boundary condition after streaming
-        lx = self.lx
-        ly = self.ly
-
-        self.g[1, 0,  :]  = -1.0
-        self.g[2, lx, :]  = -1.0
-        self.g[3, :,  0]  = -1.0
-        self.g[4, :,  ly] = -1.0
-        self.g[5, 0,  :]  = -1.0
-        self.g[5, :,  0]  = -1.0
-        self.g[6, lx, :]  = -1.0
-        self.g[6, :,  ly] = -1.0
-        self.g[7, lx, :]  = -1.0
-        self.g[7, :,  0]  = -1.0
-        self.g[8, 0,  :]  = -1.0
-        self.g[8, :,  ly] = -1.0
-
         # self.g[:,self.lattice]    = self.g_s[:,self.lattice]
 
     ### ************************************************
@@ -793,7 +775,7 @@ class Lattice:
 
     ### ************************************************
     ### Set poiseuille fields
-    def set_poiseuille(self, u_lbm, rho_lbm):
+    def set_poiseuille(self, u_lbm, rho_lbm, it, sigma):
 
         lx              = self.lx
         ly              = self.ly
@@ -807,9 +789,9 @@ class Lattice:
 
         for j in range(self.ny):
             pt               = self.lattice_coords(0, j)
-            self.u_left[:,j] = u_lbm*self.poiseuille(pt)
-            for i in range(self.nx):
-                self.u[:,i,j] = u_lbm*self.poiseuille(pt)
+            self.u_left[:,j] = u_lbm*self.poiseuille(pt, it, sigma)
+            #for i in range(self.nx):
+            #    self.u[:,i,j] = u_lbm*self.poiseuille(pt)
 
     ### ************************************************
     ### Set driven cavity fields
@@ -829,13 +811,17 @@ class Lattice:
 
     ### ************************************************
     ### Poiseuille flow
-    def poiseuille(self, pt):
+    def poiseuille(self, pt, it, sigma):
 
         x    = pt[0]
         y    = pt[1]
         H    = self.y_max - self.y_min
         u    = np.zeros(2)
         u[0] = 4.0*y*(H-y)/H**2
+
+        val  = it
+        ret  = (1.0 - math.exp(-val**2/(2.0*sigma**2)))
+        u   *= ret
 
         return u
 
@@ -848,7 +834,7 @@ class Lattice:
 
         for j in range(self.ny):
             pt   = self.lattice_coords(nx,j)
-            u_ex = self.poiseuille(pt)
+            u_ex = self.poiseuille(pt, 1.0e10, 1)
             u    = self.u[:,nx,j]
 
             u_error[0,j] = u[0]/u_lbm
