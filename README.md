@@ -23,7 +23,7 @@ A simple driven cavity in unit square. Launch it by running ```python3 cavity.py
 *Center*: velocity streamlines at convergence.   
 *Right*: comparison of u_x = f(y) at the center of the domain with reference data from Ghia
 
-<img width="280" alt="" src="https://user-images.githubusercontent.com/44053700/76219774-a7aa9b80-6216-11ea-87ec-c5fb3a64c851.gif"> <img width="280" alt="" src="https://user-images.githubusercontent.com/44053700/76288545-4088f780-62a7-11ea-9893-dd0a19339bc5.png"> <img width="280" alt="" src="https://user-images.githubusercontent.com/44053700/76288543-3ebf3400-62a7-11ea-9e2b-13e0f6327c89.png">
+<img width="280" alt="" src="https://user-images.githubusercontent.com/44053700/77251271-bac55e80-6c4d-11ea-9c75-bdc10da0fef9.gif"> <img width="280" alt="" src="https://user-images.githubusercontent.com/44053700/76288545-4088f780-62a7-11ea-9893-dd0a19339bc5.png"> <img width="280" alt="" src="https://user-images.githubusercontent.com/44053700/76288543-3ebf3400-62a7-11ea-9e2b-13e0f6327c89.png">
 
 <img width="280" alt="" src="https://user-images.githubusercontent.com/44053700/76447194-8ab5ca00-63c8-11ea-8d80-0fc7f9c17ed2.gif"> <img width="280" alt="" src="https://user-images.githubusercontent.com/44053700/76447230-9a351300-63c8-11ea-8722-35e1eb2151c0.png"> <img width="280" alt="" src="https://user-images.githubusercontent.com/44053700/76447238-9e613080-63c8-11ea-8e60-6f77248518a2.png">
 
