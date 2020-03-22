@@ -790,8 +790,6 @@ class Lattice:
         for j in range(self.ny):
             pt               = self.lattice_coords(0, j)
             self.u_left[:,j] = u_lbm*self.poiseuille(pt, it, sigma)
-            #for i in range(self.nx):
-            #    self.u[:,i,j] = u_lbm*self.poiseuille(pt)
 
     ### ************************************************
     ### Set driven cavity fields

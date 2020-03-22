@@ -12,7 +12,7 @@ from lattice_utils import *
 ### Free parameters
 Re_lbm      = 100.0
 u_lbm       = 0.03
-L_lbm       = 100
+L_lbm       = 200
 t_max       = 20.0
 
 # Deduce other parameters
