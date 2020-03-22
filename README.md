@@ -29,7 +29,9 @@ A simple driven cavity in unit square. Launch it by running ```python3 cavity.py
 
 ## Poiseuille flow
 
-Launch it by running ```python3 poiseuille.py```
+The establishment of a Poiseuille flow in a channel at Re=100. Launch it by running ```python3 poiseuille.py```
+
+<img width="550" alt="" src="https://user-images.githubusercontent.com/44053700/77248108-4b447480-6c37-11ea-8396-31207aad9bc8.gif"> <img width="280" alt="" src="https://user-images.githubusercontent.com/44053700/77248104-47185700-6c37-11ea-8e2d-693e34a0132c.png">
 
 ## Poiseuille with obstacle
 
@@ -39,4 +41,4 @@ Launch it by running ```python3 poiseuille.py```
 
 To run a simulation, adjust the parameters in ```start.py```, then run ```python3 start.py```. A results folder will be generated in ```./results/``` with the current date and time. The ```png/``` folder will contain outputs of the velocity norm over the domain. To generate a video out of the png files, you can use the ```convert``` command as follows:
 
-```convert -delay 10 -loop 0 'vel_%d.png'[0-100] animation.gif```
+```convert -delay 10 -loop 0 'u_norm_%d.png'[0-100] animation.gif```
