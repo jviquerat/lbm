@@ -258,7 +258,8 @@ def generate_cylinder_pts(n_pts):
     pts = np.zeros([n_pts, 2])
     ang = 2.0*math.pi/n_pts
     for i in range(0,n_pts):
-        pts[i,:] = [math.cos(float(i)*ang),math.sin(float(i)*ang)]
+        pts[i,:] = [0.5*math.cos(float(i)*ang),
+                    0.5*math.sin(float(i)*ang)]
 
     return pts
 
@@ -269,11 +270,13 @@ def generate_square_pts(n_pts):
         print('You should have n_pts = 4 for square')
         exit()
 
-    pts      = np.zeros([n_pts, 2])
-    pts[0,:] = [ 1.0, 1.0]
-    pts[1,:] = [-1.0, 1.0]
-    pts[2,:] = [-1.0,-1.0]
-    pts[3,:] = [ 1.0,-1.0]
+    pts       = np.zeros([n_pts, 2])
+    pts[0,:]  = [ 1.0, 1.0]
+    pts[1,:]  = [-1.0, 1.0]
+    pts[2,:]  = [-1.0,-1.0]
+    pts[3,:]  = [ 1.0,-1.0]
+
+    pts[:,:] *= 0.5
 
     return pts
 

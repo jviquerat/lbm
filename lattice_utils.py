@@ -213,18 +213,16 @@ class Lattice:
             j = self.boundary[k,1]
 
             for q in range(1,self.q):
-                qb        = self.ns[q]
-                dc        = self.c[q, :]
-                ic        = self.c[qb,:]
-                ii        = i + dc[0]
-                jj        = j + dc[1]
+                c         = self.c[q, :]
+                ii        = i + c[0]
+                jj        = j + c[1]
                 w         = self.lattice[ii,jj]
-                df        =-self.g[qb,i,j]*ic[:] + self.g_up[q,i,j]*dc[:]
+                df        = 2.0*self.g[q,i,j]*c[:]
                 force[:] += w*df
 
         # Normalize coefficient
         force *= self.Cf
-        force *= 1.0/(0.5*R_ref*L_ref*U_ref**2)
+        force *= 2.0/(R_ref*L_ref*U_ref**2)
 
         # Write to file
         filename = self.output_dir+'drag_lift'
@@ -238,16 +236,18 @@ class Lattice:
         for k in range(len(self.boundary)):
             i = self.boundary[k,0]
             j = self.boundary[k,1]
+
             for q in range(1,self.q):
                 qb = self.ns[q]
-                dc = self.c[q, :]
-                ic = self.c[qb,:]
-                ii = i + dc[0]
-                jj = j + dc[1]
+                c  = self.c[q, :]
+                ii = i + c[0]
+                jj = j + c[1]
                 w  = self.lattice[ii,jj]
 
                 # Apply if neighbor is solid
-                if w: self.g[qb,i,j] = self.g_up[q,i,j]
+                if w: self.g[q,i,j] = self.g_up[qb,i,j]
+
+        self.u[:,self.lattice] = 0.0
 
     ### ************************************************
     ### Zou-He left wall velocity b.c.
@@ -686,7 +686,7 @@ class Lattice:
 
         print('Obstacle area: '+str(self.area))
 
-        # Re-process obstacle to keep first solid nodes only
+        # Re-process obstacle to keep first wet nodes only
         for k in range(obstacle.shape[0]):
             i = obstacle[k,0]
             j = obstacle[k,1]
@@ -746,7 +746,15 @@ class Lattice:
         # Add obstacle border
         lat = self.lattice.copy()
         lat = lat.astype(float)
-        #lat[self.boundary[:,1],self.boundary[:,0]] += 2.0
+
+        for k in range(self.boundary.shape[0]):
+            i = self.boundary[k,0]
+            j = self.boundary[k,1]
+
+            if (self.lattice[i,j]):
+                lat[i,j] += 1.0
+            else:
+                lat[i,j] += 2.0
 
         # Plot and save image of lattice
         filename = self.output_dir+self.name+'.png'
@@ -774,8 +782,8 @@ class Lattice:
         cp.save(filename)
 
     ### ************************************************
-    ### Set poiseuille fields
-    def set_poiseuille(self, u_lbm, rho_lbm, it, sigma):
+    ### Set inlet poiseuille fields
+    def set_inlet_poiseuille(self, u_lbm, rho_lbm, it, sigma):
 
         lx              = self.lx
         ly              = self.ly
@@ -790,6 +798,27 @@ class Lattice:
         for j in range(self.ny):
             pt               = self.lattice_coords(0, j)
             self.u_left[:,j] = u_lbm*self.poiseuille(pt, it, sigma)
+
+    ### ************************************************
+    ### Set full poiseuille fields
+    def set_full_poiseuille(self, u_lbm, rho_lbm):
+
+        lx              = self.lx
+        ly              = self.ly
+
+        self.u_left     = np.zeros((2, self.ny))
+        self.u_right    = np.zeros((2, self.ny))
+        self.u_top      = np.zeros((2, self.nx))
+        self.u_bot      = np.zeros((2, self.nx))
+        self.rho_right  = np.ones(self.ny)
+        self.rho_right *= rho_lbm
+
+        for j in range(self.ny):
+            for i in range(self.nx):
+                pt               = self.lattice_coords(i, j)
+                u                = u_lbm*self.poiseuille(pt, 1, 1.0e-10)
+                self.u_left[:,j] = u
+                self.u[:,i,j]    = u
 
     ### ************************************************
     ### Set driven cavity fields
@@ -815,7 +844,7 @@ class Lattice:
         y    = pt[1]
         H    = self.y_max - self.y_min
         u    = np.zeros(2)
-        u[0] = 4.0*y*(H-y)/H**2
+        u[0] = 4.0*(self.y_max-y)*(y-self.y_min)/H**2
 
         val  = it
         ret  = (1.0 - math.exp(-val**2/(2.0*sigma**2)))
