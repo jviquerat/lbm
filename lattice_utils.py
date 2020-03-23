@@ -172,20 +172,20 @@ class Lattice:
 
         # BGK, switch to it by de-commenting this line
         # and commenting all lines below
-        #self.g_up = self.g - (1.0/self.tau_lbm)*(self.g - self.g_eq)
+        self.g_up = self.g - (1.0/self.tau_lbm)*(self.g - self.g_eq)
 
         # Compute g_p = g_p - g_eq_p
         #     and g_m = g_m - g_eq_m
-        self.g_p = 0.5*(self.g[:,:,:]    + self.g[self.ns[:],:,:] \
-                     - (self.g_eq[:,:,:] + self.g_eq[self.ns[:],:,:]))
-        self.g_m = 0.5*(self.g[:,:,:]    - self.g[self.ns[:],:,:] \
-                     - (self.g_eq[:,:,:] - self.g_eq[self.ns[:],:,:]))
-        self.g_p[0,:,:] = 0.5*(self.g[0,:,:] - self.g_eq[0,:,:])
-        self.g_m[0,:,:] = 0.0
+        #self.g_p = 0.5*(self.g[:,:,:]    + self.g[self.ns[:],:,:] \
+        #             - (self.g_eq[:,:,:] + self.g_eq[self.ns[:],:,:]))
+        #self.g_m = 0.5*(self.g[:,:,:]    - self.g[self.ns[:],:,:] \
+        #             - (self.g_eq[:,:,:] - self.g_eq[self.ns[:],:,:]))
+        #self.g_p[0,:,:] = self.g[0,:,:] - self.g_eq[0,:,:]
+        #self.g_m[0,:,:] = 0.0
 
         # Compute collisions
-        self.g_up = self.g - (1.0/self.tau_p_lbm)*self.g_p \
-                           - (1.0/self.tau_m_lbm)*self.g_m
+        #self.g_up = self.g - (1.0/self.tau_p_lbm)*self.g_p \
+        #                   - (1.0/self.tau_m_lbm)*self.g_m
 
     ### ************************************************
     ### Stream distribution
@@ -205,29 +205,38 @@ class Lattice:
     def drag_lift(self, it, R_ref, U_ref, L_ref):
 
         # Initialize
-        force = np.zeros((2))
+        force_x = 0.0
+        force_y = 0.0
 
         # Loop over obstacle array
         for k in range(len(self.boundary)):
             i = self.boundary[k,0]
             j = self.boundary[k,1]
+            g = self.g_up[:,i,j]
 
             for q in range(1,self.q):
-                c         = self.c[q, :]
-                ii        = i + c[0]
-                jj        = j + c[1]
-                w         = self.lattice[ii,jj]
-                df        = 2.0*self.g[q,i,j]*c[:]
-                force[:] += w*df
+                c_x      = self.c[q,0]
+                c_y      = self.c[q,1]
+                ii       = i + c_x
+                jj       = j + c_y
+                w        = float(self.lattice[ii,jj])
+                force_x += 2.0*w*g[q]*c_x
+                force_y += 2.0*w*g[q]*c_y
 
         # Normalize coefficient
-        force *= self.Cf
-        force *= 2.0/(R_ref*L_ref*U_ref**2)
+        #force *= self.Cf
+        force_x *= 2.0/(R_ref*L_ref*U_ref**2)
+        force_y *= 2.0/(R_ref*L_ref*U_ref**2)
+
+        print('\n',force_x, force_y)
 
         # Write to file
         filename = self.output_dir+'drag_lift'
         with open(filename, 'a') as f:
-            f.write('{} {} {}\n'.format(it*self.dt, force[0], force[1]))
+            f.write('{} {} {}\n'.format(it*self.dt, force_x, force_y))
+
+
+        exit()
 
     ### ************************************************
     ### Obstacle halfway bounce-back no-slip b.c.

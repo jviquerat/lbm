@@ -19,7 +19,7 @@ shape_size     = 0.1
 
 # Domain size
 x_min       =-0.2
-x_max       = 2.0
+x_max       = 1.0
 y_min       =-0.2
 y_max       = 0.21
 
@@ -28,7 +28,7 @@ y_max       = 0.21
 # u_lbm corresponds to max velocity
 Re_lbm      = 20.0
 u_lbm       = 0.025
-L_lbm       = 50
+L_lbm       = 100
 t_max       = 1.0
 
 # Deduce other parameters
@@ -48,6 +48,9 @@ nx          = math.floor(ny*(x_max-x_min)/(y_max-y_min))
 # Other parameters
 output_freq = 500
 dpi         = 200
+
+# Poiseuille imposition style
+sigma       = math.floor(it_max/10)
 
 # Initialize lattice
 lattice = Lattice(nx      = nx,
@@ -102,7 +105,7 @@ lattice.add_obstacle(shape.curve_pts)
 lattice.generate_image()
 
 # Initialize fields
-lattice.set_full_poiseuille(u_lbm, rho_lbm)
+lattice.set_inlet_poiseuille(u_lbm, rho_lbm, 0, sigma)
 lattice.u[:,lattice.lattice] = 0.0
 
 # Set initial distributions
@@ -112,6 +115,9 @@ lattice.g = lattice.g_eq.copy()
 # Solve
 bar = progress.bar.Bar('Solving...', max=it_max)
 for it in range(it_max+1):
+
+    # Progressively impose Poiseuille
+    lattice.set_inlet_poiseuille(u_lbm, rho_lbm, it, sigma)
 
     # Compute macroscopic fields
     lattice.macro()
@@ -128,6 +134,9 @@ for it in range(it_max+1):
     # Collisions
     lattice.trt_collisions()
 
+    # Compute drag/lift
+    lattice.drag_lift(it, rho_lbm, u_avg, D_lbm)
+
     # Streaming
     lattice.stream()
 
@@ -141,9 +150,6 @@ for it in range(it_max+1):
     lattice.zou_he_top_left_corner()
     lattice.zou_he_top_right_corner()
     lattice.zou_he_bottom_right_corner()
-
-    # Compute drag/lift
-    lattice.drag_lift(it, rho_lbm, u_avg, D_lbm)
 
     # Increment bar
     bar.next()
