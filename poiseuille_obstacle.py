@@ -21,7 +21,7 @@ shape_size     = 0.1
 x_min       =-0.2
 x_max       = 1.0
 y_min       =-0.2
-y_max       = 0.21
+y_max       = 0.3
 
 # Free parameters
 # L_lbm correponds to y length

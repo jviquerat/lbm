@@ -1,6 +1,7 @@
 # Generic imports
 import os
 import math
+import random
 import progress.bar
 import numpy             as np
 import matplotlib        as mplt
@@ -172,20 +173,20 @@ class Lattice:
 
         # BGK, switch to it by de-commenting this line
         # and commenting all lines below
-        self.g_up = self.g - (1.0/self.tau_lbm)*(self.g - self.g_eq)
+        #self.g_up = self.g - (1.0/self.tau_lbm)*(self.g - self.g_eq)
 
         # Compute g_p = g_p - g_eq_p
         #     and g_m = g_m - g_eq_m
-        #self.g_p = 0.5*(self.g[:,:,:]    + self.g[self.ns[:],:,:] \
-        #             - (self.g_eq[:,:,:] + self.g_eq[self.ns[:],:,:]))
-        #self.g_m = 0.5*(self.g[:,:,:]    - self.g[self.ns[:],:,:] \
-        #             - (self.g_eq[:,:,:] - self.g_eq[self.ns[:],:,:]))
-        #self.g_p[0,:,:] = self.g[0,:,:] - self.g_eq[0,:,:]
-        #self.g_m[0,:,:] = 0.0
+        self.g_p = 0.5*(self.g[:,:,:]    + self.g[self.ns[:],:,:] \
+                     - (self.g_eq[:,:,:] + self.g_eq[self.ns[:],:,:]))
+        self.g_m = 0.5*(self.g[:,:,:]    - self.g[self.ns[:],:,:] \
+                     - (self.g_eq[:,:,:] - self.g_eq[self.ns[:],:,:]))
+        self.g_p[0,:,:] = self.g[0,:,:] - self.g_eq[0,:,:]
+        self.g_m[0,:,:] = 0.0
 
         # Compute collisions
-        #self.g_up = self.g - (1.0/self.tau_p_lbm)*self.g_p \
-        #                   - (1.0/self.tau_m_lbm)*self.g_m
+        self.g_up = self.g - (1.0/self.tau_p_lbm)*self.g_p \
+                           - (1.0/self.tau_m_lbm)*self.g_m
 
     ### ************************************************
     ### Stream distribution
@@ -198,45 +199,35 @@ class Lattice:
                                 self.g_up[q,:,:],self.c[q,0],axis=0),
                                                  self.c[q,1],axis=1)
 
-        # self.g[:,self.lattice]    = self.g_s[:,self.lattice]
-
     ### ************************************************
     ### Compute drag and lift
     def drag_lift(self, it, R_ref, U_ref, L_ref):
 
         # Initialize
-        force_x = 0.0
-        force_y = 0.0
+        fx = 0.0
+        fy = 0.0
 
         # Loop over obstacle array
         for k in range(len(self.boundary)):
-            i = self.boundary[k,0]
-            j = self.boundary[k,1]
-            g = self.g_up[:,i,j]
+            i    = self.boundary[k,0]
+            j    = self.boundary[k,1]
+            g_up = self.g_up[:,i,j]
 
             for q in range(1,self.q):
-                c_x      = self.c[q,0]
-                c_y      = self.c[q,1]
-                ii       = i + c_x
-                jj       = j + c_y
-                w        = float(self.lattice[ii,jj])
-                force_x += 2.0*w*g[q]*c_x
-                force_y += 2.0*w*g[q]*c_y
+                cx  = self.c[q,0]
+                cy  = self.c[q,1]
+                w   = float(self.lattice[i+cx,j+cy])
+                fx += 2.0*w*g_up[q]*cx
+                fy += 2.0*w*g_up[q]*cy
 
         # Normalize coefficient
-        #force *= self.Cf
-        force_x *= 2.0/(R_ref*L_ref*U_ref**2)
-        force_y *= 2.0/(R_ref*L_ref*U_ref**2)
-
-        print('\n',force_x, force_y)
+        Cx = 2.0*fx/(R_ref*L_ref*U_ref**2)
+        Cy = 2.0*fy/(R_ref*L_ref*U_ref**2)
 
         # Write to file
         filename = self.output_dir+'drag_lift'
         with open(filename, 'a') as f:
-            f.write('{} {} {}\n'.format(it*self.dt, force_x, force_y))
-
-
-        exit()
+            f.write('{} {} {}\n'.format(it*self.dt, Cx, Cy))
 
     ### ************************************************
     ### Obstacle halfway bounce-back no-slip b.c.
@@ -661,8 +652,8 @@ class Lattice:
         poly_bnds[3] = np.amax(poly[:,1])
 
         # Declare lattice arrays
-        obstacle      = np.empty((0,2), dtype=int)
-        self.boundary = np.empty((0,2), dtype=int)
+        obstacle = np.empty((0,2), dtype=int)
+        boundary = np.empty((0,2), dtype=int)
 
         # Fill lattice
         bar = progress.bar.Bar('Generating...', max=self.nx*self.ny)
@@ -677,9 +668,9 @@ class Lattice:
                     (pt[1] < poly_bnds[3])):
 
                     if (self.is_inside(poly, pt)):
+                        self.lattice[i,j] = True
                         obstacle = np.append(obstacle,
                                              np.array([[i,j]]), axis=0)
-                        self.lattice[i,j] = True
 
                 bar.next()
         bar.finish()
@@ -695,16 +686,16 @@ class Lattice:
 
         print('Obstacle area: '+str(self.area))
 
-        # Re-process obstacle to keep first wet nodes only
         for k in range(obstacle.shape[0]):
             i = obstacle[k,0]
             j = obstacle[k,1]
             for di in [-1, 0, 1]:
-                for dj in [-1, 0, 1]:
-                    if (not self.lattice[i+di,j+dj]):
-                        self.boundary = np.append(self.boundary,
-                                                  np.array([[i+di,j+dj]]),
-                                                  axis=0)
+               for dj in [-1, 0, 1]:
+                   if (not self.lattice[i+di,j+dj]):
+                       boundary = np.append(boundary,
+                                            np.array([[i+di,j+dj]]), axis=0)
+
+        self.boundary = boundary.copy()
 
         # Printings
         print('Found '+str(self.boundary.shape[0])+' on obstacle boundary')
@@ -759,23 +750,15 @@ class Lattice:
         for k in range(self.boundary.shape[0]):
             i = self.boundary[k,0]
             j = self.boundary[k,1]
-
-            if (self.lattice[i,j]):
-                lat[i,j] += 1.0
-            else:
-                lat[i,j] += 2.0
+            lat[i,j] += 2.0
 
         # Plot and save image of lattice
         filename = self.output_dir+self.name+'.png'
 
-        plt.axis('off')
-        plt.imshow(np.transpose(lat),
-                   cmap = mplt.cm.inferno,
-                   vmin = 0.0,
-                   vmax = 2.0,
-                   interpolation='none')
-        plt.savefig(filename, dpi=200, bbox_inches='tight')
-        plt.close()
+        plt.imsave(filename,
+                   np.transpose(lat),
+                   vmin=-1.0,
+                   vmax= 2.0)
         self.trim_white(filename)
 
     ### ************************************************
