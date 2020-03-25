@@ -94,7 +94,6 @@ class Lattice:
         self.bot   = np.arange(self.q)[np.asarray([ci[1] <0 for ci in c])]
         self.ns    = np.asarray([self.c.tolist().index(
             (-self.c[i]).tolist()) for i in range(self.q)])
-
         # Density arrays
         self.g       = np.zeros((self.q,  self.nx, self.ny))
         self.g_eq    = np.zeros((self.q,  self.nx, self.ny))
@@ -173,20 +172,20 @@ class Lattice:
 
         # BGK, switch to it by de-commenting this line
         # and commenting all lines below
-        self.g_up = self.g - (1.0/self.tau_lbm)*(self.g - self.g_eq)
+        #self.g_up = self.g - (1.0/self.tau_lbm)*(self.g - self.g_eq)
 
         # Compute g_p = g_p - g_eq_p
         #     and g_m = g_m - g_eq_m
-        #self.g_p = 0.5*(self.g[:,:,:]    + self.g[self.ns[:],:,:] \
-        #             - (self.g_eq[:,:,:] + self.g_eq[self.ns[:],:,:]))
-        #self.g_m = 0.5*(self.g[:,:,:]    - self.g[self.ns[:],:,:] \
-        #             - (self.g_eq[:,:,:] - self.g_eq[self.ns[:],:,:]))
-        #self.g_p[0,:,:] = self.g[0,:,:] - self.g_eq[0,:,:]
-        #self.g_m[0,:,:] = 0.0
+        self.g_p = 0.5*(self.g[:,:,:]    + self.g[self.ns[:],:,:] \
+                     - (self.g_eq[:,:,:] + self.g_eq[self.ns[:],:,:]))
+        self.g_m = 0.5*(self.g[:,:,:]    - self.g[self.ns[:],:,:] \
+                     - (self.g_eq[:,:,:] - self.g_eq[self.ns[:],:,:]))
+        self.g_p[0,:,:] = self.g[0,:,:] - self.g_eq[0,:,:]
+        self.g_m[0,:,:] = 0.0
 
         # Compute collisions
-        #self.g_up = self.g - (1.0/self.tau_p_lbm)*self.g_p \
-        #                   - (1.0/self.tau_m_lbm)*self.g_m
+        self.g_up = self.g - (1.0/self.tau_p_lbm)*self.g_p \
+                           - (1.0/self.tau_m_lbm)*self.g_m
 
     ### ************************************************
     ### Stream distribution
@@ -214,8 +213,8 @@ class Lattice:
             g_up = self.g_up[:,i,j]
 
             for q in range(1,self.q):
-                cx  = self.c[self.ns[q],0]
-                cy  = self.c[self.ns[q],1]
+                cx  = self.c[q,0]
+                cy  = self.c[q,1]
                 w   = float(self.lattice[i+cx,j+cy])
                 fx += 2.0*w*g_up[q]*cx
                 fy += 2.0*w*g_up[q]*cy
@@ -223,10 +222,10 @@ class Lattice:
         # Normalize coefficient
         #fx *= (self.dx**2)/self.dt
         #fy *= (self.dx**2)/self.dt
-        #Cx  = 2.0*fx/(R_ref*L_ref*U_ref**2)
-        #Cy  = 2.0*fy/(R_ref*L_ref*U_ref**2)
-        Cx = fx
-        Cy = fy
+        Cx  = 2.0*fx/(R_ref*L_ref*U_ref**2)
+        Cy  = 2.0*fy/(R_ref*L_ref*U_ref**2)
+        #Cx = fx
+        #Cy = fy
 
         # Write to file
         filename = self.output_dir+'drag_lift'
@@ -822,7 +821,7 @@ class Lattice:
 
         val  = it
         ret  = (1.0 - math.exp(-val**2/(2.0*sigma**2)))
-        u   *= ret
+        u   *= ret*self.Cs
 
         return u
 
