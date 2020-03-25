@@ -21,14 +21,14 @@ shape_size     = 0.1
 x_min       =-0.2
 x_max       = 1.0
 y_min       =-0.2
-y_max       = 0.3
+y_max       = 0.21
 
 # Free parameters
 # L_lbm correponds to y length
 # u_lbm corresponds to max velocity
 Re_lbm      = 20.0
-u_lbm       = 0.025
-L_lbm       = 100
+u_lbm       = 0.03
+L_lbm       = 200
 t_max       = 1.0
 
 # Deduce other parameters
@@ -144,8 +144,8 @@ for it in range(it_max+1):
     lattice.bounce_back_obstacle()
     lattice.zou_he_bottom_wall_velocity()
     lattice.zou_he_left_wall_velocity()
-    lattice.zou_he_right_wall_pressure()
     lattice.zou_he_top_wall_velocity()
+    lattice.zou_he_right_wall_pressure()
     lattice.zou_he_bottom_left_corner()
     lattice.zou_he_top_left_corner()
     lattice.zou_he_top_right_corner()
