@@ -1,5 +1,6 @@
 # Generic imports
 import math
+import time
 import progress.bar
 
 # Custom imports
@@ -9,6 +10,9 @@ from lattice_utils import *
 ###############################################
 ### LBM poiseuille with obstacle
 ###############################################
+
+# Count time
+start_time = time.time()
 
 # Shape1 parameters
 shape1_name     = 'main'
@@ -89,6 +93,11 @@ lattice.u[:,lattice.lattice] = 0.0
 lattice.equilibrium()
 lattice.g = lattice.g_eq.copy()
 
+# Count time
+end_time = time.time()
+print("Pre-processing time = {}".format(end_time - start_time))
+start_time = time.time()
+
 # Solve
 bar = progress.bar.Bar('Solving...', max=it_max)
 for it in range(it_max+1):
@@ -133,3 +142,7 @@ for it in range(it_max+1):
 
 # End bar
 bar.finish()
+
+# Count time
+end_time = time.time()
+print("Loop time = {}".format(end_time - start_time))
