@@ -66,6 +66,9 @@ class Lattice:
         self.tau_p_lbm  = self.tau_lbm
         self.lambda_trt = 1.0/4.0 # Best for stability
         self.tau_m_lbm  = self.lambda_trt/(self.tau_p_lbm - 0.5) + 0.5
+        self.om_p_lbm   = 1.0/self.tau_p_lbm
+        self.om_m_lbm   = 1.0/self.tau_m_lbm
+        self.om_lbm     = 1.0/self.tau_lbm
 
         # D2Q9 Velocities
         self.c  = np.array([ [ 0, 0],
@@ -167,26 +170,25 @@ class Lattice:
 
         # BGK, switch to it by de-commenting this line
         # and commenting all lines below
-        #self.g_up = self.g - (1.0/self.tau_lbm)*(self.g - self.g_eq)
+        #self.g_up = self.g - self.om_lbm*(self.g - self.g_eq)
 
         # Compute g_p = g_p - g_eq_p
         #     and g_m = g_m - g_eq_m
         self.g_p = 0.5*(self.g[:,:,:]    + self.g[self.ns[:],:,:] \
-                     - (self.g_eq[:,:,:] + self.g_eq[self.ns[:],:,:]))
+                    - (self.g_eq[:,:,:] + self.g_eq[self.ns[:],:,:]))
         self.g_m = 0.5*(self.g[:,:,:]    - self.g[self.ns[:],:,:] \
-                     - (self.g_eq[:,:,:] - self.g_eq[self.ns[:],:,:]))
+                    - (self.g_eq[:,:,:] - self.g_eq[self.ns[:],:,:]))
         self.g_p[0,:,:] = self.g[0,:,:] - self.g_eq[0,:,:]
         self.g_m[0,:,:] = 0.0
 
         # Compute collisions
-        self.g_up = self.g - (1.0/self.tau_p_lbm)*self.g_p \
-                           - (1.0/self.tau_m_lbm)*self.g_m
+        self.g_up = self.g - self.om_p_lbm*self.g_p \
+                           - self.om_m_lbm*self.g_m
 
     ### ************************************************
     ### Stream distribution
     def stream(self):
 
-        # Stream
         for q in range(self.q):
             self.g[q,:,:] = np.roll(
                             np.roll(
@@ -238,10 +240,7 @@ class Lattice:
                 jj = j + c[1]
                 w  = self.lattice[ii,jj]
 
-                # Apply BB : this expression saves a if statement
-                # Equivalent to : if w: self.g[qb,i,j] = self.g_up[q,i,j]
-                self.g[qb,i,j] = ((1.0-w)*self.g[qb,i,j] +
-                                  w*self.g_up[q,i,j])
+                if w: self.g[qb,i,j] = self.g_up[q,i,j]
 
         self.u[:,self.lattice] = 0.0
 

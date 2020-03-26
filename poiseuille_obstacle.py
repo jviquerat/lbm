@@ -27,8 +27,8 @@ y_max       = 0.21
 # L_lbm correponds to y length
 # u_lbm corresponds to max velocity
 Re_lbm      = 20.0
-u_lbm       = 0.03
-L_lbm       = 300
+u_lbm       = 0.1
+L_lbm       = 100
 t_max       = 1.0
 
 # Deduce other parameters
