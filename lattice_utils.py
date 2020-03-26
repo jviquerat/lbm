@@ -317,8 +317,8 @@ class Lattice:
         self.g[7,lx,:] = (     self.g[8,lx,:]  -
                           0.5*(self.g[3,lx,:]  -
                                self.g[4,lx,:]) -
-                          (1.0/6.0)*self.rho[lx,:]*self.u[0,lx,:]/c +
-                          (1.0/2.0)*self.rho[lx,:]*self.u[1,lx,:]/c)
+                          (1.0/6.0)*self.rho[lx,:]*self.u[0,lx,:] +
+                          (1.0/2.0)*self.rho[lx,:]*self.u[1,lx,:] )
 
     ### ************************************************
     ### Zou-He right wall pressure b.c.
