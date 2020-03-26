@@ -34,7 +34,7 @@ y_max       = 0.21
 Re_lbm      = 20.0
 u_lbm       = 0.03
 L_lbm       = 100
-t_max       = 1.0
+t_max       = 0.1
 
 # Deduce other parameters
 Cs          = 1.0/math.sqrt(3.0)

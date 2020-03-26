@@ -58,7 +58,6 @@ class Lattice:
         self.ly         = self.ny - 1
         self.q          = 9
         self.Cs         = 1.0/math.sqrt(3.0)
-        #self.Re_lbm     = self.u_lbm*self.L_lbm/self.nu_lbm
 
         # Output dirs
         time             = datetime.now().strftime('%Y-%m-%d_%H_%M_%S')
@@ -187,9 +186,10 @@ class Lattice:
         # Compute g_p = g_p - g_eq_p
         #     and g_m = g_m - g_eq_m
         self.g_p = 0.5*(self.g[:,:,:]    + self.g[self.ns[:],:,:] \
-                    - (self.g_eq[:,:,:] + self.g_eq[self.ns[:],:,:]))
+                     - (self.g_eq[:,:,:] + self.g_eq[self.ns[:],:,:]))
         self.g_m = 0.5*(self.g[:,:,:]    - self.g[self.ns[:],:,:] \
-                    - (self.g_eq[:,:,:] - self.g_eq[self.ns[:],:,:]))
+                     - (self.g_eq[:,:,:] - self.g_eq[self.ns[:],:,:]))
+
         self.g_p[0,:,:] = self.g[0,:,:] - self.g_eq[0,:,:]
         self.g_m[0,:,:] = 0.0
 
@@ -202,10 +202,10 @@ class Lattice:
     def stream(self):
 
         for q in range(self.q):
-            self.g[q,:,:] = np.roll(
-                            np.roll(
-                                self.g_up[q,:,:],self.c[q,0],axis=0),
-                                                 self.c[q,1],axis=1)
+           self.g[q,:,:] = np.roll(
+                           np.roll(
+                               self.g_up[q,:,:],self.c[q,1],axis=1),
+                                                self.c[q,0],axis=0)
 
     ### ************************************************
     ### Compute drag and lift
