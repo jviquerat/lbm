@@ -10,13 +10,21 @@ from lattice_utils import *
 ### LBM poiseuille with obstacle
 ###############################################
 
-# Shape parameters
-shape_name     = 'shape'
-n_pts          = 4
-n_sampling_pts = 50
-shape_type     = 'cylinder' # 'cylinder', 'square' or 'random'
-shape_size     = 0.1
-position       = [0.5, 0.0]
+# Shape1 parameters
+shape1_name     = 'main'
+shape1_npts     = 4
+shape1_nspts    = 50
+shape1_type     = 'square'
+shape1_size     = 0.1
+shape1_position = [0.0, 0.0]
+
+# Shape2 parameters
+shape2_name     = 'obs'
+shape2_npts     = 4
+shape2_nspts    = 50
+shape2_type     = 'cylinder'
+shape2_size     = 0.02
+shape2_position = [-0.1, 0.0]
 
 # Domain size
 x_min       =-0.2
@@ -70,17 +78,23 @@ lattice = Lattice(nx      = nx,
                   y_max   = y_max,
                   dpi     = dpi)
 
-# Generate shape
-shape = generate_shape(n_pts,
-                       position,
-                       shape_type,
-                       shape_size,
-                       shape_name,
-                       n_sampling_pts,
+# Generate main shape and add to lattice
+shape1 = generate_shape(shape1_npts,
+                       shape1_position,
+                       shape1_type,
+                       shape1_size,
+                       shape1_name,
+                       shape1_nspts,
                        lattice.output_dir)
-
-# Generate lattice from shape closed curve
-lattice.add_obstacle(shape.curve_pts)
+lattice.add_obstacle(shape1.curve_pts)
+shape2 = generate_shape(shape2_npts,
+                       shape2_position,
+                       shape2_type,
+                       shape2_size,
+                       shape2_name,
+                       shape2_nspts,
+                       lattice.output_dir)
+lattice.add_obstacle(shape2.curve_pts)
 lattice.generate_image()
 
 # Initialize fields
