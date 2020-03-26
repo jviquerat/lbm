@@ -262,7 +262,6 @@ class Lattice:
 
         lx = self.lx
         ly = self.ly
-        c  = self.Cs
 
         self.u[0,0,:] = self.u_left[0,:]
         self.u[1,0,:] = self.u_left[1,:]
@@ -272,22 +271,22 @@ class Lattice:
                          self.g[4,0,:] +
                      2.0*self.g[2,0,:] +
                      2.0*self.g[6,0,:] +
-                     2.0*self.g[7,0,:] )*(c/(c - self.u[0,0,:]))
+                     2.0*self.g[7,0,:] )/(1.0 - self.u[0,0,:])
 
         self.g[1,0,:] = (self.g[2,0,:] +
-                         (2.0/3.0)*self.rho[0,:]*self.u[0,0,:]/c)
+                         (2.0/3.0)*self.rho[0,:]*self.u[0,0,:])
 
         self.g[5,0,:] = (     self.g[6,0,:]  -
                          0.5*(self.g[3,0,:]  -
                               self.g[4,0,:]) +
-                    (1.0/6.0)*self.rho[0,:]*self.u[0,0,:]/c +
-                    (1.0/2.0)*self.rho[0,:]*self.u[1,0,:]/c)
+                    (1.0/6.0)*self.rho[0,:]*self.u[0,0,:] +
+                    (1.0/2.0)*self.rho[0,:]*self.u[1,0,:] )
 
         self.g[8,0,:] = (     self.g[7,0,:]  +
                          0.5*(self.g[3,0,:]  -
                               self.g[4,0,:]) +
-                    (1.0/6.0)*self.rho[0,:]*self.u[0,0,:]/c -
-                    (1.0/2.0)*self.rho[0,:]*self.u[1,0,:]/c)
+                    (1.0/6.0)*self.rho[0,:]*self.u[0,0,:] -
+                    (1.0/2.0)*self.rho[0,:]*self.u[1,0,:] )
 
     ### ************************************************
     ### Zou-He right wall velocity b.c.
@@ -304,16 +303,16 @@ class Lattice:
                           self.g[4,lx,:] +
                       2.0*self.g[1,lx,:] +
                       2.0*self.g[5,lx,:] +
-                      2.0*self.g[8,lx,:])*(c/(c + self.u[0,lx,:]))
+                      2.0*self.g[8,lx,:])/(1.0 + self.u[0,lx,:])
 
         self.g[2,lx,:] = (self.g[1,lx,:] -
-                          (2.0/3.0)*self.rho[lx,:]*self.u[0,lx,:]/c)
+                          (2.0/3.0)*self.rho[lx,:]*self.u[0,lx,:])
 
         self.g[6,lx,:] = (     self.g[5,lx,:]  +
                           0.5*(self.g[3,lx,:]  -
                                self.g[4,lx,:]) -
-                          (1.0/6.0)*self.rho[lx,:]*self.u[0,lx,:]/c -
-                          (1.0/2.0)*self.rho[lx,:]*self.u[1,lx,:]/c)
+                          (1.0/6.0)*self.rho[lx,:]*self.u[0,lx,:] -
+                          (1.0/2.0)*self.rho[lx,:]*self.u[1,lx,:] )
 
         self.g[7,lx,:] = (     self.g[8,lx,:]  -
                           0.5*(self.g[3,lx,:]  -
@@ -327,32 +326,31 @@ class Lattice:
 
         lx = self.lx
         ly = self.ly
-        c  = self.Cs
 
         self.rho[lx,:] = self.rho_right[:]
         self.u[1,lx,:] = self.u_right[1,:]
 
-        self.u[0,lx,:] = c*((self.g[0,lx,:] +
+        self.u[0,lx,:] =    (self.g[0,lx,:] +
                              self.g[3,lx,:] +
                              self.g[4,lx,:] +
                          2.0*self.g[1,lx,:] +
                          2.0*self.g[5,lx,:] +
-                         2.0*self.g[8,lx,:])/self.rho[lx,:] - 1.0)
+                         2.0*self.g[8,lx,:])/self.rho[lx,:] - 1.0
 
         self.g[2,lx,:] = (self.g[1,lx,:] -
-                          (2.0/3.0)*self.rho[lx,:]*self.u[0,lx,:]/c)
+                          (2.0/3.0)*self.rho[lx,:]*self.u[0,lx,:])
 
         self.g[6,lx,:] = (     self.g[5,lx,:]  +
                           0.5*(self.g[3,lx,:]  -
                                self.g[4,lx,:]) -
-                          (1.0/6.0)*self.rho[lx,:]*self.u[0,lx,:]/c -
-                          (1.0/2.0)*self.rho[lx,:]*self.u[1,lx,:]/c)
+                          (1.0/6.0)*self.rho[lx,:]*self.u[0,lx,:] -
+                          (1.0/2.0)*self.rho[lx,:]*self.u[1,lx,:] )
 
         self.g[7,lx,:] = (     self.g[8,lx,:]  -
                           0.5*(self.g[3,lx,:]  -
                                self.g[4,lx,:]) -
-                          (1.0/6.0)*self.rho[lx,:]*self.u[0,lx,:]/c +
-                          (1.0/2.0)*self.rho[lx,:]*self.u[1,lx,:]/c)
+                          (1.0/6.0)*self.rho[lx,:]*self.u[0,lx,:] +
+                          (1.0/2.0)*self.rho[lx,:]*self.u[1,lx,:] )
 
     ### ************************************************
     ### Zou-He no-slip top wall velocity b.c.
@@ -360,7 +358,6 @@ class Lattice:
 
         lx = self.lx
         ly = self.ly
-        c  = self.Cs
 
         self.u[0,:,ly] = self.u_top[0,:]
         self.u[1,:,ly] = self.u_top[1,:]
@@ -370,22 +367,22 @@ class Lattice:
                          self.g[2,:,0] +
                      2.0*self.g[3,:,0] +
                      2.0*self.g[5,:,0] +
-                     2.0*self.g[7,:,0] )*(c/(c + self.u[1,:,ly]))
+                     2.0*self.g[7,:,0] )/(1.0 + self.u[1,:,ly])
 
         self.g[4,:,ly] = (self.g[3,:,ly] -
-                          (2.0/3.0)*self.rho[:,ly]*self.u[1,:,ly]/c)
+                          (2.0/3.0)*self.rho[:,ly]*self.u[1,:,ly])
 
         self.g[8,:,ly] = (     self.g[7,:,ly]  -
                           0.5*(self.g[1,:,ly]  -
                                self.g[2,:,ly]) +
-                          (1.0/2.0)*self.rho[:,ly]*self.u[0,:,ly]/c -
-                          (1.0/6.0)*self.rho[:,ly]*self.u[1,:,ly]/c)
+                          (1.0/2.0)*self.rho[:,ly]*self.u[0,:,ly] -
+                          (1.0/6.0)*self.rho[:,ly]*self.u[1,:,ly] )
 
         self.g[6,:,ly] = (     self.g[5,:,ly]  +
                           0.5*(self.g[1,:,ly]  -
                                self.g[2,:,ly]) -
-                          (1.0/2.0)*self.rho[:,ly]*self.u[0,:,ly]/c -
-                          (1.0/6.0)*self.rho[:,ly]*self.u[1,:,ly]/c)
+                          (1.0/2.0)*self.rho[:,ly]*self.u[0,:,ly] -
+                          (1.0/6.0)*self.rho[:,ly]*self.u[1,:,ly] )
 
     ### ************************************************
     ### Zou-He no-slip bottom wall velocity b.c.
@@ -393,7 +390,6 @@ class Lattice:
 
         lx = self.lx
         ly = self.ly
-        c  = self.Cs
 
         self.u[0,:,0] = self.u_bot[0,:]
         self.u[1,:,0] = self.u_bot[1,:]
@@ -403,22 +399,22 @@ class Lattice:
                          self.g[2,:,0] +
                      2.0*self.g[4,:,0] +
                      2.0*self.g[6,:,0] +
-                     2.0*self.g[8,:,0] )*(c/(c - self.u[1,:,0]))
+                     2.0*self.g[8,:,0] )/(1.0 - self.u[1,:,0])
 
         self.g[3,:,0] = (self.g[4,:,0] +
-                         (2.0/3.0)*self.rho[:,0]*self.u[1,:,0]/c)
+                         (2.0/3.0)*self.rho[:,0]*self.u[1,:,0])
 
         self.g[5,:,0] = (     self.g[6,:,0]  -
                          0.5*(self.g[1,:,0]  -
                               self.g[2,:,0]) +
-                         (1.0/2.0)*self.rho[:,0]*self.u[0,:,0]/c +
-                         (1.0/6.0)*self.rho[:,0]*self.u[1,:,0]/c)
+                         (1.0/2.0)*self.rho[:,0]*self.u[0,:,0] +
+                         (1.0/6.0)*self.rho[:,0]*self.u[1,:,0] )
 
         self.g[7,:,0] = (     self.g[8,:,0]  +
                          0.5*(self.g[1,:,0]  -
                               self.g[2,:,0]) -
-                         (1.0/2.0)*self.rho[:,0]*self.u[0,:,0]/c +
-                         (1.0/6.0)*self.rho[:,0]*self.u[1,:,0]/c)
+                         (1.0/2.0)*self.rho[:,0]*self.u[0,:,0] +
+                         (1.0/6.0)*self.rho[:,0]*self.u[1,:,0] )
 
     ### ************************************************
     ### Zou-He bottom left corner
@@ -426,21 +422,20 @@ class Lattice:
 
         lx = self.lx
         ly = self.ly
-        c  = self.Cs
 
         self.u[0,0,0] = self.u[0,1,0]
         self.u[1,0,0] = self.u[1,1,0]
         self.rho[0,0] = self.rho[1,0]
 
         self.g[1,0,0] = (self.g[2,0,0] +
-                         (2.0/3.0)*self.rho[0,0]*self.u[0,0,0]/c)
+                         (2.0/3.0)*self.rho[0,0]*self.u[0,0,0])
 
         self.g[3,0,0] = (self.g[4,0,0] +
-                         (2.0/3.0)*self.rho[0,0]*self.u[1,0,0]/c)
+                         (2.0/3.0)*self.rho[0,0]*self.u[1,0,0])
 
         self.g[5,0,0] = (self.g[6,0,0] +
-                         (1.0/6.0)*self.rho[0,0]*self.u[0,0,0]/c +
-                         (1.0/6.0)*self.rho[0,0]*self.u[1,0,0]/c)
+                         (1.0/6.0)*self.rho[0,0]*self.u[0,0,0] +
+                         (1.0/6.0)*self.rho[0,0]*self.u[1,0,0] )
 
         self.g[7,0,0] = 0.0
         self.g[8,0,0] = 0.0
@@ -461,21 +456,20 @@ class Lattice:
 
         lx = self.lx
         ly = self.ly
-        c  = self.Cs
 
         self.u[0,0,ly] = self.u[0,1,ly]
         self.u[1,0,ly] = self.u[1,1,ly]
         self.rho[0,ly] = self.rho[1,ly]
 
         self.g[1,0,ly] = (self.g[2,0,ly] +
-                         (2.0/3.0)*self.rho[0,ly]*self.u[0,0,ly]/c)
+                         (2.0/3.0)*self.rho[0,ly]*self.u[0,0,ly])
 
         self.g[4,0,ly] = (self.g[3,0,ly] -
-                         (2.0/3.0)*self.rho[0,ly]*self.u[1,0,ly]/c)
+                         (2.0/3.0)*self.rho[0,ly]*self.u[1,0,ly])
 
         self.g[8,0,ly] = (self.g[7,0,ly] +
-                         (1.0/6.0)*self.rho[0,ly]*self.u[0,0,ly]/c -
-                         (1.0/6.0)*self.rho[0,ly]*self.u[1,0,ly]/c)
+                         (1.0/6.0)*self.rho[0,ly]*self.u[0,0,ly] -
+                         (1.0/6.0)*self.rho[0,ly]*self.u[1,0,ly])
 
 
         self.g[5,0,ly] = 0.0
@@ -497,21 +491,20 @@ class Lattice:
 
         lx = self.lx
         ly = self.ly
-        c  = self.Cs
 
         self.u[0,lx,ly] = self.u[0,lx-1,ly]
         self.u[1,lx,ly] = self.u[1,lx-1,ly]
         self.rho[lx,ly] = self.rho[lx-1,ly]
 
         self.g[2,lx,ly] = (self.g[1,lx,ly] -
-                         (2.0/3.0)*self.rho[lx,ly]*self.u[0,lx,ly]/c)
+                         (2.0/3.0)*self.rho[lx,ly]*self.u[0,lx,ly])
 
         self.g[4,lx,ly] = (self.g[3,lx,ly] -
-                         (2.0/3.0)*self.rho[lx,ly]*self.u[1,lx,ly]/c)
+                         (2.0/3.0)*self.rho[lx,ly]*self.u[1,lx,ly])
 
         self.g[6,lx,ly] = (self.g[5,lx,ly] -
-                         (1.0/6.0)*self.rho[lx,ly]*self.u[0,lx,ly]/c -
-                         (1.0/6.0)*self.rho[lx,ly]*self.u[1,lx,ly]/c)
+                         (1.0/6.0)*self.rho[lx,ly]*self.u[0,lx,ly] -
+                         (1.0/6.0)*self.rho[lx,ly]*self.u[1,lx,ly])
 
         self.g[7,lx,ly] = 0.0
         self.g[8,lx,ly] = 0.0
@@ -532,21 +525,20 @@ class Lattice:
 
         lx = self.lx
         ly = self.ly
-        c  = self.Cs
 
         self.u[0,lx,0] = self.u[0,lx-1,0]
         self.u[1,lx,0] = self.u[1,lx-1,0]
         self.rho[lx,0] = self.rho[lx-1,0]
 
         self.g[2,lx,0] = (self.g[1,lx,0] -
-                         (2.0/3.0)*self.rho[lx,0]*self.u[0,lx,0]/c)
+                         (2.0/3.0)*self.rho[lx,0]*self.u[0,lx,0])
 
         self.g[3,lx,0] = (self.g[4,lx,0] +
-                         (2.0/3.0)*self.rho[lx,0]*self.u[1,lx,0]/c)
+                         (2.0/3.0)*self.rho[lx,0]*self.u[1,lx,0])
 
         self.g[7,lx,0] = (self.g[8,lx,0] -
-                         (1.0/6.0)*self.rho[lx,0]*self.u[0,lx,0]/c +
-                         (1.0/6.0)*self.rho[lx,0]*self.u[1,lx,0]/c)
+                         (1.0/6.0)*self.rho[lx,0]*self.u[0,lx,0] +
+                         (1.0/6.0)*self.rho[lx,0]*self.u[1,lx,0])
 
         self.g[5,lx,0] = 0.0
         self.g[6,lx,0] = 0.0
@@ -824,7 +816,7 @@ class Lattice:
 
         val  = it
         ret  = (1.0 - math.exp(-val**2/(2.0*sigma**2)))
-        u   *= ret*self.Cs
+        u   *= ret
 
         return u
 
