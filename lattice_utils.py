@@ -11,6 +11,17 @@ from   PIL               import Image
 from   datetime          import datetime
 
 ### ************************************************
+### Class defining an obstacle in the lattice
+class Obstacle:
+    ### ************************************************
+    ### Constructor
+    def __init__(self, polygon, area, boundary):
+
+        self.polygon  = polygon
+        self.area     = area
+        self.boundary = boundary
+
+### ************************************************
 ### Class defining lattice object
 class Lattice:
     ### ************************************************
@@ -87,15 +98,8 @@ class Lattice:
         self.w[np.asarray(idx_extra_card)] = 1./36.
         self.w[0]                          = 4./9.
 
-        # Boundary conditions
-        # Velocities on which to apply the different BC
-        c          = self.c
-        self.ns    = np.asarray([self.c.tolist().index(
-            (-self.c[i]).tolist()) for i in range(self.q)])
-        #np.array([0,2,1,4,3,6,5,8,7])
-
-        print(self.ns)
-        exit()
+        # Array for bounce-back
+        self.ns = np.array([0,2,1,4,3,6,5,8,7])
 
         # Density arrays
         self.g       = np.zeros((self.q,  self.nx, self.ny))
@@ -113,6 +117,9 @@ class Lattice:
         # Physical fields
         self.rho     = np.ones ((   self.nx, self.ny))
         self.u       = np.zeros((2, self.nx, self.ny))
+
+        # Obstacles
+        self.obstacles = []
 
         # Printings
         print('### LBM solver ###')
@@ -202,16 +209,16 @@ class Lattice:
 
     ### ************************************************
     ### Compute drag and lift
-    def drag_lift(self, it, R_ref, U_ref, L_ref):
+    def drag_lift(self, obs, it, R_ref, U_ref, L_ref):
 
         # Initialize
         fx = 0.0
         fy = 0.0
 
         # Loop over obstacle array
-        for k in range(len(self.boundary)):
-            i    = self.boundary[k,0]
-            j    = self.boundary[k,1]
+        for k in range(len(self.obstacles[obs].boundary)):
+            i    = self.obstacles[obs].boundary[k,0]
+            j    = self.obstacles[obs].boundary[k,1]
             g_up = self.g_up[:,i,j]
 
             for q in range(1,self.q):
@@ -226,17 +233,17 @@ class Lattice:
         Cy = 2.0*fy/(R_ref*L_ref*U_ref**2)
 
         # Write to file
-        filename = self.output_dir+'drag_lift'
+        filename = self.output_dir+'drag_lift_'+str(obs)
         with open(filename, 'a') as f:
             f.write('{} {} {}\n'.format(it*self.dt, Cx, Cy))
 
     ### ************************************************
     ### Obstacle halfway bounce-back no-slip b.c.
-    def bounce_back_obstacle(self):
+    def bounce_back_obstacle(self, obs):
 
-        for k in range(len(self.boundary)):
-            i = self.boundary[k,0]
-            j = self.boundary[k,1]
+        for k in range(len(self.obstacles[obs].boundary)):
+            i = self.obstacles[obs].boundary[k,0]
+            j = self.obstacles[obs].boundary[k,1]
 
             for q in range(1,self.q):
                 qb = self.ns[q]
@@ -615,15 +622,12 @@ class Lattice:
     ### Add obstacle
     def add_obstacle(self, polygon):
 
-        # Copy input polygon
-        poly         = polygon.copy()
-
         # Compute polygon bnds
         poly_bnds    = np.zeros((4))
-        poly_bnds[0] = np.amin(poly[:,0])
-        poly_bnds[1] = np.amax(poly[:,0])
-        poly_bnds[2] = np.amin(poly[:,1])
-        poly_bnds[3] = np.amax(poly[:,1])
+        poly_bnds[0] = np.amin(polygon[:,0])
+        poly_bnds[1] = np.amax(polygon[:,0])
+        poly_bnds[2] = np.amin(polygon[:,1])
+        poly_bnds[3] = np.amax(polygon[:,1])
 
         # Declare lattice arrays
         obstacle = np.empty((0,2), dtype=int)
@@ -641,7 +645,7 @@ class Lattice:
                     (pt[1] > poly_bnds[2]) and
                     (pt[1] < poly_bnds[3])):
 
-                    if (self.is_inside(poly, pt)):
+                    if (self.is_inside(polygon, pt)):
                         self.lattice[i,j] = True
                         obstacle = np.append(obstacle,
                                              np.array([[i,j]]), axis=0)
@@ -670,10 +674,14 @@ class Lattice:
                                             np.array([[i+di,j+dj]]), axis=0)
 
         # Some cells were counted multiple times, unique-sort them
-        self.boundary = np.unique(boundary, axis=0)
+        boundary = np.unique(boundary, axis=0)
+
+        # Add obstacle
+        obs = Obstacle(polygon, area, boundary)
+        self.obstacles.append(obs)
 
         # Printings
-        print('Found '+str(self.boundary.shape[0])+' on obstacle boundary')
+        print('Found '+str(boundary.shape[0])+' on obstacle boundary')
 
     ### ************************************************
     ### Get lattice coordinates from integers
@@ -722,10 +730,11 @@ class Lattice:
         lat = self.lattice.copy()
         lat = lat.astype(float)
 
-        for k in range(self.boundary.shape[0]):
-            i = self.boundary[k,0]
-            j = self.boundary[k,1]
-            lat[i,j] += 2.0
+        for obs in range(len(self.obstacles)):
+            for k in range(len(self.obstacles[obs].boundary)):
+                i = self.obstacles[obs].boundary[k,0]
+                j = self.obstacles[obs].boundary[k,1]
+                lat[i,j] += 2.0
 
         # Plot and save image of lattice
         filename = self.output_dir+self.name+'.png'

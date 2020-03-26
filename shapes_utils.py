@@ -15,6 +15,7 @@ class Shape:
     ### Constructor
     def __init__(self,
                  name,
+                 position,
                  control_pts,
                  n_control_pts,
                  n_sampling_pts,
@@ -23,6 +24,7 @@ class Shape:
                  output_dir):
 
         self.name           = name
+        self.position       = position
         self.control_pts    = control_pts
         self.n_control_pts  = n_control_pts
         self.n_sampling_pts = n_sampling_pts
@@ -51,8 +53,8 @@ class Shape:
         self.area           = 0.0
 
     ### ************************************************
-    ### Generate shape
-    def generate(self):
+    ### Build shape
+    def build(self):
 
         # Center set of points
         center = np.mean(self.control_pts, axis=0)
@@ -119,6 +121,10 @@ class Shape:
         center            = np.mean(self.curve_pts, axis=0)
         self.curve_pts   -= center
         self.control_pts[:,0:2] -= center[0:2]
+
+        # Reprocess to position
+        self.control_pts[:,0:2] += self.position[0:2]
+        self.curve_pts  [:,0:2] += self.position[0:2]
 
     ### ************************************************
     ### Write image
@@ -407,8 +413,14 @@ def trim_white(filename):
     cp.save(filename)
 
 ### ************************************************
-### Generate shape inputs
-def shape_input(n_pts, shape_type):
+### Generate shape
+def generate_shape(n_pts,
+                   position,
+                   shape_type,
+                   shape_size,
+                   shape_name,
+                   n_sampling_pts,
+                   output_dir):
 
     # Select shape type
     if (shape_type == 'cylinder'):
@@ -429,4 +441,18 @@ def shape_input(n_pts, shape_type):
         ctrl_pts       = np.random.rand(n_pts,2)
         ctrl_pts[:,:] *= shape_size
 
-    return radius, edgy, ctrl_pts
+    # Initialize and build shape
+    shape = Shape(shape_name,
+                  position,
+                  ctrl_pts,
+                  n_pts,
+                  n_sampling_pts,
+                  radius,
+                  edgy,
+                  output_dir)
+
+    shape.build()
+    shape.generate_image()
+    shape.write_csv()
+
+    return shape

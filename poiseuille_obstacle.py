@@ -16,6 +16,7 @@ n_pts          = 4
 n_sampling_pts = 50
 shape_type     = 'cylinder' # 'cylinder', 'square' or 'random'
 shape_size     = 0.1
+position       = [0.5, 0.0]
 
 # Domain size
 x_min       =-0.2
@@ -70,18 +71,13 @@ lattice = Lattice(nx      = nx,
                   dpi     = dpi)
 
 # Generate shape
-radius, edgy, ctrl_pts = shape_input(n_pts, shape_type)
-shape = Shape(shape_name,
-              ctrl_pts,
-              n_pts,
-              n_sampling_pts,
-              radius,
-              edgy,
-              lattice.output_dir)
-
-shape.generate()
-shape.generate_image()
-shape.write_csv()
+shape = generate_shape(n_pts,
+                       position,
+                       shape_type,
+                       shape_size,
+                       shape_name,
+                       n_sampling_pts,
+                       lattice.output_dir)
 
 # Generate lattice from shape closed curve
 lattice.add_obstacle(shape.curve_pts)
@@ -118,13 +114,13 @@ for it in range(it_max+1):
     lattice.trt_collisions()
 
     # Compute drag/lift
-    lattice.drag_lift(it, rho_lbm, u_avg, D_lbm)
+    lattice.drag_lift(0, it, rho_lbm, u_avg, D_lbm)
 
     # Streaming
     lattice.stream()
 
     # Boundary conditions
-    lattice.bounce_back_obstacle()
+    lattice.bounce_back_obstacle(0)
     lattice.zou_he_bottom_wall_velocity()
     lattice.zou_he_left_wall_velocity()
     lattice.zou_he_top_wall_velocity()
