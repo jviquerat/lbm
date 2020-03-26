@@ -87,11 +87,6 @@ class Lattice:
         # Boundary conditions
         # Velocities on which to apply the different BC
         c          = self.c
-        self.right = np.arange(self.q)[np.asarray([ci[0] >0 for ci in c])]
-        self.left  = np.arange(self.q)[np.asarray([ci[0] <0 for ci in c])]
-        self.mid   = np.arange(self.q)[np.asarray([ci[0]==0 for ci in c])]
-        self.top   = np.arange(self.q)[np.asarray([ci[1] >0 for ci in c])]
-        self.bot   = np.arange(self.q)[np.asarray([ci[1] <0 for ci in c])]
         self.ns    = np.asarray([self.c.tolist().index(
             (-self.c[i]).tolist()) for i in range(self.q)])
         # Density arrays
@@ -220,12 +215,8 @@ class Lattice:
                 fy += 2.0*w*g_up[q]*cy
 
         # Normalize coefficient
-        #fx *= (self.dx**2)/self.dt
-        #fy *= (self.dx**2)/self.dt
-        Cx  = 2.0*fx/(R_ref*L_ref*U_ref**2)
-        Cy  = 2.0*fy/(R_ref*L_ref*U_ref**2)
-        #Cx = fx
-        #Cy = fy
+        Cx = 2.0*fx/(R_ref*L_ref*U_ref**2)
+        Cy = 2.0*fy/(R_ref*L_ref*U_ref**2)
 
         # Write to file
         filename = self.output_dir+'drag_lift'
