@@ -18,14 +18,6 @@ shape1_type     = 'square'
 shape1_size     = 0.1
 shape1_position = [0.0, 0.0]
 
-# Shape2 parameters
-shape2_name     = 'obs'
-shape2_npts     = 4
-shape2_nspts    = 50
-shape2_type     = 'cylinder'
-shape2_size     = 0.02
-shape2_position = [-0.1, 0.0]
-
 # Domain size
 x_min       =-0.2
 x_max       = 1.0
@@ -36,7 +28,7 @@ y_max       = 0.21
 # L_lbm correponds to y length
 # u_lbm corresponds to max velocity
 Re_lbm      = 20.0
-u_lbm       = 0.1
+u_lbm       = 0.03
 L_lbm       = 100
 t_max       = 1.0
 
@@ -44,7 +36,7 @@ t_max       = 1.0
 Cs          = 1.0/math.sqrt(3.0)
 ny          = L_lbm
 u_avg       = 2.0*u_lbm/3.0
-D_lbm       = math.floor(ny*shape_size/(y_max-y_min))
+D_lbm       = math.floor(ny*shape1_size/(y_max-y_min))
 nu_lbm      = u_avg*D_lbm/Re_lbm
 tau_lbm     = 0.5 + nu_lbm/(Cs**2)
 rho_lbm     = 1.0
@@ -87,14 +79,6 @@ shape1 = generate_shape(shape1_npts,
                        shape1_nspts,
                        lattice.output_dir)
 lattice.add_obstacle(shape1.curve_pts)
-shape2 = generate_shape(shape2_npts,
-                       shape2_position,
-                       shape2_type,
-                       shape2_size,
-                       shape2_name,
-                       shape2_nspts,
-                       lattice.output_dir)
-lattice.add_obstacle(shape2.curve_pts)
 lattice.generate_image()
 
 # Initialize fields
