@@ -70,24 +70,7 @@ lattice = Lattice(nx      = nx,
                   dpi     = dpi)
 
 # Generate shape
-if (shape_type == 'cylinder'):
-    radius         = (1.0/math.sqrt(2))*np.ones((n_pts))
-    edgy           = 1.0*np.ones((n_pts))
-    ctrl_pts       = generate_cylinder_pts(n_pts)
-    ctrl_pts[:,:] *= shape_size
-
-if (shape_type == 'square'):
-    radius         = np.zeros((n_pts))
-    edgy           = np.ones((n_pts))
-    ctrl_pts       = generate_square_pts(n_pts)
-    ctrl_pts[:,:] *= shape_size
-
-if (shape_type == 'random'):
-    radius         = np.random.uniform(low=0.0, high=1.0, size=n_pts)
-    edgy           = np.random.uniform(low=0.0, high=1.0, size=n_pts)
-    ctrl_pts       = np.random.rand(n_pts,2)
-    ctrl_pts[:,:] *= shape_size
-
+radius, edgy, ctrl_pts = shape_input(n_pts, shape_type)
 shape = Shape(shape_name,
               ctrl_pts,
               n_pts,

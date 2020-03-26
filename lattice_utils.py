@@ -92,6 +92,11 @@ class Lattice:
         c          = self.c
         self.ns    = np.asarray([self.c.tolist().index(
             (-self.c[i]).tolist()) for i in range(self.q)])
+        #np.array([0,2,1,4,3,6,5,8,7])
+
+        print(self.ns)
+        exit()
+
         # Density arrays
         self.g       = np.zeros((self.q,  self.nx, self.ny))
         self.g_eq    = np.zeros((self.q,  self.nx, self.ny))
@@ -612,7 +617,6 @@ class Lattice:
 
         # Copy input polygon
         poly         = polygon.copy()
-        self.polygon = poly
 
         # Compute polygon bnds
         poly_bnds    = np.zeros((4))
@@ -648,13 +652,13 @@ class Lattice:
         print('Found '+str(obstacle.shape[0])+' locations in obstacle')
 
         # Check area of obstacle
-        self.area = 0.0
+        area = 0.0
 
         for i in range(self.nx):
             for j in range(self.ny):
-                if (self.lattice[i,j]): self.area += self.dx**2
+                if (self.lattice[i,j]): area += self.dx**2
 
-        print('Obstacle area: '+str(self.area))
+        print('Obstacle area: '+str(area))
 
         for k in range(obstacle.shape[0]):
             i = obstacle[k,0]
