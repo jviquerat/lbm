@@ -154,11 +154,12 @@ class Lattice:
     def macro_velocity(self):
 
         # Compute velocity
-        self.u[:,:,:] = 0.0
-
-        for q in range(self.q):
-            self.u[0,:,:] += self.c[q,0]*self.g[q,:,:]
-            self.u[1,:,:] += self.c[q,1]*self.g[q,:,:]
+        self.u[0,:,:] = np.tensordot(self.c[:,0],
+                                     self.g[:,:,:],
+                                     axes=(0,0))
+        self.u[1,:,:] = np.tensordot(self.c[:,1],
+                                     self.g[:,:,:],
+                                     axes=(0,0))
 
         self.u[0,:,:] /= self.rho[:,:]
         self.u[1,:,:] /= self.rho[:,:]
@@ -178,46 +179,30 @@ class Lattice:
             self.g_eq[q,:,:] *= self.rho[:,:]*self.w[q]
 
     ### ************************************************
-    ### TRT collision operator
-    def trt_collisions(self):
+    ### Collision and streaming
+    def collision_stream(self):
 
-        # BGK, switch to it by de-commenting this line
-        # and commenting all lines below
-        #self.g_up = self.g - self.om_lbm*(self.g - self.g_eq)
-
-        # TRT collisions + streaming
-        #self.g_p[:,:]    = self.g[0,:,:] - self.g_eq[0,:,:]
+        # Take care of q=0 first
         self.g_up[0,:,:] = (self.g[0,:,:]
-                        - self.om_p_lbm*(self.g[0,:,:] - self.g_eq[0,:,:]))
-        self.g[0,:,:]    = self.g_up[0,:,:]
+                         - self.om_p_lbm*(self.g[0,:,:] - self.g_eq[0,:,:]))
+        self.g   [0,:,:] = self.g_up[0,:,:]
 
+        # Collide other indices
         for q in range(1,self.q):
-            #self.g_p[:,:] = 0.5*(self.g[q,:,:]    + self.g[self.ns[q],:,:] \
-            #                - (self.g_eq[q,:,:] + self.g_eq[self.ns[q],:,:]))
-            #self.g_m[:,:] = 0.5*(self.g[q,:,:]    - self.g[self.ns[q],:,:] \
-            #                - (self.g_eq[q,:,:] - self.g_eq[self.ns[q],:,:]))
-
             self.g_up[q,:,:] = (self.g[q,:,:]
                 - self.om_p_lbm*0.5*(self.g[q,:,:]
-                                     + self.g[self.ns[q],:,:]
-                                     - self.g_eq[q,:,:]
-                                     - self.g_eq[self.ns[q],:,:])
+                                   + self.g[self.ns[q],:,:]
+                                   - self.g_eq[q,:,:]
+                                   - self.g_eq[self.ns[q],:,:])
                 - self.om_m_lbm*0.5*(self.g[q,:,:]
-                                     - self.g[self.ns[q],:,:]
-                                     - self.g_eq[q,:,:]
-                                     + self.g_eq[self.ns[q],:,:]))
+                                   - self.g[self.ns[q],:,:]
+                                   - self.g_eq[q,:,:]
+                                   + self.g_eq[self.ns[q],:,:]))
 
-
+        # Stream other indices
         for q in range(1,self.q):
-            self.g[q,:,:] = np.roll(np.roll(
-                    self.g_up[q,:,:],self.c[q,1],axis=1),
-                self.c[q,0],axis=0)
-
-    ### ************************************************
-    ### Stream distribution
-    #def stream(self):
-
-        
+            self.g[q,:,:] = np.roll(self.g_up[q,:,:],
+                                    [self.c[q,1],self.c[q,0]],axis=(1,0))
 
     ### ************************************************
     ### Compute drag and lift

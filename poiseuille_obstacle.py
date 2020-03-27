@@ -120,7 +120,7 @@ for it in range(it_max+1):
     lattice.equilibrium()
 
     # Collisions
-    lattice.trt_collisions()
+    lattice.collision_stream()
 
     # Streaming
     #lattice.stream()
