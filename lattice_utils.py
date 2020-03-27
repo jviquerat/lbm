@@ -108,6 +108,7 @@ class Lattice:
         #self.g_m     = np.zeros((self.nx, self.ny))
         #self.g_p     = np.zeros((self.nx, self.ny))
         self.g_up    = np.zeros((self.q,  self.nx, self.ny))
+        self.g_s     = np.zeros((self.nx, self.ny))
 
         # Lattice array is oriented as follows :
         # +x     = left-right
@@ -200,10 +201,24 @@ class Lattice:
                                    + self.g_eq[self.ns[q],:,:]))
 
         # Stream other indices
-        for q in range(1,self.q):
-            self.g[q,:,:] = np.roll(self.g_up[q,:,:],
-                                    [self.c[q,1],self.c[q,0]],axis=(1,0))
+        # for q in range(1,self.q):
+        #     self.g[q,:,:] = np.roll(self.g_up[q,:,:],
+        #                             [self.c[q,1],self.c[q,0]],axis=(1,0))
 
+        nx = self.nx
+        ny = self.ny
+        lx = self.lx
+        ly = self.ly
+
+        self.g[1,1:nx,:] = self.g_up[1,0:lx,:]
+        self.g[2,0:lx,:] = self.g_up[2,1:nx,:]
+        self.g[3,:,1:ny] = self.g_up[3,:,0:ly]
+        self.g[4,:,0:ly] = self.g_up[4,:,1:ny]
+        self.g[5,1:nx,1:ny] = self.g_up[5,0:lx,0:ly]
+        self.g[6,0:lx,0:ly] = self.g_up[6,1:nx,1:ny]
+        self.g[7,0:lx,1:ny] = self.g_up[7,1:nx,0:ly]
+        self.g[8,1:nx,0:ly] = self.g_up[8,0:lx,1:ny]
+        
     ### ************************************************
     ### Compute drag and lift
     def drag_lift(self, obs, it, R_ref, U_ref, L_ref):
