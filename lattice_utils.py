@@ -222,12 +222,13 @@ class Lattice:
             i    = self.obstacles[obs].boundary[k,0]
             j    = self.obstacles[obs].boundary[k,1]
             q    = self.obstacles[obs].boundary[k,2]
+            qb   = self.ns[q]
             cx   = self.c[q,0]
             cy   = self.c[q,1]
-            g_up = self.g_up[q,i,j]
+            g_up = self.g_up[q,i,j] + self.g[qb,i,j]
 
-            fx += 2.0*g_up*cx
-            fy += 2.0*g_up*cy
+            fx += g_up*cx
+            fy += g_up*cy
 
         # Normalize coefficient
         Cx = 2.0*fx/(R_ref*L_ref*U_ref**2)
@@ -242,17 +243,40 @@ class Lattice:
     ### Obstacle halfway bounce-back no-slip b.c.
     def bounce_back_obstacle(self, obs):
 
-        for k in range(len(self.obstacles[obs].boundary)):
-            i  = self.obstacles[obs].boundary[k,0]
-            j  = self.obstacles[obs].boundary[k,1]
-            q  = self.obstacles[obs].boundary[k,2]
-            qb = self.ns[q]
-            c  = self.c[q,:]
-            ii = i + c[0]
-            jj = j + c[1]
+        # Interpolated BB
+        if (self.IBB):
+            for k in range(len(self.obstacles[obs].boundary)):
+                i  = self.obstacles[obs].boundary[k,0]
+                j  = self.obstacles[obs].boundary[k,1]
+                q  = self.obstacles[obs].boundary[k,2]
+                qb = self.ns[q]
+                c  = self.c[q,:]
+                cb = self.c[qb,:]
+                im = i + cb[0]
+                jm = j + cb[1]
 
-            self.g[qb,i,j] = self.g_up[q,i,j]
+                p = 2.0*self.obstacles[obs].ibb[k]
+                if (p < 1.0):
+                    self.g[qb,i,j] = (p*self.g_up[q,i,j] +
+                                      (1.0-p)*self.g_up[q,im,jm])
+                else:
+                    self.g[qb,i,j] = ((1.0/p)*self.g_up[q,i,j] +
+                                      ((p-1.0)/p)*self.g_up[qb,i,j])
 
+        # Regular BB
+        if (not self.IBB):
+            for k in range(len(self.obstacles[obs].boundary)):
+                i  = self.obstacles[obs].boundary[k,0]
+                j  = self.obstacles[obs].boundary[k,1]
+                q  = self.obstacles[obs].boundary[k,2]
+                qb = self.ns[q]
+                c  = self.c[q,:]
+                ii = i + c[0]
+                jj = j + c[1]
+
+                self.g[qb,i,j] = self.g_up[q,i,j]
+
+        # Set velocity of obstacles
         self.u[:,self.lattice] = 0.0
 
     ### ************************************************
