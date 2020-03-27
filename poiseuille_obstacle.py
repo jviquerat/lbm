@@ -122,9 +122,6 @@ for it in range(it_max+1):
     # Collisions
     lattice.collision_stream()
 
-    # Streaming
-    #lattice.stream()
-
     # Boundary conditions
     lattice.bounce_back_obstacle(0)
     lattice.zou_he_bottom_wall_velocity()
