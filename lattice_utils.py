@@ -185,21 +185,24 @@ class Lattice:
 
         # Take care of q=0 first
         self.g_up[0,:,:] = (self.g[0,:,:]
-                         - self.om_p_lbm*(self.g[0,:,:] - self.g_eq[0,:,:]))
-        self.g   [0,:,:] = self.g_up[0,:,:]
+                         -  self.om_p_lbm*(self.g[0,:,:] - self.g_eq[0,:,:]))
+        self.g   [0,:,:] =  self.g_up[0,:,:]
 
         # Collide other indices
         for q in range(1,self.q):
-            self.g_up[q,:,:] = (self.g[q,:,:]
-                - self.om_p_lbm*0.5*(self.g[q,:,:]
-                                   + self.g[self.ns[q],:,:]
-                                   - self.g_eq[q,:,:]
-                                   - self.g_eq[self.ns[q],:,:])
-                - self.om_m_lbm*0.5*(self.g[q,:,:]
-                                   - self.g[self.ns[q],:,:]
-                                   - self.g_eq[q,:,:]
-                                   + self.g_eq[self.ns[q],:,:]))
+            qb = self.ns[q]
 
+            self.g_up[q,:,:] = (self.g   [q,:,:]
+           - self.om_p_lbm*0.5*(self.g   [q,:,:]
+                              + self.g   [qb,:,:]
+                              - self.g_eq[q,:,:]
+                              - self.g_eq[qb,:,:])
+           - self.om_m_lbm*0.5*(self.g   [q,:,:]
+                              - self.g   [qb,:,:]
+                              - self.g_eq[q,:,:]
+                              + self.g_eq[qb,:,:]))
+
+        # Stream
         nx = self.nx
         ny = self.ny
         lx = self.lx
