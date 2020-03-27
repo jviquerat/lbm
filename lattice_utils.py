@@ -231,8 +231,8 @@ class Lattice:
             fy += g_up*cy
 
         # Normalize coefficient
-        Cx = 2.0*fx/(R_ref*L_ref*U_ref**2)
-        Cy = 2.0*fy/(R_ref*L_ref*U_ref**2)
+        Cx =-2.0*fx/(R_ref*L_ref*U_ref**2)
+        Cy =-2.0*fy/(R_ref*L_ref*U_ref**2)
 
         # Write to file
         filename = self.output_dir+'drag_lift_'+str(obs)
