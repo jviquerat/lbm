@@ -105,8 +105,8 @@ class Lattice:
         # Density arrays
         self.g       = np.zeros((self.q,  self.nx, self.ny))
         self.g_eq    = np.zeros((self.q,  self.nx, self.ny))
-        self.g_m     = np.zeros((self.nx, self.ny))
-        self.g_p     = np.zeros((self.nx, self.ny))
+        #self.g_m     = np.zeros((self.nx, self.ny))
+        #self.g_p     = np.zeros((self.nx, self.ny))
         self.g_up    = np.zeros((self.q,  self.nx, self.ny))
 
         # Lattice array is oriented as follows :
@@ -185,22 +185,27 @@ class Lattice:
         # and commenting all lines below
         #self.g_up = self.g - self.om_lbm*(self.g - self.g_eq)
 
-        # Compute g_p = g_p - g_eq_p
-        #     and g_m = g_m - g_eq_m
-        self.g_p[:,:] = self.g[0,:,:] - self.g_eq[0,:,:]
-        self.g_m[:,:] = 0.0
-        self.g_up[0,:,:] = self.g[0,:,:] - self.om_p_lbm*self.g_p[:,:] \
-                - self.om_m_lbm*self.g_m[:,:]
-        self.g[0,:,:] = self.g_up[0,:,:]
+        # TRT collisions + streaming
+        #self.g_p[:,:]    = self.g[0,:,:] - self.g_eq[0,:,:]
+        self.g_up[0,:,:] = (self.g[0,:,:]
+                        - self.om_p_lbm*(self.g[0,:,:] - self.g_eq[0,:,:]))
+        self.g[0,:,:]    = self.g_up[0,:,:]
 
         for q in range(1,self.q):
-            self.g_p[:,:] = 0.5*(self.g[q,:,:]    + self.g[self.ns[q],:,:] \
-                            - (self.g_eq[q,:,:] + self.g_eq[self.ns[q],:,:]))
-            self.g_m[:,:] = 0.5*(self.g[q,:,:]    - self.g[self.ns[q],:,:] \
-                            - (self.g_eq[q,:,:] - self.g_eq[self.ns[q],:,:]))
+            #self.g_p[:,:] = 0.5*(self.g[q,:,:]    + self.g[self.ns[q],:,:] \
+            #                - (self.g_eq[q,:,:] + self.g_eq[self.ns[q],:,:]))
+            #self.g_m[:,:] = 0.5*(self.g[q,:,:]    - self.g[self.ns[q],:,:] \
+            #                - (self.g_eq[q,:,:] - self.g_eq[self.ns[q],:,:]))
 
-            self.g_up[q,:,:] = self.g[q,:,:] - self.om_p_lbm*self.g_p[:,:] \
-                - self.om_m_lbm*self.g_m[:,:]
+            self.g_up[q,:,:] = (self.g[q,:,:]
+                - self.om_p_lbm*0.5*(self.g[q,:,:]
+                                     + self.g[self.ns[q],:,:]
+                                     - self.g_eq[q,:,:]
+                                     - self.g_eq[self.ns[q],:,:])
+                - self.om_m_lbm*0.5*(self.g[q,:,:]
+                                     - self.g[self.ns[q],:,:]
+                                     - self.g_eq[q,:,:]
+                                     + self.g_eq[self.ns[q],:,:]))
 
 
         for q in range(1,self.q):
