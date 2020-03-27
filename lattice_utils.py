@@ -187,27 +187,31 @@ class Lattice:
 
         # Compute g_p = g_p - g_eq_p
         #     and g_m = g_m - g_eq_m
-        self.g_p = 0.5*(self.g[:,:,:]    + self.g[self.ns[:],:,:] \
-                     - (self.g_eq[:,:,:] + self.g_eq[self.ns[:],:,:]))
-        self.g_m = 0.5*(self.g[:,:,:]    - self.g[self.ns[:],:,:] \
-                     - (self.g_eq[:,:,:] - self.g_eq[self.ns[:],:,:]))
+        for q in range(self.q):
+            self.g_p[q,:,:] = 0.5*(self.g[q,:,:]    + self.g[self.ns[q],:,:] \
+                            - (self.g_eq[q,:,:] + self.g_eq[self.ns[q],:,:]))
+            self.g_m[q,:,:] = 0.5*(self.g[q,:,:]    - self.g[self.ns[q],:,:] \
+                            - (self.g_eq[q,:,:] - self.g_eq[self.ns[q],:,:]))
 
         self.g_p[0,:,:] = self.g[0,:,:] - self.g_eq[0,:,:]
         self.g_m[0,:,:] = 0.0
 
         # Compute collisions
-        self.g_up = self.g - self.om_p_lbm*self.g_p \
-                           - self.om_m_lbm*self.g_m
-
-    ### ************************************************
-    ### Stream distribution
-    def stream(self):
+        for q in range(self.q):
+            self.g_up[q,:,:] = self.g[q,:,:] - self.om_p_lbm*self.g_p[q,:,:] \
+                - self.om_m_lbm*self.g_m[q,:,:]
 
         for q in range(self.q):
            self.g[q,:,:] = np.roll(
                            np.roll(
                                self.g_up[q,:,:],self.c[q,1],axis=1),
                                                 self.c[q,0],axis=0)
+
+    ### ************************************************
+    ### Stream distribution
+    #def stream(self):
+
+        
 
     ### ************************************************
     ### Compute drag and lift

@@ -33,8 +33,8 @@ y_max       = 0.21
 # u_lbm corresponds to max velocity
 Re_lbm      = 20.0
 u_lbm       = 0.03
-L_lbm       = 200
-t_max       = 1.0
+L_lbm       = 100
+t_max       = 0.1
 
 # Deduce other parameters
 Cs          = 1.0/math.sqrt(3.0)
@@ -123,7 +123,7 @@ for it in range(it_max+1):
     lattice.trt_collisions()
 
     # Streaming
-    lattice.stream()
+    #lattice.stream()
 
     # Boundary conditions
     lattice.bounce_back_obstacle(0)
