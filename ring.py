@@ -4,10 +4,6 @@ import math
 import numpy as np
 
 ###############################################
-### Useful classes
-###############################################
-
-###############################################
 ### Class Ring_buffer
 ### A ring buffer class
 class Ring_buffer:
