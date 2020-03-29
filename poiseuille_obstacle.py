@@ -17,16 +17,16 @@ start_time = time.time()
 # Shape1 parameters
 shape1_name     = 'main'
 shape1_npts     = 4
-shape1_nspts    = 200
-shape1_type     = 'cylinder'
+shape1_nspts    = 600
+shape1_type     = 'square'
 shape1_size     = 0.1
 shape1_position = [0.0, 0.0]
 
 # Domain size
 x_min       =-0.2
 x_max       = 1.0
-y_min       =-0.2
-y_max       = 0.21
+y_min       =-0.3
+y_max       = 0.35
 
 # Free parameters
 # L_lbm correponds to y length
@@ -34,7 +34,7 @@ y_max       = 0.21
 Re_lbm      = 20.0
 u_lbm       = 0.03
 L_lbm       = 100
-t_max       = 0.1
+t_max       = 1.0
 
 # Deduce other parameters
 Cs          = 1.0/math.sqrt(3.0)
@@ -52,11 +52,11 @@ nx          = math.floor(ny*(x_max-x_min)/(y_max-y_min))
 
 # Other parameters
 output_freq = 500
-dpi         = 200
-IBB         = True
+dpi         = 300
+IBB         = False
 
 # Poiseuille imposition style
-sigma       = math.floor(it_max/10)
+sigma       = math.floor(it_max/6)
 
 # Initialize lattice
 lattice = Lattice(nx      = nx,

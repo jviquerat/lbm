@@ -10,6 +10,9 @@ import matplotlib.pyplot as plt
 from   PIL               import Image
 from   datetime          import datetime
 
+# Custom imports
+from ring                import *
+
 ### ************************************************
 ### Class defining an obstacle in the lattice
 class Obstacle:
@@ -262,14 +265,19 @@ class Lattice:
                 cb = self.c[qb,:]
                 im = i + cb[0]
                 jm = j + cb[1]
+                imm = i + 2*cb[0]
+                jmm = j + 2*cb[1]
 
-                p = 2.0*self.obstacles[obs].ibb[k]
-                if (p < 1.0):
-                    self.g[qb,i,j] = (p*self.g_up[q,i,j] +
-                                      (1.0-p)*self.g_up[q,im,jm])
+                p  = self.obstacles[obs].ibb[k]
+                pp = 2.0*p
+                if (p < 0.5):
+                    self.g[qb,i,j] = (p*(pp+1.0)*self.g_up[q,i,j]
+                                   + (1.0+pp)*(1.0-pp)*self.g_up[q,im,jm]
+                                   - p*(1.0-pp)*self.g_up[q,imm,jmm])
                 else:
-                    self.g[qb,i,j] = ((1.0/p)*self.g_up[q,i,j] +
-                                      ((p-1.0)/p)*self.g_up[qb,i,j])
+                    self.g[qb,i,j] = (1.0/(p*(pp+1.0))*self.g_up[q,i,j] +
+                                     (pp-1.0)/p*self.g_up[qb,i,j] +
+                                     (1.0-pp)/(1.0+pp)*self.g_up[qb,im,jm])
 
         # Regular BB
         if (not self.IBB):
@@ -716,7 +724,7 @@ class Lattice:
                 pt   = self.lattice_coords(i, j)
                 x    = polygon[:,0] - pt[0]
                 y    = polygon[:,1] - pt[1]
-                dist = np.sqrt(x*x + y*y)
+                dist = np.sqrt(np.square(x) + np.square(y))
                 mpt  = np.argmin(dist)
                 mdst = dist[mpt]/(self.dx*np.linalg.norm(self.c[q]))
                 ibb  = np.append(ibb, mdst)
