@@ -1,25 +1,29 @@
 # Generic imports
 import os
+import PIL
 import math
 import random
 import progress.bar
 import numpy             as np
 import matplotlib        as mplt
 import matplotlib.pyplot as plt
-import PIL
 from   PIL               import Image
 from   datetime          import datetime
+
+# Custom imports
+from ring                import *
 
 ### ************************************************
 ### Class defining an obstacle in the lattice
 class Obstacle:
     ### ************************************************
     ### Constructor
-    def __init__(self, polygon, area, boundary):
+    def __init__(self, polygon, area, boundary, ibb):
 
         self.polygon  = polygon
         self.area     = area
         self.boundary = boundary
+        self.ibb      = ibb
 
 ### ************************************************
 ### Class defining lattice object
@@ -51,6 +55,7 @@ class Lattice:
         self.nu_lbm     = kwargs.get('nu_lbm',    0.01                      )
         self.Re_lbm     = kwargs.get('Re_lbm',    100.0                     )
         self.rho_lbm    = kwargs.get('rho_lbm',   1.0                       )
+        self.IBB        = kwargs.get('IBB',       False                     )
 
         # Other parameters
         self.output_it  = 0
@@ -103,9 +108,10 @@ class Lattice:
         # Density arrays
         self.g       = np.zeros((self.q,  self.nx, self.ny))
         self.g_eq    = np.zeros((self.q,  self.nx, self.ny))
-        self.g_m     = np.zeros((self.q,  self.nx, self.ny))
-        self.g_p     = np.zeros((self.q,  self.nx, self.ny))
+        #self.g_m     = np.zeros((self.nx, self.ny))
+        #self.g_p     = np.zeros((self.nx, self.ny))
         self.g_up    = np.zeros((self.q,  self.nx, self.ny))
+        self.g_s     = np.zeros((self.nx, self.ny))
 
         # Lattice array is oriented as follows :
         # +x     = left-right
@@ -152,11 +158,12 @@ class Lattice:
     def macro_velocity(self):
 
         # Compute velocity
-        self.u[:,:,:] = 0.0
-
-        for q in range(self.q):
-            self.u[0,:,:] += self.c[q,0]*self.g[q,:,:]
-            self.u[1,:,:] += self.c[q,1]*self.g[q,:,:]
+        self.u[0,:,:] = np.tensordot(self.c[:,0],
+                                     self.g[:,:,:],
+                                     axes=(0,0))
+        self.u[1,:,:] = np.tensordot(self.c[:,1],
+                                     self.g[:,:,:],
+                                     axes=(0,0))
 
         self.u[0,:,:] /= self.rho[:,:]
         self.u[1,:,:] /= self.rho[:,:]
@@ -176,36 +183,42 @@ class Lattice:
             self.g_eq[q,:,:] *= self.rho[:,:]*self.w[q]
 
     ### ************************************************
-    ### TRT collision operator
-    def trt_collisions(self):
+    ### Collision and streaming
+    def collision_stream(self):
 
-        # BGK, switch to it by de-commenting this line
-        # and commenting all lines below
-        #self.g_up = self.g - self.om_lbm*(self.g - self.g_eq)
+        # Take care of q=0 first
+        self.g_up[0,:,:] = (self.g[0,:,:]
+                         -  self.om_p_lbm*(self.g[0,:,:] - self.g_eq[0,:,:]))
+        self.g   [0,:,:] =  self.g_up[0,:,:]
 
-        # Compute g_p = g_p - g_eq_p
-        #     and g_m = g_m - g_eq_m
-        self.g_p = 0.5*(self.g[:,:,:]    + self.g[self.ns[:],:,:] \
-                     - (self.g_eq[:,:,:] + self.g_eq[self.ns[:],:,:]))
-        self.g_m = 0.5*(self.g[:,:,:]    - self.g[self.ns[:],:,:] \
-                     - (self.g_eq[:,:,:] - self.g_eq[self.ns[:],:,:]))
+        # Collide other indices
+        for q in range(1,self.q):
+            qb = self.ns[q]
 
-        self.g_p[0,:,:] = self.g[0,:,:] - self.g_eq[0,:,:]
-        self.g_m[0,:,:] = 0.0
+            self.g_up[q,:,:] = (self.g   [q,:,:]
+           - self.om_p_lbm*0.5*(self.g   [q,:,:]
+                              + self.g   [qb,:,:]
+                              - self.g_eq[q,:,:]
+                              - self.g_eq[qb,:,:])
+           - self.om_m_lbm*0.5*(self.g   [q,:,:]
+                              - self.g   [qb,:,:]
+                              - self.g_eq[q,:,:]
+                              + self.g_eq[qb,:,:]))
 
-        # Compute collisions
-        self.g_up = self.g - self.om_p_lbm*self.g_p \
-                           - self.om_m_lbm*self.g_m
+        # Stream
+        nx = self.nx
+        ny = self.ny
+        lx = self.lx
+        ly = self.ly
 
-    ### ************************************************
-    ### Stream distribution
-    def stream(self):
-
-        for q in range(self.q):
-           self.g[q,:,:] = np.roll(
-                           np.roll(
-                               self.g_up[q,:,:],self.c[q,1],axis=1),
-                                                self.c[q,0],axis=0)
+        self.g[1,1:nx, :  ] = self.g_up[1,0:lx, :  ]
+        self.g[2,0:lx, :  ] = self.g_up[2,1:nx, :  ]
+        self.g[3, :,  1:ny] = self.g_up[3, :,  0:ly]
+        self.g[4, :,  0:ly] = self.g_up[4, :,  1:ny]
+        self.g[5,1:nx,1:ny] = self.g_up[5,0:lx,0:ly]
+        self.g[6,0:lx,0:ly] = self.g_up[6,1:nx,1:ny]
+        self.g[7,0:lx,1:ny] = self.g_up[7,1:nx,0:ly]
+        self.g[8,1:nx,0:ly] = self.g_up[8,0:lx,1:ny]
 
     ### ************************************************
     ### Compute drag and lift
@@ -216,21 +229,21 @@ class Lattice:
         fy = 0.0
 
         # Loop over obstacle array
-        for q in range(1,self.q):
-            cx  = self.c[q,0]
-            cy  = self.c[q,1]
-            for k in range(len(self.obstacles[obs].boundary)):
-                i    = self.obstacles[obs].boundary[k,0]
-                j    = self.obstacles[obs].boundary[k,1]
-                g_up = self.g_up[q,i,j]
+        for k in range(len(self.obstacles[obs].boundary)):
+            i    = self.obstacles[obs].boundary[k,0]
+            j    = self.obstacles[obs].boundary[k,1]
+            q    = self.obstacles[obs].boundary[k,2]
+            qb   = self.ns[q]
+            cx   = self.c[q,0]
+            cy   = self.c[q,1]
+            g_up = self.g_up[q,i,j] + self.g[qb,i,j]
 
-                w   = float(self.lattice[i+cx,j+cy])
-                fx += 2.0*w*g_up*cx
-                fy += 2.0*w*g_up*cy
+            fx += g_up*cx
+            fy += g_up*cy
 
         # Normalize coefficient
-        Cx = 2.0*fx/(R_ref*L_ref*U_ref**2)
-        Cy = 2.0*fy/(R_ref*L_ref*U_ref**2)
+        Cx =-2.0*fx/(R_ref*L_ref*U_ref**2)
+        Cy =-2.0*fy/(R_ref*L_ref*U_ref**2)
 
         # Write to file
         filename = self.output_dir+'drag_lift_'+str(obs)
@@ -241,19 +254,45 @@ class Lattice:
     ### Obstacle halfway bounce-back no-slip b.c.
     def bounce_back_obstacle(self, obs):
 
-        for q in range(1,self.q):
-            qb = self.ns[q]
-            c  = self.c[q, :]
-
+        # Interpolated BB
+        if (self.IBB):
             for k in range(len(self.obstacles[obs].boundary)):
                 i  = self.obstacles[obs].boundary[k,0]
                 j  = self.obstacles[obs].boundary[k,1]
+                q  = self.obstacles[obs].boundary[k,2]
+                qb = self.ns[q]
+                c  = self.c[q,:]
+                cb = self.c[qb,:]
+                im = i + cb[0]
+                jm = j + cb[1]
+                imm = i + 2*cb[0]
+                jmm = j + 2*cb[1]
+
+                p  = self.obstacles[obs].ibb[k]
+                pp = 2.0*p
+                if (p < 0.5):
+                    self.g[qb,i,j] = (p*(pp+1.0)*self.g_up[q,i,j]
+                                   + (1.0+pp)*(1.0-pp)*self.g_up[q,im,jm]
+                                   - p*(1.0-pp)*self.g_up[q,imm,jmm])
+                else:
+                    self.g[qb,i,j] = (1.0/(p*(pp+1.0))*self.g_up[q,i,j] +
+                                     (pp-1.0)/p*self.g_up[qb,i,j] +
+                                     (1.0-pp)/(1.0+pp)*self.g_up[qb,im,jm])
+
+        # Regular BB
+        if (not self.IBB):
+            for k in range(len(self.obstacles[obs].boundary)):
+                i  = self.obstacles[obs].boundary[k,0]
+                j  = self.obstacles[obs].boundary[k,1]
+                q  = self.obstacles[obs].boundary[k,2]
+                qb = self.ns[q]
+                c  = self.c[q,:]
                 ii = i + c[0]
                 jj = j + c[1]
-                w  = self.lattice[ii,jj]
 
-                if w: self.g[qb,i,j] = self.g_up[q,i,j]
+                self.g[qb,i,j] = self.g_up[q,i,j]
 
+        # Set velocity of obstacles
         self.u[:,self.lattice] = 0.0
 
     ### ************************************************
@@ -623,7 +662,8 @@ class Lattice:
 
         # Declare lattice arrays
         obstacle = np.empty((0,2), dtype=int)
-        boundary = np.empty((0,2), dtype=int)
+        boundary = np.empty((0,3), dtype=int)
+        ibb      = np.empty((1),   dtype=float)
 
         # Fill lattice
         bar = progress.bar.Bar('Generating...', max=self.nx*self.ny)
@@ -656,20 +696,41 @@ class Lattice:
 
         print('Obstacle area: '+str(area))
 
-        for k in range(obstacle.shape[0]):
+        # Build boundary of obstacle, i.e. 1st layer of fluid
+        for k in range(len(obstacle)):
             i = obstacle[k,0]
             j = obstacle[k,1]
-            for di in [-1, 0, 1]:
-               for dj in [-1, 0, 1]:
-                   if (not self.lattice[i+di,j+dj]):
-                       boundary = np.append(boundary,
-                                            np.array([[i+di,j+dj]]), axis=0)
+
+            for q in range(1,9):
+                qb  = self.ns[q]
+                cx  = self.c[q,0]
+                cy  = self.c[q,1]
+                ii  = i + cx
+                jj  = j + cy
+
+                if (not self.lattice[ii,jj]):
+                    boundary = np.append(boundary,
+                                         np.array([[ii,jj,qb]]), axis=0)
 
         # Some cells were counted multiple times, unique-sort them
         boundary = np.unique(boundary, axis=0)
 
+        # Compute lattice-boundary distances if IBB is True
+        if (self.IBB):
+            for k in range(len(boundary)):
+                i    = boundary[k,0]
+                j    = boundary[k,1]
+                q    = boundary[k,2]
+                pt   = self.lattice_coords(i, j)
+                x    = polygon[:,0] - pt[0]
+                y    = polygon[:,1] - pt[1]
+                dist = np.sqrt(np.square(x) + np.square(y))
+                mpt  = np.argmin(dist)
+                mdst = dist[mpt]/(self.dx*np.linalg.norm(self.c[q]))
+                ibb  = np.append(ibb, mdst)
+
         # Add obstacle
-        obs = Obstacle(polygon, area, boundary)
+        obs = Obstacle(polygon, area, boundary, ibb)
         self.obstacles.append(obs)
 
         # Printings

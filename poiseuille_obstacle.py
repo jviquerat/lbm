@@ -17,7 +17,7 @@ start_time = time.time()
 # Shape1 parameters
 shape1_name     = 'main'
 shape1_npts     = 4
-shape1_nspts    = 50
+shape1_nspts    = 600
 shape1_type     = 'square'
 shape1_size     = 0.1
 shape1_position = [0.0, 0.0]
@@ -25,8 +25,8 @@ shape1_position = [0.0, 0.0]
 # Domain size
 x_min       =-0.2
 x_max       = 1.0
-y_min       =-0.2
-y_max       = 0.21
+y_min       =-0.3
+y_max       = 0.35
 
 # Free parameters
 # L_lbm correponds to y length
@@ -52,10 +52,11 @@ nx          = math.floor(ny*(x_max-x_min)/(y_max-y_min))
 
 # Other parameters
 output_freq = 500
-dpi         = 200
+dpi         = 300
+IBB         = False
 
 # Poiseuille imposition style
-sigma       = math.floor(it_max/10)
+sigma       = math.floor(it_max/6)
 
 # Initialize lattice
 lattice = Lattice(nx      = nx,
@@ -72,7 +73,8 @@ lattice = Lattice(nx      = nx,
                   x_max   = x_max,
                   y_min   = y_min,
                   y_max   = y_max,
-                  dpi     = dpi)
+                  dpi     = dpi,
+                  IBB     = IBB)
 
 # Generate main shape and add to lattice
 shape1 = generate_shape(shape1_npts,
@@ -118,13 +120,7 @@ for it in range(it_max+1):
     lattice.equilibrium()
 
     # Collisions
-    lattice.trt_collisions()
-
-    # Compute drag/lift
-    lattice.drag_lift(0, it, rho_lbm, u_avg, D_lbm)
-
-    # Streaming
-    lattice.stream()
+    lattice.collision_stream()
 
     # Boundary conditions
     lattice.bounce_back_obstacle(0)
@@ -136,6 +132,9 @@ for it in range(it_max+1):
     lattice.zou_he_top_left_corner()
     lattice.zou_he_top_right_corner()
     lattice.zou_he_bottom_right_corner()
+
+    # Compute drag/lift
+    lattice.drag_lift(0, it, rho_lbm, u_avg, D_lbm)
 
     # Increment bar
     bar.next()
