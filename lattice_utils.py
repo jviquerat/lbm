@@ -10,7 +10,7 @@ from   PIL               import Image
 from   datetime          import datetime
 
 # Custom imports
-from ring                import *
+from buffer              import *
 
 ### ************************************************
 ### Class defining an obstacle in the lattice

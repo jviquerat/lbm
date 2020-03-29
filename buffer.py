@@ -4,9 +4,9 @@ import math
 import numpy as np
 
 ###############################################
-### Class Ring_buffer
-### A ring buffer class
-class Ring_buffer:
+### Class Buffer
+### A buffer class
+class Buffer:
 
     ### Create object
     def __init__(self,
@@ -14,7 +14,7 @@ class Ring_buffer:
 
         # Check inputs
         if (size < 1):
-            raise ValueError('Incorrect ring buffer size')
+            raise ValueError('Incorrect buffer size')
 
         if (size is not int):
             size = math.floor(size)
@@ -35,7 +35,7 @@ class Ring_buffer:
         # Circular test
         if (self.index == self.size): self.index = 0
 
-    ### Average ring buffer
+    ### Average buffer
     def avg(self):
 
         # Average and return
