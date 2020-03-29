@@ -3,7 +3,6 @@ import os
 import PIL
 import math
 import random
-import progress.bar
 import numpy             as np
 import matplotlib        as mplt
 import matplotlib.pyplot as plt
@@ -56,6 +55,10 @@ class Lattice:
         self.Re_lbm     = kwargs.get('Re_lbm',    100.0                     )
         self.rho_lbm    = kwargs.get('rho_lbm',   1.0                       )
         self.IBB        = kwargs.get('IBB',       False                     )
+        self.stop       = kwargs.get('stop',      'it'                      )
+        self.t_max      = kwargs.get('t_max',     '1.0'                     )
+        self.it_max     = kwargs.get('it_max',    1000                      )
+        self.drag_crit  = kwargs.get('drag_crit', 1.0e-3                    )
 
         # Other parameters
         self.output_it  = 0
@@ -108,10 +111,7 @@ class Lattice:
         # Density arrays
         self.g       = np.zeros((self.q,  self.nx, self.ny))
         self.g_eq    = np.zeros((self.q,  self.nx, self.ny))
-        #self.g_m     = np.zeros((self.nx, self.ny))
-        #self.g_p     = np.zeros((self.nx, self.ny))
         self.g_up    = np.zeros((self.q,  self.nx, self.ny))
-        self.g_s     = np.zeros((self.nx, self.ny))
 
         # Lattice array is oriented as follows :
         # +x     = left-right
@@ -125,6 +125,10 @@ class Lattice:
 
         # Obstacles
         self.obstacles = []
+
+        # Iterating and stopping
+        self.it      = 0
+        self.compute = True
 
         # Printings
         print('### LBM solver ###')
@@ -666,7 +670,7 @@ class Lattice:
         ibb      = np.empty((1),   dtype=float)
 
         # Fill lattice
-        bar = progress.bar.Bar('Generating...', max=self.nx*self.ny)
+        print('Generating lattice...')
         for i in range(self.nx):
             for j in range(self.ny):
                 pt = self.lattice_coords(i, j)
@@ -681,9 +685,6 @@ class Lattice:
                         self.lattice[i,j] = True
                         obstacle = np.append(obstacle,
                                              np.array([[i,j]]), axis=0)
-
-                bar.next()
-        bar.finish()
 
         print('Found '+str(obstacle.shape[0])+' locations in obstacle')
 
@@ -928,3 +929,22 @@ class Lattice:
         with open(filename, 'w') as f:
             for j in range(self.ny):
                 f.write('{} {}\n'.format(j*self.dx, ux_error[j]))
+
+    ### ************************************************
+    ### Check stopping criterion
+    def check_stop(self):
+
+        if (self.stop == 'it'):
+            if (self.it > self.it_max): self.compute = False
+
+        self.it += 1
+
+    ### ************************************************
+    ### Iteration printings
+    def it_printings(self):
+
+        if (self.stop == 'it'):
+            print('# it = '+str(self.it)+' / '+str(self.it_max),
+                  end="\r")
+        if (self.stop == 'drag'):
+            print('it = '+str(self.it))

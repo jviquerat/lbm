@@ -13,7 +13,7 @@ class Ring_buffer:
                  size):
 
         # Check inputs
-        if (size <= 0):
+        if (size < 1):
             raise ValueError('Incorrect ring buffer size')
 
         if (size is not int):
