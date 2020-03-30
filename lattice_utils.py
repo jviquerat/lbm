@@ -257,16 +257,16 @@ class Lattice:
         self.drag_buff.add(Cx)
         self.lift_buff.add(Cy)
 
-        #if ((self.it%10 == 0)):
-        avg_Cx = self.drag_buff.fft_avg()
-        avg_Cy = self.lift_buff.fft_avg()
+        avg_Cx, dcx = self.drag_buff.mv_avg()
+        avg_Cy, dcy = self.lift_buff.mv_avg()
 
         # Write to file
         filename = self.output_dir+'drag_lift_'+str(obs)
         with open(filename, 'a') as f:
-            f.write('{} {} {} {} {}\n'.format(it*self.dt,
+            f.write('{} {} {} {} {} {} {}\n'.format(it*self.dt,
                                               Cx,     Cy,
-                                              avg_Cx, avg_Cy))
+                                              avg_Cx, avg_Cy,
+                                              dcx,    dcy))
 
     ### ************************************************
     ### Obstacle halfway bounce-back no-slip b.c.

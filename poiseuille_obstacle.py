@@ -17,7 +17,7 @@ start_time = time.time()
 shape1_name     = 'main'
 shape1_npts     = 4
 shape1_nspts    = 600
-shape1_type     = 'square'
+shape1_type     = 'cylinder'
 shape1_size     = 0.1
 shape1_position = [0.0, 0.0]
 
