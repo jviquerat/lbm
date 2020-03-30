@@ -10,7 +10,7 @@ from   PIL               import Image
 from   datetime          import datetime
 
 # Custom imports
-from buffer              import *
+from   buff              import *
 
 ### ************************************************
 ### Class defining an obstacle in the lattice
@@ -127,8 +127,10 @@ class Lattice:
         self.obstacles = []
 
         # Iterating and stopping
-        self.it      = 0
-        self.compute = True
+        self.it        = 0
+        self.compute   = True
+        self.drag_buff = Buff('drag', self.dt, self.output_dir)
+        self.lift_buff = Buff('lift', self.dt, self.output_dir)
 
         # Printings
         print('### LBM solver ###')
@@ -229,8 +231,10 @@ class Lattice:
     def drag_lift(self, obs, it, R_ref, U_ref, L_ref):
 
         # Initialize
-        fx = 0.0
-        fy = 0.0
+        fx     = 0.0
+        fy     = 0.0
+        avg_Cx = 0.0
+        avg_Cy = 0.0
 
         # Loop over obstacle array
         for k in range(len(self.obstacles[obs].boundary)):
@@ -249,10 +253,20 @@ class Lattice:
         Cx =-2.0*fx/(R_ref*L_ref*U_ref**2)
         Cy =-2.0*fy/(R_ref*L_ref*U_ref**2)
 
+        # Add to buffer and check for convergence
+        self.drag_buff.add(Cx)
+        self.lift_buff.add(Cy)
+
+        #if ((self.it%10 == 0)):
+        avg_Cx = self.drag_buff.fft_avg()
+        avg_Cy = self.lift_buff.fft_avg()
+
         # Write to file
         filename = self.output_dir+'drag_lift_'+str(obs)
         with open(filename, 'a') as f:
-            f.write('{} {} {}\n'.format(it*self.dt, Cx, Cy))
+            f.write('{} {} {} {} {}\n'.format(it*self.dt,
+                                              Cx,     Cy,
+                                              avg_Cx, avg_Cy))
 
     ### ************************************************
     ### Obstacle halfway bounce-back no-slip b.c.
@@ -935,7 +949,14 @@ class Lattice:
     def check_stop(self):
 
         if (self.stop == 'it'):
-            if (self.it > self.it_max): self.compute = False
+            if (self.it > self.it_max):
+                self.compute = False
+                print('\n')
+
+        if (self.stop == 'obs'):
+            if (self.drag_buff.obs_cv and self.lift_buff.obs_cv):
+                self.compute = False
+                print('\n')
 
         self.it += 1
 
@@ -945,6 +966,9 @@ class Lattice:
 
         if (self.stop == 'it'):
             print('# it = '+str(self.it)+' / '+str(self.it_max),
-                  end="\r")
-        if (self.stop == 'drag'):
-            print('it = '+str(self.it))
+                  end='\r')
+        if (self.stop == 'obs'):
+            print('it = '+str(self.it)+\
+                  ', avg drag = '+str(self.drag_buff.obs)+\
+                  ', avg lift = '+str(self.lift_buff.obs),\
+                  end='\r')

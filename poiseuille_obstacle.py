@@ -23,14 +23,14 @@ shape1_position = [0.0, 0.0]
 
 # Domain size
 x_min       =-0.2
-x_max       = 1.0
-y_min       =-0.3
-y_max       = 0.35
+x_max       = 2.0
+y_min       =-0.2
+y_max       = 0.22
 
 # Free parameters
 # L_lbm correponds to y length
 # u_lbm corresponds to max velocity
-Re_lbm      = 20.0
+Re_lbm      = 100.0
 u_lbm       = 0.03
 L_lbm       = 100
 
@@ -50,12 +50,12 @@ nx          = math.floor(ny*(x_max-x_min)/(y_max-y_min))
 # Other parameters
 output_freq = 500
 dpi         = 300
-IBB         = False
-stop        = 'it'
-t_max       = 0.1
+IBB         = True
+stop        = 'obs'
+t_max       = 2.0
 it_max      = math.floor(t_max/dt)
 drag_crit   = 1.0e-3
-sigma       = math.floor(30*nx)
+sigma       = math.floor(10*nx)
 
 # Initialize lattice
 lattice = Lattice(nx        = nx,
