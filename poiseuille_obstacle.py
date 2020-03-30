@@ -23,16 +23,16 @@ shape1_position = [0.0, 0.0]
 
 # Domain size
 x_min       =-0.2
-x_max       = 2.0
+x_max       = 1.0
 y_min       =-0.2
-y_max       = 0.22
+y_max       = 0.25
 
 # Free parameters
 # L_lbm correponds to y length
 # u_lbm corresponds to max velocity
 Re_lbm      = 20.0
 u_lbm       = 0.03
-L_lbm       = 100
+L_lbm       = 300
 
 # Deduce other parameters
 Cs          = 1.0/math.sqrt(3.0)
@@ -50,7 +50,7 @@ nx          = math.floor(ny*(x_max-x_min)/(y_max-y_min))
 # Other parameters
 output_freq = 500
 dpi         = 300
-IBB         = True
+IBB         = False
 stop        = 'it'
 t_max       = 1.0
 it_max      = math.floor(t_max/dt)

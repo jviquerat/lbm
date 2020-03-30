@@ -292,9 +292,9 @@ class Lattice:
                                    + (1.0+pp)*(1.0-pp)*self.g_up[q,im,jm]
                                    - p*(1.0-pp)*self.g_up[q,imm,jmm])
                 else:
-                    self.g[qb,i,j] = (1.0/(p*(pp+1.0))*self.g_up[q,i,j] +
-                                     (pp-1.0)/p*self.g_up[qb,i,j] +
-                                     (1.0-pp)/(1.0+pp)*self.g_up[qb,im,jm])
+                    self.g[qb,i,j] = ((1.0/(p*(pp+1.0)))*self.g_up[q,i,j] +
+                                     ((pp-1.0)/p)*self.g_up[qb,i,j] +
+                                     ((1.0-pp)/(1.0+pp))*self.g_up[qb,im,jm])
 
         # Regular BB
         if (not self.IBB):
