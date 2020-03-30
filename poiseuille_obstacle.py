@@ -17,7 +17,7 @@ start_time = time.time()
 shape1_name     = 'main'
 shape1_npts     = 4
 shape1_nspts    = 600
-shape1_type     = 'cylinder'
+shape1_type     = 'square'
 shape1_size     = 0.1
 shape1_position = [0.0, 0.0]
 
@@ -30,7 +30,7 @@ y_max       = 0.22
 # Free parameters
 # L_lbm correponds to y length
 # u_lbm corresponds to max velocity
-Re_lbm      = 100.0
+Re_lbm      = 20.0
 u_lbm       = 0.03
 L_lbm       = 100
 
@@ -51,10 +51,9 @@ nx          = math.floor(ny*(x_max-x_min)/(y_max-y_min))
 output_freq = 500
 dpi         = 300
 IBB         = True
-stop        = 'obs'
-t_max       = 2.0
+stop        = 'it'
+t_max       = 1.0
 it_max      = math.floor(t_max/dt)
-drag_crit   = 1.0e-3
 sigma       = math.floor(10*nx)
 
 # Initialize lattice
@@ -76,8 +75,7 @@ lattice = Lattice(nx        = nx,
                   IBB       = IBB,
                   stop      = stop,
                   t_max     = t_max,
-                  it_max    = it_max,
-                  drag_crit = drag_crit)
+                  it_max    = it_max)
 
 # Generate main shape and add to lattice
 shape1 = generate_shape(shape1_npts,

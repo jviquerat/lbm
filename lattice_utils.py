@@ -58,7 +58,6 @@ class Lattice:
         self.stop       = kwargs.get('stop',      'it'                      )
         self.t_max      = kwargs.get('t_max',     '1.0'                     )
         self.it_max     = kwargs.get('it_max',    1000                      )
-        self.drag_crit  = kwargs.get('drag_crit', 1.0e-3                    )
 
         # Other parameters
         self.output_it  = 0
