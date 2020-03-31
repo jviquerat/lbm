@@ -1,7 +1,6 @@
 # Generic imports
 import math
 import time
-import progress.bar
 
 # Custom imports
 from shapes_utils  import *
@@ -25,16 +24,15 @@ shape1_position = [0.0, 0.0]
 # Domain size
 x_min       =-0.2
 x_max       = 1.0
-y_min       =-0.3
-y_max       = 0.35
+y_min       =-0.2
+y_max       = 0.25
 
 # Free parameters
 # L_lbm correponds to y length
 # u_lbm corresponds to max velocity
 Re_lbm      = 20.0
 u_lbm       = 0.03
-L_lbm       = 100
-t_max       = 1.0
+L_lbm       = 300
 
 # Deduce other parameters
 Cs          = 1.0/math.sqrt(3.0)
@@ -45,7 +43,6 @@ nu_lbm      = u_avg*D_lbm/Re_lbm
 tau_lbm     = 0.5 + nu_lbm/(Cs**2)
 rho_lbm     = 1.0
 dt          = Re_lbm*nu_lbm/L_lbm**2
-it_max      = math.floor(t_max/dt)
 dx          = (y_max-y_min)/ny
 dy          = dx
 nx          = math.floor(ny*(x_max-x_min)/(y_max-y_min))
@@ -54,27 +51,31 @@ nx          = math.floor(ny*(x_max-x_min)/(y_max-y_min))
 output_freq = 500
 dpi         = 300
 IBB         = False
-
-# Poiseuille imposition style
-sigma       = math.floor(it_max/6)
+stop        = 'it'
+t_max       = 1.0
+it_max      = math.floor(t_max/dt)
+sigma       = math.floor(10*nx)
 
 # Initialize lattice
-lattice = Lattice(nx      = nx,
-                  ny      = ny,
-                  dx      = dx,
-                  dt      = dt,
-                  tau_lbm = tau_lbm,
-                  Re_lbm  = Re_lbm,
-                  u_lbm   = u_lbm,
-                  L_lbm   = D_lbm,
-                  nu_lbm  = nu_lbm,
-                  rho_lbm = rho_lbm,
-                  x_min   = x_min,
-                  x_max   = x_max,
-                  y_min   = y_min,
-                  y_max   = y_max,
-                  dpi     = dpi,
-                  IBB     = IBB)
+lattice = Lattice(nx        = nx,
+                  ny        = ny,
+                  dx        = dx,
+                  dt        = dt,
+                  tau_lbm   = tau_lbm,
+                  Re_lbm    = Re_lbm,
+                  u_lbm     = u_lbm,
+                  L_lbm     = D_lbm,
+                  nu_lbm    = nu_lbm,
+                  rho_lbm   = rho_lbm,
+                  x_min     = x_min,
+                  x_max     = x_max,
+                  y_min     = y_min,
+                  y_max     = y_max,
+                  dpi       = dpi,
+                  IBB       = IBB,
+                  stop      = stop,
+                  t_max     = t_max,
+                  it_max    = it_max)
 
 # Generate main shape and add to lattice
 shape1 = generate_shape(shape1_npts,
@@ -101,17 +102,19 @@ print("Pre-processing time = {}".format(end_time - start_time))
 start_time = time.time()
 
 # Solve
-bar = progress.bar.Bar('Solving...', max=it_max)
-for it in range(it_max+1):
+print('Solving...')
+while (lattice.compute):
+
+    lattice.it_printings()
 
     # Progressively impose Poiseuille
-    lattice.set_inlet_poiseuille(u_lbm, rho_lbm, it, sigma)
+    lattice.set_inlet_poiseuille(u_lbm, rho_lbm, lattice.it, sigma)
 
     # Compute macroscopic fields
     lattice.macro()
 
     # Output field
-    lattice.output_fields(it,
+    lattice.output_fields(lattice.it,
                           output_freq,
                           u_norm   = True,
                           u_stream = False)
@@ -134,13 +137,10 @@ for it in range(it_max+1):
     lattice.zou_he_bottom_right_corner()
 
     # Compute drag/lift
-    lattice.drag_lift(0, it, rho_lbm, u_avg, D_lbm)
+    lattice.drag_lift(0, lattice.it, rho_lbm, u_avg, D_lbm)
 
-    # Increment bar
-    bar.next()
-
-# End bar
-bar.finish()
+    # Check stopping criterion
+    lattice.check_stop()
 
 # Count time
 end_time = time.time()

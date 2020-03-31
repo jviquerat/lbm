@@ -3,7 +3,6 @@ import os
 import PIL
 import math
 import random
-import progress.bar
 import numpy             as np
 import matplotlib        as mplt
 import matplotlib.pyplot as plt
@@ -11,7 +10,7 @@ from   PIL               import Image
 from   datetime          import datetime
 
 # Custom imports
-from ring                import *
+from   buff              import *
 
 ### ************************************************
 ### Class defining an obstacle in the lattice
@@ -56,6 +55,9 @@ class Lattice:
         self.Re_lbm     = kwargs.get('Re_lbm',    100.0                     )
         self.rho_lbm    = kwargs.get('rho_lbm',   1.0                       )
         self.IBB        = kwargs.get('IBB',       False                     )
+        self.stop       = kwargs.get('stop',      'it'                      )
+        self.t_max      = kwargs.get('t_max',     '1.0'                     )
+        self.it_max     = kwargs.get('it_max',    1000                      )
 
         # Other parameters
         self.output_it  = 0
@@ -108,10 +110,7 @@ class Lattice:
         # Density arrays
         self.g       = np.zeros((self.q,  self.nx, self.ny))
         self.g_eq    = np.zeros((self.q,  self.nx, self.ny))
-        #self.g_m     = np.zeros((self.nx, self.ny))
-        #self.g_p     = np.zeros((self.nx, self.ny))
         self.g_up    = np.zeros((self.q,  self.nx, self.ny))
-        self.g_s     = np.zeros((self.nx, self.ny))
 
         # Lattice array is oriented as follows :
         # +x     = left-right
@@ -125,6 +124,12 @@ class Lattice:
 
         # Obstacles
         self.obstacles = []
+
+        # Iterating and stopping
+        self.it        = 0
+        self.compute   = True
+        self.drag_buff = Buff('drag', self.dt, self.output_dir)
+        self.lift_buff = Buff('lift', self.dt, self.output_dir)
 
         # Printings
         print('### LBM solver ###')
@@ -225,8 +230,10 @@ class Lattice:
     def drag_lift(self, obs, it, R_ref, U_ref, L_ref):
 
         # Initialize
-        fx = 0.0
-        fy = 0.0
+        fx     = 0.0
+        fy     = 0.0
+        avg_Cx = 0.0
+        avg_Cy = 0.0
 
         # Loop over obstacle array
         for k in range(len(self.obstacles[obs].boundary)):
@@ -245,10 +252,20 @@ class Lattice:
         Cx =-2.0*fx/(R_ref*L_ref*U_ref**2)
         Cy =-2.0*fy/(R_ref*L_ref*U_ref**2)
 
+        # Add to buffer and check for convergence
+        self.drag_buff.add(Cx)
+        self.lift_buff.add(Cy)
+
+        avg_Cx, dcx = self.drag_buff.mv_avg()
+        avg_Cy, dcy = self.lift_buff.mv_avg()
+
         # Write to file
         filename = self.output_dir+'drag_lift_'+str(obs)
         with open(filename, 'a') as f:
-            f.write('{} {} {}\n'.format(it*self.dt, Cx, Cy))
+            f.write('{} {} {} {} {} {} {}\n'.format(it*self.dt,
+                                              Cx,     Cy,
+                                              avg_Cx, avg_Cy,
+                                              dcx,    dcy))
 
     ### ************************************************
     ### Obstacle halfway bounce-back no-slip b.c.
@@ -275,9 +292,9 @@ class Lattice:
                                    + (1.0+pp)*(1.0-pp)*self.g_up[q,im,jm]
                                    - p*(1.0-pp)*self.g_up[q,imm,jmm])
                 else:
-                    self.g[qb,i,j] = (1.0/(p*(pp+1.0))*self.g_up[q,i,j] +
-                                     (pp-1.0)/p*self.g_up[qb,i,j] +
-                                     (1.0-pp)/(1.0+pp)*self.g_up[qb,im,jm])
+                    self.g[qb,i,j] = ((1.0/(p*(pp+1.0)))*self.g_up[q,i,j] +
+                                     ((pp-1.0)/p)*self.g_up[qb,i,j] +
+                                     ((1.0-pp)/(1.0+pp))*self.g_up[qb,im,jm])
 
         # Regular BB
         if (not self.IBB):
@@ -666,7 +683,7 @@ class Lattice:
         ibb      = np.empty((1),   dtype=float)
 
         # Fill lattice
-        bar = progress.bar.Bar('Generating...', max=self.nx*self.ny)
+        print('Generating lattice...')
         for i in range(self.nx):
             for j in range(self.ny):
                 pt = self.lattice_coords(i, j)
@@ -681,9 +698,6 @@ class Lattice:
                         self.lattice[i,j] = True
                         obstacle = np.append(obstacle,
                                              np.array([[i,j]]), axis=0)
-
-                bar.next()
-        bar.finish()
 
         print('Found '+str(obstacle.shape[0])+' locations in obstacle')
 
@@ -928,3 +942,32 @@ class Lattice:
         with open(filename, 'w') as f:
             for j in range(self.ny):
                 f.write('{} {}\n'.format(j*self.dx, ux_error[j]))
+
+    ### ************************************************
+    ### Check stopping criterion
+    def check_stop(self):
+
+        if (self.stop == 'it'):
+            if (self.it > self.it_max):
+                self.compute = False
+                print('\n')
+
+        if (self.stop == 'obs'):
+            if (self.drag_buff.obs_cv and self.lift_buff.obs_cv):
+                self.compute = False
+                print('\n')
+
+        self.it += 1
+
+    ### ************************************************
+    ### Iteration printings
+    def it_printings(self):
+
+        if (self.stop == 'it'):
+            print('# it = '+str(self.it)+' / '+str(self.it_max),
+                  end='\r')
+        if (self.stop == 'obs'):
+            print('it = '+str(self.it)+\
+                  ', avg drag = '+str(self.drag_buff.obs)+\
+                  ', avg lift = '+str(self.lift_buff.obs),\
+                  end='\r')
