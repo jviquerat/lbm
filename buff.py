@@ -12,6 +12,8 @@ class Buff:
     def __init__(self,
                  name,
                  dt,
+                 obs_cv_ct,
+                 obs_cv_nb,
                  output_dir):
 
         # Fill structure
@@ -25,6 +27,8 @@ class Buff:
         self.output_dir   = output_dir
         self.freq         = 1.0
         self.obs          = 0.0
+        self.obs_cv_ct    = obs_cv_ct
+        self.obs_cv_nb    = obs_cv_nb
         self.obs_cv_cnt   = 0
         self.obs_cv       = False
 
@@ -48,7 +52,7 @@ class Buff:
     def mv_avg(self):
 
         f_avg             = self.f_avg()
-        it_s              = math.floor(2*self.it/3)
+        it_s              = math.floor(9*self.it/10)
         it_e              = self.it
         self.obs          = self.p_avg(self.buff, it_s, it_e)
         self.avg1_buff    = np.append(self.avg1_buff, self.obs)
@@ -59,16 +63,16 @@ class Buff:
         self.obs          = self.p_avg(self.avg3_buff, it_s, it_e)
 
         growth = 0.0
-        if (self.it > 4):
+        if (self.it > 5):
             growth = (self.avg3_buff[-1] -
-                      self.avg3_buff[-4])/(3.0*self.dt)
+                      self.avg3_buff[-5])/(4.0*self.dt)
 
-            if (abs(growth) < 1.0e-2):
+            if (abs(growth) < self.obs_cv_ct):
                 self.obs_cv_cnt += 1
             else:
                 self.obs_cv_cnt  = 0
 
-            if (self.obs_cv_cnt > 1000):
+            if (self.obs_cv_cnt > self.obs_cv_nb):
                 self.obs_cv = True
 
         return self.obs, growth

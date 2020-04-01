@@ -452,7 +452,10 @@ def generate_shape(n_pts,
                   output_dir)
 
     shape.build()
-    shape.generate_image()
+    shape.generate_image(xmin =-shape_size,
+                         xmax = shape_size,
+                         ymin =-shape_size,
+                         ymax = shape_size)
     shape.write_csv()
 
     return shape

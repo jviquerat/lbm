@@ -17,22 +17,22 @@ start_time = time.time()
 shape1_name     = 'main'
 shape1_npts     = 4
 shape1_nspts    = 600
-shape1_type     = 'square'
+shape1_type     = 'random'
 shape1_size     = 0.1
 shape1_position = [0.0, 0.0]
 
 # Domain size
 x_min       =-0.2
-x_max       = 1.0
+x_max       = 2.0
 y_min       =-0.2
-y_max       = 0.25
+y_max       = 0.2
 
 # Free parameters
 # L_lbm correponds to y length
 # u_lbm corresponds to max velocity
-Re_lbm      = 20.0
+Re_lbm      = 100.0
 u_lbm       = 0.03
-L_lbm       = 300
+L_lbm       = 200
 
 # Deduce other parameters
 Cs          = 1.0/math.sqrt(3.0)
@@ -51,7 +51,9 @@ nx          = math.floor(ny*(x_max-x_min)/(y_max-y_min))
 output_freq = 500
 dpi         = 300
 IBB         = False
-stop        = 'it'
+stop        = 'obs'
+obs_cv_ct   = 1.0e-2
+obs_cv_nb   = 1000
 t_max       = 1.0
 it_max      = math.floor(t_max/dt)
 sigma       = math.floor(10*nx)
@@ -75,7 +77,9 @@ lattice = Lattice(nx        = nx,
                   IBB       = IBB,
                   stop      = stop,
                   t_max     = t_max,
-                  it_max    = it_max)
+                  it_max    = it_max,
+                  obs_cv_ct = obs_cv_ct,
+                  obs_cv_nb = obs_cv_nb)
 
 # Generate main shape and add to lattice
 shape1 = generate_shape(shape1_npts,

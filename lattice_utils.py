@@ -58,6 +58,8 @@ class Lattice:
         self.stop       = kwargs.get('stop',      'it'                      )
         self.t_max      = kwargs.get('t_max',     '1.0'                     )
         self.it_max     = kwargs.get('it_max',    1000                      )
+        self.obs_cv_ct  = kwargs.get('obs_cv_ct', 1.0e-2                    )
+        self.obs_cv_nb  = kwargs.get('obs_cv_nb', 1000                      )
 
         # Other parameters
         self.output_it  = 0
@@ -128,8 +130,16 @@ class Lattice:
         # Iterating and stopping
         self.it        = 0
         self.compute   = True
-        self.drag_buff = Buff('drag', self.dt, self.output_dir)
-        self.lift_buff = Buff('lift', self.dt, self.output_dir)
+        self.drag_buff = Buff('drag',
+                              self.dt,
+                              self.obs_cv_ct,
+                              self.obs_cv_nb,
+                              self.output_dir)
+        self.lift_buff = Buff('lift',
+                              self.dt,
+                              self.obs_cv_ct,
+                              self.obs_cv_nb,
+                              self.output_dir)
 
         # Printings
         print('### LBM solver ###')
