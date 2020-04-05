@@ -817,7 +817,7 @@ class Lattice:
         filename = self.output_dir+self.name+'.png'
 
         plt.imsave(filename,
-                   np.transpose(lat),
+                   np.rot90(lat),
                    vmin=-1.0,
                    vmax= 2.0)
         self.trim_white(filename)

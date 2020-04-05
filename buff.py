@@ -52,7 +52,7 @@ class Buff:
     def mv_avg(self):
 
         f_avg             = self.f_avg()
-        it_s              = math.floor(9*self.it/10)
+        it_s              = math.floor(3*self.it/4)
         it_e              = self.it
         self.obs          = self.p_avg(self.buff, it_s, it_e)
         self.avg1_buff    = np.append(self.avg1_buff, self.obs)
