@@ -237,13 +237,11 @@ class Lattice:
 
     ### ************************************************
     ### Compute drag and lift
-    def drag_lift(self, obs, it, R_ref, U_ref, L_ref):
+    def drag_lift(self, obs, R_ref, U_ref, L_ref):
 
         # Initialize
         fx     = 0.0
         fy     = 0.0
-        avg_Cx = 0.0
-        avg_Cy = 0.0
 
         # Loop over obstacle array
         for k in range(len(self.obstacles[obs].boundary)):
@@ -262,6 +260,12 @@ class Lattice:
         Cx =-2.0*fx/(R_ref*L_ref*U_ref**2)
         Cy =-2.0*fy/(R_ref*L_ref*U_ref**2)
 
+        return Cx, Cy
+
+    ### ************************************************
+    ### Handle drag/lift buffers
+    def add_buff(self, Cx, Cy, it):
+
         # Add to buffer and check for convergence
         self.drag_buff.add(Cx)
         self.lift_buff.add(Cy)
@@ -270,12 +274,14 @@ class Lattice:
         avg_Cy, dcy = self.lift_buff.mv_avg()
 
         # Write to file
-        filename = self.output_dir+'drag_lift_'+str(obs)
+        filename = self.output_dir+'drag_lift'
         with open(filename, 'a') as f:
             f.write('{} {} {} {} {} {} {}\n'.format(it*self.dt,
                                               Cx,     Cy,
                                               avg_Cx, avg_Cy,
                                               dcx,    dcy))
+
+        return avg_Cx, avg_Cy
 
     ### ************************************************
     ### Obstacle halfway bounce-back no-slip b.c.
@@ -977,7 +983,8 @@ class Lattice:
             print('# it = '+str(self.it)+' / '+str(self.it_max),
                   end='\r')
         if (self.stop == 'obs'):
-            print('it = '+str(self.it)+\
-                  ', avg drag = '+str(self.drag_buff.obs)+\
-                  ', avg lift = '+str(self.lift_buff.obs),\
-                  end='\r')
+            str_d = "{:10.6f}".format(self.drag_buff.obs)
+            str_l = "{:10.6f}".format(self.lift_buff.obs)
+
+            print('it = '+str(self.it)+
+                  ', avg drag = '+str_d+', avg lift = '+str_l, end='\r')

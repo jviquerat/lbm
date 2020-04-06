@@ -1,6 +1,6 @@
 # Generic imports
 import math
-import progress.bar
+import time
 
 # Custom imports
 from lattice_utils import *
@@ -8,6 +8,9 @@ from lattice_utils import *
 ###############################################
 ### LBM poiseuille
 ###############################################
+
+# Count time
+start_time = time.time()
 
 # Domain size
 x_min       =-1.0
@@ -39,8 +42,6 @@ nx          = math.floor(ny*(x_max-x_min)/(y_max-y_min))
 # Other parameters
 output_freq = 500
 dpi         = 200
-
-# Poiseuille imposition style
 sigma       = math.floor(it_max/10)
 
 # Initialize lattice
@@ -58,7 +59,9 @@ lattice = Lattice(nx      = nx,
                   x_max   = x_max,
                   y_min   = y_min,
                   y_max   = y_max,
-                  dpi     = dpi)
+                  dpi     = dpi,
+                  t_max   = t_max,
+                  it_max  = it_max)
 
 # Initialize fields
 lattice.set_inlet_poiseuille(u_lbm, rho_lbm, 0, sigma)
@@ -67,18 +70,26 @@ lattice.set_inlet_poiseuille(u_lbm, rho_lbm, 0, sigma)
 lattice.equilibrium()
 lattice.g = lattice.g_eq.copy()
 
+# Count time
+end_time = time.time()
+print("Pre-processing time = {}".format(end_time - start_time))
+start_time = time.time()
+
 # Solve
-bar = progress.bar.Bar('Solving...', max=it_max)
-for it in range(it_max+1):
+print('Solving...')
+while (lattice.compute):
+
+    # Printings
+    lattice.it_printings()
 
     # Progressively impose Poiseuille
-    lattice.set_inlet_poiseuille(u_lbm, rho_lbm, it, sigma)
+    lattice.set_inlet_poiseuille(u_lbm, rho_lbm, lattice.it, sigma)
 
     # Compute macroscopic fields
     lattice.macro()
 
     # Output field
-    lattice.output_fields(it,
+    lattice.output_fields(lattice.it,
                           output_freq,
                           u_norm   = True,
                           u_stream = False)
@@ -86,11 +97,8 @@ for it in range(it_max+1):
     # Compute equilibrium state
     lattice.equilibrium()
 
-    # Collisions
-    lattice.trt_collisions()
-
     # Streaming
-    lattice.stream()
+    lattice.collision_stream()
 
     # Boundary conditions
     lattice.zou_he_bottom_wall_velocity()
@@ -102,11 +110,12 @@ for it in range(it_max+1):
     lattice.zou_he_top_right_corner()
     lattice.zou_he_bottom_right_corner()
 
-    # Increment bar
-    bar.next()
+    # Check stopping criterion
+    lattice.check_stop()
 
-# End bar
-bar.finish()
+# Count time
+end_time = time.time()
+print("Loop time = {}".format(end_time - start_time))
 
 # Output error with exact solution
 lattice.poiseuille_error(u_lbm)

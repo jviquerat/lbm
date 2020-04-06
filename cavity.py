@@ -1,6 +1,6 @@
 # Generic imports
 import math
-import progress.bar
+import time
 
 # Custom imports
 from lattice_utils import *
@@ -8,6 +8,9 @@ from lattice_utils import *
 ###############################################
 ### LBM lid-driven cavity
 ###############################################
+
+# Count time
+start_time = time.time()
 
 ### Free parameters
 Re_lbm      = 100.0
@@ -30,6 +33,7 @@ dpi         = 200
 
 # Initialize lattice
 lattice = Lattice(nx      = nx,
+                  ny      = nx,
                   dx      = 1.0/nx,
                   dt      = dt,
                   tau_lbm = tau_lbm,
@@ -38,7 +42,9 @@ lattice = Lattice(nx      = nx,
                   L_lbm   = L_lbm,
                   nu_lbm  = nu_lbm,
                   rho_lbm = rho_lbm,
-                  dpi     = dpi)
+                  dpi     = dpi,
+                  t_max   = t_max,
+                  it_max  = it_max)
 
 # Initialize fields
 lattice.set_cavity(u_lbm)
@@ -48,15 +54,23 @@ lattice.rho *= rho_lbm
 lattice.equilibrium()
 lattice.g = lattice.g_eq.copy()
 
+# Count time
+end_time = time.time()
+print("Pre-processing time = {}".format(end_time - start_time))
+start_time = time.time()
+
 # Solve
-bar = progress.bar.Bar('Solving...', max=it_max)
-for it in range(it_max+1):
+print('Solving...')
+while (lattice.compute):
+
+    # Printings
+    lattice.it_printings()
 
     # Compute macroscopic fields
     lattice.macro()
 
     # Output field
-    lattice.output_fields(it,
+    lattice.output_fields(lattice.it,
                           output_freq,
                           u_norm   = True,
                           u_stream = False)
@@ -64,11 +78,8 @@ for it in range(it_max+1):
     # Compute equilibrium state
     lattice.equilibrium()
 
-    # Collisions
-    lattice.trt_collisions()
-
     # Streaming
-    lattice.stream()
+    lattice.collision_stream()
 
     # Boundary conditions
     lattice.zou_he_bottom_wall_velocity()
@@ -80,27 +91,12 @@ for it in range(it_max+1):
     lattice.zou_he_top_right_corner()
     lattice.zou_he_bottom_right_corner()
 
-    lx = lattice.lx
-    ly = lattice.ly
+    # Check stopping criterion
+    lattice.check_stop()
 
-    if(any(lattice.g[1, 0,  :] == -1.0)): print('stop')
-    if(any(lattice.g[2, lx, :]  == -1.0)): print('stop')
-    if(any(lattice.g[3, :,  0]  == -1.0)): print('stop')
-    if(any(lattice.g[4, :,  ly] == -1.0)): print('stop')
-    if(any(lattice.g[5, 0,  :]  == -1.0)): print('stop')
-    if(any(lattice.g[5, :,  0]  == -1.0)): print('stop')
-    if(any(lattice.g[6, lx, :]  == -1.0)): print('stop')
-    if(any(lattice.g[6, :,  ly] == -1.0)): print('stop')
-    if(any(lattice.g[7, lx, :]  == -1.0)): print('stop')
-    if(any(lattice.g[7, :,  0]  == -1.0)): print('stop')
-    if(any(lattice.g[8, 0,  :]  == -1.0)): print('stop')
-    if(any(lattice.g[8, :,  ly] == -1.0)): print('stop')
-
-    # Increment bar
-    bar.next()
-
-# End bar
-bar.finish()
+# Count time
+end_time = time.time()
+print("Loop time = {}".format(end_time - start_time))
 
 # Output error with exact solution
 lattice.cavity_error(u_lbm)

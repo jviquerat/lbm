@@ -109,6 +109,7 @@ start_time = time.time()
 print('Solving...')
 while (lattice.compute):
 
+    # Printings
     lattice.it_printings()
 
     # Progressively impose Poiseuille
@@ -141,7 +142,8 @@ while (lattice.compute):
     lattice.zou_he_bottom_right_corner()
 
     # Compute drag/lift
-    lattice.drag_lift(0, lattice.it, rho_lbm, u_avg, D_lbm)
+    drag,     lift     = lattice.drag_lift(0, rho_lbm, u_avg, D_lbm)
+    avg_drag, avg_lift = lattice.add_buff(drag, lift, lattice.it)
 
     # Check stopping criterion
     lattice.check_stop()
