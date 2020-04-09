@@ -159,19 +159,8 @@ class Lattice:
     ### Compute macroscopic fields
     def macro(self):
 
-        self.macro_density()
-        self.macro_velocity()
-
-    ### ************************************************
-    ### Compute macroscopic density
-    def macro_density(self):
-
         # Compute density
         self.rho[:,:] = np.sum(self.g[:,:,:], axis=0)
-
-    ### ************************************************
-    ### Compute macroscopic velocity
-    def macro_velocity(self):
 
         # Compute velocity
         self.u[0,:,:] = np.tensordot(self.c[:,0],
@@ -188,25 +177,27 @@ class Lattice:
     ### Compute equilibrium state
     def equilibrium(self):
 
-        # Compute velocity term
-        v = (3.0/2.0)*(self.u[0,:,:]**2 + self.u[1,:,:]**2)
+        nb_equilibrium(self.u, self.c, self.w, self.rho, self.g_eq)
 
-        # Compute equilibrium
-        for q in range(self.q):
-            t                 = 3.0*(self.u[0,:,:]*self.c[q,0] +
-                                     self.u[1,:,:]*self.c[q,1])
-            self.g_eq[q,:,:]  = (1.0 + t + 0.5*t**2 - v)
-            self.g_eq[q,:,:] *= self.rho[:,:]*self.w[q]
+        # # Compute velocity term
+        # v = (3.0/2.0)*(self.u[0,:,:]**2 + self.u[1,:,:]**2)
+
+        # # Compute equilibrium
+        # for q in range(self.q):
+        #     t                 = 3.0*(self.u[0,:,:]*self.c[q,0] +
+        #                              self.u[1,:,:]*self.c[q,1])
+        #     self.g_eq[q,:,:]  = (1.0 + t + 0.5*t**2 - v)
+        #     self.g_eq[q,:,:] *= self.rho[:,:]*self.w[q]
 
     ### ************************************************
     ### Collision and streaming
     def collision_stream(self):
 
-        col_str(self.g, self.g_eq, self.g_up,
-                self.om_p_lbm, self.om_m_lbm,
-                self.c, self.ns,
-                self.nx, self.ny,
-                self.lx, self.ly)
+        nb_col_str(self.g, self.g_eq, self.g_up,
+                   self.om_p_lbm, self.om_m_lbm,
+                   self.c, self.ns,
+                   self.nx, self.ny,
+                   self.lx, self.ly)
 
         # # Take care of q=0 first
         # self.g_up[0,:,:] = (self.g[0,:,:]
@@ -996,11 +987,25 @@ class Lattice:
             print('it = '+str(self.it)+
                   ', avg drag = '+str_d+', avg lift = '+str_l, end='\r')
 
+### ************************************************
+### Compute equilibrium state
+@jit(nopython=True,parallel=True,cache=True)
+def nb_equilibrium(u, c, w, rho, g_eq):
+
+    # Compute velocity term
+    v = (3.0/2.0)*(u[0,:,:]**2 + u[1,:,:]**2)
+
+    # Compute equilibrium
+    for q in range(9):
+        t                 = 3.0*(u[0,:,:]*c[q,0] +
+                                 u[1,:,:]*c[q,1])
+        g_eq[q,:,:]  = (1.0 + t + 0.5*t**2 - v)
+        g_eq[q,:,:] *= rho[:,:]*w[q]
 
 ### ************************************************
 ### Collision and streaming
 @jit(nopython=True,parallel=True,cache=True)
-def col_str(g, g_eq, g_up, om_p, om_m, c, ns, nx, ny, lx, ly):
+def nb_col_str(g, g_eq, g_up, om_p, om_m, c, ns, nx, ny, lx, ly):
 
     # Take care of q=0 first
     g_up[0,:,:] = g[0,:,:] - om_p*(g[0,:,:] - g_eq[0,:,:])
