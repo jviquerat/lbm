@@ -8,6 +8,7 @@ import matplotlib        as mplt
 import matplotlib.pyplot as plt
 from   PIL               import Image
 from   datetime          import datetime
+from   numba             import jit
 
 # Custom imports
 from   buff              import *
@@ -56,7 +57,7 @@ class Lattice:
         self.rho_lbm    = kwargs.get('rho_lbm',   1.0                       )
         self.IBB        = kwargs.get('IBB',       False                     )
         self.stop       = kwargs.get('stop',      'it'                      )
-        self.t_max      = kwargs.get('t_max',     '1.0'                     )
+        self.t_max      = kwargs.get('t_max',     1.0                       )
         self.it_max     = kwargs.get('it_max',    1000                      )
         self.obs_cv_ct  = kwargs.get('obs_cv_ct', 1.0e-2                    )
         self.obs_cv_nb  = kwargs.get('obs_cv_nb', 1000                      )
@@ -201,39 +202,45 @@ class Lattice:
     ### Collision and streaming
     def collision_stream(self):
 
-        # Take care of q=0 first
-        self.g_up[0,:,:] = (self.g[0,:,:]
-                         -  self.om_p_lbm*(self.g[0,:,:] - self.g_eq[0,:,:]))
-        self.g   [0,:,:] =  self.g_up[0,:,:]
+        col_str(self.g, self.g_eq, self.g_up,
+                self.om_p_lbm, self.om_m_lbm,
+                self.c, self.ns,
+                self.nx, self.ny,
+                self.lx, self.ly)
 
-        # Collide other indices
-        for q in range(1,self.q):
-            qb = self.ns[q]
+        # # Take care of q=0 first
+        # self.g_up[0,:,:] = (self.g[0,:,:]
+        #                  -  self.om_p_lbm*(self.g[0,:,:] - self.g_eq[0,:,:]))
+        # self.g   [0,:,:] =  self.g_up[0,:,:]
 
-            self.g_up[q,:,:] = (self.g   [q,:,:]
-           - self.om_p_lbm*0.5*(self.g   [q,:,:]
-                              + self.g   [qb,:,:]
-                              - self.g_eq[q,:,:]
-                              - self.g_eq[qb,:,:])
-           - self.om_m_lbm*0.5*(self.g   [q,:,:]
-                              - self.g   [qb,:,:]
-                              - self.g_eq[q,:,:]
-                              + self.g_eq[qb,:,:]))
+        # # Collide other indices
+        # for q in range(1,self.q):
+        #     qb = self.ns[q]
 
-        # Stream
-        nx = self.nx
-        ny = self.ny
-        lx = self.lx
-        ly = self.ly
+        #     self.g_up[q,:,:] = (self.g   [q,:,:]
+        #    - self.om_p_lbm*0.5*(self.g   [q,:,:]
+        #                       + self.g   [qb,:,:]
+        #                       - self.g_eq[q,:,:]
+        #                       - self.g_eq[qb,:,:])
+        #    - self.om_m_lbm*0.5*(self.g   [q,:,:]
+        #                       - self.g   [qb,:,:]
+        #                       - self.g_eq[q,:,:]
+        #                       + self.g_eq[qb,:,:]))
 
-        self.g[1,1:nx, :  ] = self.g_up[1,0:lx, :  ]
-        self.g[2,0:lx, :  ] = self.g_up[2,1:nx, :  ]
-        self.g[3, :,  1:ny] = self.g_up[3, :,  0:ly]
-        self.g[4, :,  0:ly] = self.g_up[4, :,  1:ny]
-        self.g[5,1:nx,1:ny] = self.g_up[5,0:lx,0:ly]
-        self.g[6,0:lx,0:ly] = self.g_up[6,1:nx,1:ny]
-        self.g[7,0:lx,1:ny] = self.g_up[7,1:nx,0:ly]
-        self.g[8,1:nx,0:ly] = self.g_up[8,0:lx,1:ny]
+        # # Stream
+        # nx = self.nx
+        # ny = self.ny
+        # lx = self.lx
+        # ly = self.ly
+
+        # self.g[1,1:nx, :  ] = self.g_up[1,0:lx, :  ]
+        # self.g[2,0:lx, :  ] = self.g_up[2,1:nx, :  ]
+        # self.g[3, :,  1:ny] = self.g_up[3, :,  0:ly]
+        # self.g[4, :,  0:ly] = self.g_up[4, :,  1:ny]
+        # self.g[5,1:nx,1:ny] = self.g_up[5,0:lx,0:ly]
+        # self.g[6,0:lx,0:ly] = self.g_up[6,1:nx,1:ny]
+        # self.g[7,0:lx,1:ny] = self.g_up[7,1:nx,0:ly]
+        # self.g[8,1:nx,0:ly] = self.g_up[8,0:lx,1:ny]
 
     ### ************************************************
     ### Compute drag and lift
@@ -988,3 +995,37 @@ class Lattice:
 
             print('it = '+str(self.it)+
                   ', avg drag = '+str_d+', avg lift = '+str_l, end='\r')
+
+
+### ************************************************
+### Collision and streaming
+@jit(nopython=True,parallel=True,cache=True)
+def col_str(g, g_eq, g_up, om_p, om_m, c, ns, nx, ny, lx, ly):
+
+    # Take care of q=0 first
+    g_up[0,:,:] = g[0,:,:] - om_p*(g[0,:,:] - g_eq[0,:,:])
+    g   [0,:,:] = g_up[0,:,:]
+
+    # Collide other indices
+    for q in range(1,9):
+        qb = ns[q]
+
+        g_up[q,:,:] = (g   [q,:,:]
+                       - om_p*0.5*(g   [q,:,:]
+                                   + g   [qb,:,:]
+                                   - g_eq[q,:,:]
+                                   - g_eq[qb,:,:])
+                       - om_m*0.5*(g   [q,:,:]
+                                   - g   [qb,:,:]
+                                   - g_eq[q,:,:]
+                                   + g_eq[qb,:,:]))
+
+    # Stream
+    g[1,1:nx, :  ] = g_up[1,0:lx, :  ]
+    g[2,0:lx, :  ] = g_up[2,1:nx, :  ]
+    g[3, :,  1:ny] = g_up[3, :,  0:ly]
+    g[4, :,  0:ly] = g_up[4, :,  1:ny]
+    g[5,1:nx,1:ny] = g_up[5,0:lx,0:ly]
+    g[6,0:lx,0:ly] = g_up[6,1:nx,1:ny]
+    g[7,0:lx,1:ny] = g_up[7,1:nx,0:ly]
+    g[8,1:nx,0:ly] = g_up[8,0:lx,1:ny]
