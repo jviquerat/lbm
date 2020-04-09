@@ -1,5 +1,5 @@
 # lbm
-A simple lattice-Boltzmann code for simple 2D flows resolutions
+A simple lattice-Boltzmann code for 2D flows resolutions
 
 <img width="900" alt="" src="https://user-images.githubusercontent.com/44053700/78360815-a8391680-75b7-11ea-9a4b-98114fbf8bb9.gif">
 
@@ -56,7 +56,7 @@ And the comparison of u_x = f(y) at the center of the domain with exact solution
 
 The computation of drag and lift force on an arbitrary shape in a Poiseuille flow. Launch it by running ```python3 poiseuille.py```
 
-
+<img width="900" alt="" src="https://user-images.githubusercontent.com/44053700/78360815-a8391680-75b7-11ea-9a4b-98114fbf8bb9.gif">
 
 ## Running
 

@@ -8,6 +8,7 @@ import matplotlib        as mplt
 import matplotlib.pyplot as plt
 from   PIL               import Image
 from   datetime          import datetime
+from   numba             import jit
 
 # Custom imports
 from   buff              import *
@@ -56,7 +57,7 @@ class Lattice:
         self.rho_lbm    = kwargs.get('rho_lbm',   1.0                       )
         self.IBB        = kwargs.get('IBB',       False                     )
         self.stop       = kwargs.get('stop',      'it'                      )
-        self.t_max      = kwargs.get('t_max',     '1.0'                     )
+        self.t_max      = kwargs.get('t_max',     1.0                       )
         self.it_max     = kwargs.get('it_max',    1000                      )
         self.obs_cv_ct  = kwargs.get('obs_cv_ct', 1.0e-2                    )
         self.obs_cv_nb  = kwargs.get('obs_cv_nb', 1000                      )
@@ -158,19 +159,8 @@ class Lattice:
     ### Compute macroscopic fields
     def macro(self):
 
-        self.macro_density()
-        self.macro_velocity()
-
-    ### ************************************************
-    ### Compute macroscopic density
-    def macro_density(self):
-
         # Compute density
         self.rho[:,:] = np.sum(self.g[:,:,:], axis=0)
-
-    ### ************************************************
-    ### Compute macroscopic velocity
-    def macro_velocity(self):
 
         # Compute velocity
         self.u[0,:,:] = np.tensordot(self.c[:,0],
@@ -187,78 +177,24 @@ class Lattice:
     ### Compute equilibrium state
     def equilibrium(self):
 
-        # Compute velocity term
-        v = (3.0/2.0)*(self.u[0,:,:]**2 + self.u[1,:,:]**2)
-
-        # Compute equilibrium
-        for q in range(self.q):
-            t                 = 3.0*(self.u[0,:,:]*self.c[q,0] +
-                                     self.u[1,:,:]*self.c[q,1])
-            self.g_eq[q,:,:]  = (1.0 + t + 0.5*t**2 - v)
-            self.g_eq[q,:,:] *= self.rho[:,:]*self.w[q]
+        nb_equilibrium(self.u, self.c, self.w, self.rho, self.g_eq)
 
     ### ************************************************
     ### Collision and streaming
     def collision_stream(self):
 
-        # Take care of q=0 first
-        self.g_up[0,:,:] = (self.g[0,:,:]
-                         -  self.om_p_lbm*(self.g[0,:,:] - self.g_eq[0,:,:]))
-        self.g   [0,:,:] =  self.g_up[0,:,:]
-
-        # Collide other indices
-        for q in range(1,self.q):
-            qb = self.ns[q]
-
-            self.g_up[q,:,:] = (self.g   [q,:,:]
-           - self.om_p_lbm*0.5*(self.g   [q,:,:]
-                              + self.g   [qb,:,:]
-                              - self.g_eq[q,:,:]
-                              - self.g_eq[qb,:,:])
-           - self.om_m_lbm*0.5*(self.g   [q,:,:]
-                              - self.g   [qb,:,:]
-                              - self.g_eq[q,:,:]
-                              + self.g_eq[qb,:,:]))
-
-        # Stream
-        nx = self.nx
-        ny = self.ny
-        lx = self.lx
-        ly = self.ly
-
-        self.g[1,1:nx, :  ] = self.g_up[1,0:lx, :  ]
-        self.g[2,0:lx, :  ] = self.g_up[2,1:nx, :  ]
-        self.g[3, :,  1:ny] = self.g_up[3, :,  0:ly]
-        self.g[4, :,  0:ly] = self.g_up[4, :,  1:ny]
-        self.g[5,1:nx,1:ny] = self.g_up[5,0:lx,0:ly]
-        self.g[6,0:lx,0:ly] = self.g_up[6,1:nx,1:ny]
-        self.g[7,0:lx,1:ny] = self.g_up[7,1:nx,0:ly]
-        self.g[8,1:nx,0:ly] = self.g_up[8,0:lx,1:ny]
+        nb_col_str(self.g, self.g_eq, self.g_up,
+                   self.om_p_lbm, self.om_m_lbm,
+                   self.c, self.ns,
+                   self.nx, self.ny,
+                   self.lx, self.ly)
 
     ### ************************************************
     ### Compute drag and lift
     def drag_lift(self, obs, R_ref, U_ref, L_ref):
 
-        # Initialize
-        fx     = 0.0
-        fy     = 0.0
-
-        # Loop over obstacle array
-        for k in range(len(self.obstacles[obs].boundary)):
-            i    = self.obstacles[obs].boundary[k,0]
-            j    = self.obstacles[obs].boundary[k,1]
-            q    = self.obstacles[obs].boundary[k,2]
-            qb   = self.ns[q]
-            cx   = self.c[q,0]
-            cy   = self.c[q,1]
-            g_up = self.g_up[q,i,j] + self.g[qb,i,j]
-
-            fx += g_up*cx
-            fy += g_up*cy
-
-        # Normalize coefficient
-        Cx =-2.0*fx/(R_ref*L_ref*U_ref**2)
-        Cy =-2.0*fy/(R_ref*L_ref*U_ref**2)
+        Cx, Cy = nb_drag_lift(self.obstacles[obs].boundary, self.ns,
+                              self.c, self.g_up, self.g, R_ref, U_ref, L_ref)
 
         return Cx, Cy
 
@@ -287,43 +223,9 @@ class Lattice:
     ### Obstacle halfway bounce-back no-slip b.c.
     def bounce_back_obstacle(self, obs):
 
-        # Interpolated BB
-        if (self.IBB):
-            for k in range(len(self.obstacles[obs].boundary)):
-                i  = self.obstacles[obs].boundary[k,0]
-                j  = self.obstacles[obs].boundary[k,1]
-                q  = self.obstacles[obs].boundary[k,2]
-                qb = self.ns[q]
-                c  = self.c[q,:]
-                cb = self.c[qb,:]
-                im = i + cb[0]
-                jm = j + cb[1]
-                imm = i + 2*cb[0]
-                jmm = j + 2*cb[1]
-
-                p  = self.obstacles[obs].ibb[k]
-                pp = 2.0*p
-                if (p < 0.5):
-                    self.g[qb,i,j] = (p*(pp+1.0)*self.g_up[q,i,j]
-                                   + (1.0+pp)*(1.0-pp)*self.g_up[q,im,jm]
-                                   - p*(1.0-pp)*self.g_up[q,imm,jmm])
-                else:
-                    self.g[qb,i,j] = ((1.0/(p*(pp+1.0)))*self.g_up[q,i,j] +
-                                     ((pp-1.0)/p)*self.g_up[qb,i,j] +
-                                     ((1.0-pp)/(1.0+pp))*self.g_up[qb,im,jm])
-
-        # Regular BB
-        if (not self.IBB):
-            for k in range(len(self.obstacles[obs].boundary)):
-                i  = self.obstacles[obs].boundary[k,0]
-                j  = self.obstacles[obs].boundary[k,1]
-                q  = self.obstacles[obs].boundary[k,2]
-                qb = self.ns[q]
-                c  = self.c[q,:]
-                ii = i + c[0]
-                jj = j + c[1]
-
-                self.g[qb,i,j] = self.g_up[q,i,j]
+        nb_bounce_back_obstacle(self.IBB, self.obstacles[obs].boundary,
+                                self.ns, self.c, self.obstacles[obs].ibb,
+                                self.g_up, self.g, self.u, self.lattice)
 
         # Set velocity of obstacles
         self.u[:,self.lattice] = 0.0
@@ -332,161 +234,37 @@ class Lattice:
     ### Zou-He left wall velocity b.c.
     def zou_he_left_wall_velocity(self):
 
-        lx = self.lx
-        ly = self.ly
-
-        self.u[0,0,:] = self.u_left[0,:]
-        self.u[1,0,:] = self.u_left[1,:]
-
-        self.rho[0,:] = (self.g[0,0,:] +
-                         self.g[3,0,:] +
-                         self.g[4,0,:] +
-                     2.0*self.g[2,0,:] +
-                     2.0*self.g[6,0,:] +
-                     2.0*self.g[7,0,:] )/(1.0 - self.u[0,0,:])
-
-        self.g[1,0,:] = (self.g[2,0,:] +
-                         (2.0/3.0)*self.rho[0,:]*self.u[0,0,:])
-
-        self.g[5,0,:] = (     self.g[6,0,:]  -
-                         0.5*(self.g[3,0,:]  -
-                              self.g[4,0,:]) +
-                    (1.0/6.0)*self.rho[0,:]*self.u[0,0,:] +
-                    (1.0/2.0)*self.rho[0,:]*self.u[1,0,:] )
-
-        self.g[8,0,:] = (     self.g[7,0,:]  +
-                         0.5*(self.g[3,0,:]  -
-                              self.g[4,0,:]) +
-                    (1.0/6.0)*self.rho[0,:]*self.u[0,0,:] -
-                    (1.0/2.0)*self.rho[0,:]*self.u[1,0,:] )
+        nb_zou_he_left_wall_velocity(self.lx, self.ly, self.u,
+                                     self.u_left, self.rho, self.g)
 
     ### ************************************************
     ### Zou-He right wall velocity b.c.
     def zou_he_right_wall_velocity(self):
 
-        lx = self.lx
-        ly = self.ly
-
-        self.u[0,lx,:] = self.u_right[0,:]
-        self.u[1,lx,:] = self.u_right[1,:]
-
-        self.rho[lx,:] = (self.g[0,lx,:] +
-                          self.g[3,lx,:] +
-                          self.g[4,lx,:] +
-                      2.0*self.g[1,lx,:] +
-                      2.0*self.g[5,lx,:] +
-                      2.0*self.g[8,lx,:])/(1.0 + self.u[0,lx,:])
-
-        self.g[2,lx,:] = (self.g[1,lx,:] -
-                          (2.0/3.0)*self.rho[lx,:]*self.u[0,lx,:])
-
-        self.g[6,lx,:] = (     self.g[5,lx,:]  +
-                          0.5*(self.g[3,lx,:]  -
-                               self.g[4,lx,:]) -
-                          (1.0/6.0)*self.rho[lx,:]*self.u[0,lx,:] -
-                          (1.0/2.0)*self.rho[lx,:]*self.u[1,lx,:] )
-
-        self.g[7,lx,:] = (     self.g[8,lx,:]  -
-                          0.5*(self.g[3,lx,:]  -
-                               self.g[4,lx,:]) -
-                          (1.0/6.0)*self.rho[lx,:]*self.u[0,lx,:] +
-                          (1.0/2.0)*self.rho[lx,:]*self.u[1,lx,:] )
+        nb_zou_he_right_wall_velocity(self.lx, self.ly, self.u,
+                                      self.u_right, self.rho, self.g)
 
     ### ************************************************
     ### Zou-He right wall pressure b.c.
     def zou_he_right_wall_pressure(self):
 
-        lx = self.lx
-        ly = self.ly
-
-        self.rho[lx,:] = self.rho_right[:]
-        self.u[1,lx,:] = self.u_right[1,:]
-
-        self.u[0,lx,:] =    (self.g[0,lx,:] +
-                             self.g[3,lx,:] +
-                             self.g[4,lx,:] +
-                         2.0*self.g[1,lx,:] +
-                         2.0*self.g[5,lx,:] +
-                         2.0*self.g[8,lx,:])/self.rho[lx,:] - 1.0
-
-        self.g[2,lx,:] = (self.g[1,lx,:] -
-                          (2.0/3.0)*self.rho[lx,:]*self.u[0,lx,:])
-
-        self.g[6,lx,:] = (     self.g[5,lx,:]  +
-                          0.5*(self.g[3,lx,:]  -
-                               self.g[4,lx,:]) -
-                          (1.0/6.0)*self.rho[lx,:]*self.u[0,lx,:] -
-                          (1.0/2.0)*self.rho[lx,:]*self.u[1,lx,:] )
-
-        self.g[7,lx,:] = (     self.g[8,lx,:]  -
-                          0.5*(self.g[3,lx,:]  -
-                               self.g[4,lx,:]) -
-                          (1.0/6.0)*self.rho[lx,:]*self.u[0,lx,:] +
-                          (1.0/2.0)*self.rho[lx,:]*self.u[1,lx,:] )
+        nb_zou_he_right_wall_pressure(self.lx, self.ly, self.u,
+                                      self.rho_right, self.u_right,
+                                      self.rho, self.g)
 
     ### ************************************************
     ### Zou-He no-slip top wall velocity b.c.
     def zou_he_top_wall_velocity(self):
 
-        lx = self.lx
-        ly = self.ly
-
-        self.u[0,:,ly] = self.u_top[0,:]
-        self.u[1,:,ly] = self.u_top[1,:]
-
-        self.rho[:,0] = (self.g[0,:,0] +
-                         self.g[1,:,0] +
-                         self.g[2,:,0] +
-                     2.0*self.g[3,:,0] +
-                     2.0*self.g[5,:,0] +
-                     2.0*self.g[7,:,0] )/(1.0 + self.u[1,:,ly])
-
-        self.g[4,:,ly] = (self.g[3,:,ly] -
-                          (2.0/3.0)*self.rho[:,ly]*self.u[1,:,ly])
-
-        self.g[8,:,ly] = (     self.g[7,:,ly]  -
-                          0.5*(self.g[1,:,ly]  -
-                               self.g[2,:,ly]) +
-                          (1.0/2.0)*self.rho[:,ly]*self.u[0,:,ly] -
-                          (1.0/6.0)*self.rho[:,ly]*self.u[1,:,ly] )
-
-        self.g[6,:,ly] = (     self.g[5,:,ly]  +
-                          0.5*(self.g[1,:,ly]  -
-                               self.g[2,:,ly]) -
-                          (1.0/2.0)*self.rho[:,ly]*self.u[0,:,ly] -
-                          (1.0/6.0)*self.rho[:,ly]*self.u[1,:,ly] )
+        nb_zou_he_top_wall_velocity(self.lx, self.ly, self.u,
+                                    self.u_top, self.rho, self.g)
 
     ### ************************************************
     ### Zou-He no-slip bottom wall velocity b.c.
     def zou_he_bottom_wall_velocity(self):
 
-        lx = self.lx
-        ly = self.ly
-
-        self.u[0,:,0] = self.u_bot[0,:]
-        self.u[1,:,0] = self.u_bot[1,:]
-
-        self.rho[:,0] = (self.g[0,:,0] +
-                         self.g[1,:,0] +
-                         self.g[2,:,0] +
-                     2.0*self.g[4,:,0] +
-                     2.0*self.g[6,:,0] +
-                     2.0*self.g[8,:,0] )/(1.0 - self.u[1,:,0])
-
-        self.g[3,:,0] = (self.g[4,:,0] +
-                         (2.0/3.0)*self.rho[:,0]*self.u[1,:,0])
-
-        self.g[5,:,0] = (     self.g[6,:,0]  -
-                         0.5*(self.g[1,:,0]  -
-                              self.g[2,:,0]) +
-                         (1.0/2.0)*self.rho[:,0]*self.u[0,:,0] +
-                         (1.0/6.0)*self.rho[:,0]*self.u[1,:,0] )
-
-        self.g[7,:,0] = (     self.g[8,:,0]  +
-                         0.5*(self.g[1,:,0]  -
-                              self.g[2,:,0]) -
-                         (1.0/2.0)*self.rho[:,0]*self.u[0,:,0] +
-                         (1.0/6.0)*self.rho[:,0]*self.u[1,:,0] )
+        nb_zou_he_bottom_wall_velocity(self.lx, self.ly, self.u,
+                                       self.u_bot, self.rho, self.g)
 
     ### ************************************************
     ### Zou-He bottom left corner
@@ -988,3 +766,273 @@ class Lattice:
 
             print('it = '+str(self.it)+
                   ', avg drag = '+str_d+', avg lift = '+str_l, end='\r')
+
+### ************************************************
+### Compute equilibrium state
+@jit(nopython=True,parallel=True,cache=True)
+def nb_equilibrium(u, c, w, rho, g_eq):
+
+    # Compute velocity term
+    v = (3.0/2.0)*(u[0,:,:]**2 + u[1,:,:]**2)
+
+    # Compute equilibrium
+    for q in range(9):
+        t                 = 3.0*(u[0,:,:]*c[q,0] +
+                                 u[1,:,:]*c[q,1])
+        g_eq[q,:,:]  = (1.0 + t + 0.5*t**2 - v)
+        g_eq[q,:,:] *= rho[:,:]*w[q]
+
+### ************************************************
+### Collision and streaming
+@jit(nopython=True,parallel=True,cache=True)
+def nb_col_str(g, g_eq, g_up, om_p, om_m, c, ns, nx, ny, lx, ly):
+
+    # Take care of q=0 first
+    g_up[0,:,:] = g[0,:,:] - om_p*(g[0,:,:] - g_eq[0,:,:])
+    g   [0,:,:] = g_up[0,:,:]
+
+    # Collide other indices
+    for q in range(1,9):
+        qb = ns[q]
+
+        g_up[q,:,:] = (g   [q,:,:]
+                       - om_p*0.5*(g   [q,:,:]
+                                   + g   [qb,:,:]
+                                   - g_eq[q,:,:]
+                                   - g_eq[qb,:,:])
+                       - om_m*0.5*(g   [q,:,:]
+                                   - g   [qb,:,:]
+                                   - g_eq[q,:,:]
+                                   + g_eq[qb,:,:]))
+
+    # Stream
+    g[1,1:nx, :  ] = g_up[1,0:lx, :  ]
+    g[2,0:lx, :  ] = g_up[2,1:nx, :  ]
+    g[3, :,  1:ny] = g_up[3, :,  0:ly]
+    g[4, :,  0:ly] = g_up[4, :,  1:ny]
+    g[5,1:nx,1:ny] = g_up[5,0:lx,0:ly]
+    g[6,0:lx,0:ly] = g_up[6,1:nx,1:ny]
+    g[7,0:lx,1:ny] = g_up[7,1:nx,0:ly]
+    g[8,1:nx,0:ly] = g_up[8,0:lx,1:ny]
+
+### ************************************************
+### Compute drag and lift
+@jit(nopython=True,cache=True)
+def nb_drag_lift(boundary, ns, c, g_up, g, R_ref, U_ref, L_ref):
+
+    # Initialize
+    fx     = 0.0
+    fy     = 0.0
+
+    # Loop over obstacle array
+    for k in range(len(boundary)):
+        i   = boundary[k,0]
+        j   = boundary[k,1]
+        q   = boundary[k,2]
+        qb  = ns[q]
+        cx  = c[q,0]
+        cy  = c[q,1]
+        g0  = g_up[q,i,j] + g[qb,i,j]
+
+        fx += g0*cx
+        fy += g0*cy
+
+    # Normalize coefficient
+    Cx =-2.0*fx/(R_ref*L_ref*U_ref**2)
+    Cy =-2.0*fy/(R_ref*L_ref*U_ref**2)
+
+    return Cx, Cy
+
+### ************************************************
+### Obstacle halfway bounce-back no-slip b.c.
+@jit(nopython=True,cache=True)
+def nb_bounce_back_obstacle(IBB, boundary, ns, sc,
+                            obs_ibb, g_up, g, u, lattice):
+
+    # Interpolated BB
+    if (IBB):
+        for k in range(len(boundary)):
+            i  = boundary[k,0]
+            j  = boundary[k,1]
+            q  = boundary[k,2]
+            qb = ns[q]
+            c  = sc[q,:]
+            cb = sc[qb,:]
+            im = i + cb[0]
+            jm = j + cb[1]
+            imm = i + 2*cb[0]
+            jmm = j + 2*cb[1]
+
+            p  = obs_ibb[k]
+            pp = 2.0*p
+            if (p < 0.5):
+                g[qb,i,j] = (p*(pp+1.0)*g_up[q,i,j]
+                             + (1.0+pp)*(1.0-pp)*g_up[q,im,jm]
+                             - p*(1.0-pp)*g_up[q,imm,jmm])
+            else:
+                g[qb,i,j] = ((1.0/(p*(pp+1.0)))*g_up[q,i,j] +
+                             ((pp-1.0)/p)*g_up[qb,i,j] +
+                             ((1.0-pp)/(1.0+pp))*g_up[qb,im,jm])
+
+    # Regular BB
+    if (not IBB):
+        for k in range(len(boundary)):
+            i  = boundary[k,0]
+            j  = boundary[k,1]
+            q  = boundary[k,2]
+            qb = ns[q]
+            c  = sc[q,:]
+            ii = i + c[0]
+            jj = j + c[1]
+
+            g[qb,i,j] = g_up[q,i,j]
+
+### ************************************************
+### Zou-He left wall velocity b.c.
+@jit(nopython=True,cache=True)
+def nb_zou_he_left_wall_velocity(lx, ly, u, u_left, rho, g):
+
+    u[0,0,:] = u_left[0,:]
+    u[1,0,:] = u_left[1,:]
+
+    rho[0,:] = (g[0,0,:] +
+                g[3,0,:] +
+                g[4,0,:] +
+                2.0*g[2,0,:] +
+                2.0*g[6,0,:] +
+                2.0*g[7,0,:] )/(1.0 - u[0,0,:])
+
+    g[1,0,:] = (g[2,0,:] +
+                (2.0/3.0)*rho[0,:]*u[0,0,:])
+
+    g[5,0,:] = (g[6,0,:]  -
+                0.5*(g[3,0,:]  -
+                     g[4,0,:]) +
+                (1.0/6.0)*rho[0,:]*u[0,0,:] +
+                (1.0/2.0)*rho[0,:]*u[1,0,:] )
+
+    g[8,0,:] = (g[7,0,:]  +
+                0.5*(g[3,0,:]  -
+                     g[4,0,:]) +
+                (1.0/6.0)*rho[0,:]*u[0,0,:] -
+                (1.0/2.0)*rho[0,:]*u[1,0,:] )
+
+### ************************************************
+### Zou-He right wall velocity b.c.
+@jit(nopython=True,cache=True)
+def nb_zou_he_right_wall_velocity(lx, ly, u, u_right, rho, g):
+
+    u[0,lx,:] = u_right[0,:]
+    u[1,lx,:] = u_right[1,:]
+
+    rho[lx,:] = (g[0,lx,:] +
+                 g[3,lx,:] +
+                 g[4,lx,:] +
+                 2.0*g[1,lx,:] +
+                 2.0*g[5,lx,:] +
+                 2.0*g[8,lx,:])/(1.0 + u[0,lx,:])
+
+    g[2,lx,:] = (g[1,lx,:] -
+                 (2.0/3.0)*rho[lx,:]*u[0,lx,:])
+
+    g[6,lx,:] = (g[5,lx,:]  +
+                 0.5*(g[3,lx,:]  -
+                      g[4,lx,:]) -
+                 (1.0/6.0)*rho[lx,:]*u[0,lx,:] -
+                 (1.0/2.0)*rho[lx,:]*u[1,lx,:] )
+
+    g[7,lx,:] = (g[8,lx,:]  -
+                 0.5*(g[3,lx,:]  -
+                      g[4,lx,:]) -
+                 (1.0/6.0)*rho[lx,:]*u[0,lx,:] +
+                 (1.0/2.0)*rho[lx,:]*u[1,lx,:] )
+
+### ************************************************
+### Zou-He right wall pressure b.c.
+@jit(nopython=True,cache=True)
+def nb_zou_he_right_wall_pressure(lx, ly, u, rho_right, u_right, rho, g):
+
+        rho[lx,:] = rho_right[:]
+        u[1,lx,:] = u_right[1,:]
+
+        u[0,lx,:] =    (g[0,lx,:] +
+                             g[3,lx,:] +
+                             g[4,lx,:] +
+                         2.0*g[1,lx,:] +
+                         2.0*g[5,lx,:] +
+                         2.0*g[8,lx,:])/rho[lx,:] - 1.0
+
+        g[2,lx,:] = (g[1,lx,:] -
+                          (2.0/3.0)*rho[lx,:]*u[0,lx,:])
+
+        g[6,lx,:] = (     g[5,lx,:]  +
+                          0.5*(g[3,lx,:]  -
+                               g[4,lx,:]) -
+                          (1.0/6.0)*rho[lx,:]*u[0,lx,:] -
+                          (1.0/2.0)*rho[lx,:]*u[1,lx,:] )
+
+        g[7,lx,:] = (     g[8,lx,:]  -
+                          0.5*(g[3,lx,:]  -
+                               g[4,lx,:]) -
+                          (1.0/6.0)*rho[lx,:]*u[0,lx,:] +
+                          (1.0/2.0)*rho[lx,:]*u[1,lx,:] )
+
+### ************************************************
+### Zou-He no-slip top wall velocity b.c.
+@jit(nopython=True,cache=True)
+def nb_zou_he_top_wall_velocity(lx, ly, u, u_top, rho, g):
+
+    u[0,:,ly] = u_top[0,:]
+    u[1,:,ly] = u_top[1,:]
+
+    rho[:,0] = (g[0,:,0] +
+                g[1,:,0] +
+                g[2,:,0] +
+                2.0*g[3,:,0] +
+                2.0*g[5,:,0] +
+                2.0*g[7,:,0] )/(1.0 + u[1,:,ly])
+
+    g[4,:,ly] = (g[3,:,ly] -
+                 (2.0/3.0)*rho[:,ly]*u[1,:,ly])
+
+    g[8,:,ly] = (g[7,:,ly]  -
+                 0.5*(g[1,:,ly]  -
+                      g[2,:,ly]) +
+                 (1.0/2.0)*rho[:,ly]*u[0,:,ly] -
+                 (1.0/6.0)*rho[:,ly]*u[1,:,ly] )
+
+    g[6,:,ly] = (g[5,:,ly]  +
+                 0.5*(g[1,:,ly]  -
+                      g[2,:,ly]) -
+                 (1.0/2.0)*rho[:,ly]*u[0,:,ly] -
+                 (1.0/6.0)*rho[:,ly]*u[1,:,ly] )
+
+### ************************************************
+### Zou-He no-slip bottom wall velocity b.c.
+@jit(nopython=True,cache=True)
+def nb_zou_he_bottom_wall_velocity(lx, ly, u, u_bot, rho, g):
+
+    u[0,:,0] = u_bot[0,:]
+    u[1,:,0] = u_bot[1,:]
+
+    rho[:,0] = (g[0,:,0] +
+                g[1,:,0] +
+                g[2,:,0] +
+                2.0*g[4,:,0] +
+                2.0*g[6,:,0] +
+                2.0*g[8,:,0] )/(1.0 - u[1,:,0])
+
+    g[3,:,0] = (g[4,:,0] +
+                (2.0/3.0)*rho[:,0]*u[1,:,0])
+
+    g[5,:,0] = (g[6,:,0]  -
+                0.5*(g[1,:,0]  -
+                     g[2,:,0]) +
+                (1.0/2.0)*rho[:,0]*u[0,:,0] +
+                (1.0/6.0)*rho[:,0]*u[1,:,0] )
+
+    g[7,:,0] = (g[8,:,0]  +
+                0.5*(g[1,:,0]  -
+                     g[2,:,0]) -
+                (1.0/2.0)*rho[:,0]*u[0,:,0] +
+                (1.0/6.0)*rho[:,0]*u[1,:,0] )
