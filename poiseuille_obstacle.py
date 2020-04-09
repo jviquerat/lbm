@@ -17,7 +17,7 @@ start_time = time.time()
 shape1_name     = 'main'
 shape1_npts     = 4
 shape1_nspts    = 600
-shape1_type     = 'random'
+shape1_type     = 'cylinder'
 shape1_size     = 0.1
 shape1_position = [0.0, 0.0]
 
@@ -48,13 +48,13 @@ dy          = dx
 nx          = math.floor(ny*(x_max-x_min)/(y_max-y_min))
 
 # Other parameters
-output_freq = 500
+output_freq = 50000
 dpi         = 300
 IBB         = False
-stop        = 'obs'
+stop        = 'it'
 obs_cv_ct   = 1.0e-2
 obs_cv_nb   = 1000
-t_max       = 1.0
+t_max       = 0.02
 it_max      = math.floor(t_max/dt)
 sigma       = math.floor(10*nx)
 

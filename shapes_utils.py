@@ -421,6 +421,11 @@ def generate_shape(n_pts,
                    shape_name,
                    n_sampling_pts,
                    output_dir):
+    # Check input
+    if (shape_type not in ['cylinder','square','random']):
+        print('Error in shape_type')
+        print('Authorized values are "cylinder", "square" and "random"')
+        exit()
 
     # Select shape type
     if (shape_type == 'cylinder'):
