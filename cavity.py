@@ -3,19 +3,16 @@ import math
 import time
 
 # Custom imports
-from lattice_utils import *
+from lattice import *
 
 ###############################################
 ### LBM lid-driven cavity
 ###############################################
 
-# Count time
-start_time = time.time()
-
 ### Free parameters
-Re_lbm      = 100.0
+Re_lbm      = 1000.0
 u_lbm       = 0.03
-L_lbm       = 200
+L_lbm       = 600
 t_max       = 20.0
 
 # Deduce other parameters
@@ -55,12 +52,10 @@ lattice.equilibrium()
 lattice.g = lattice.g_eq.copy()
 
 # Count time
-end_time = time.time()
-print("Pre-processing time = {}".format(end_time - start_time))
 start_time = time.time()
 
 # Solve
-print('Solving...')
+print('### Solving')
 while (lattice.compute):
 
     # Printings
@@ -96,7 +91,7 @@ while (lattice.compute):
 
 # Count time
 end_time = time.time()
-print("Loop time = {}".format(end_time - start_time))
+print("# Loop time = {:f}".format(end_time - start_time))
 
 # Output error with exact solution
 lattice.cavity_error(u_lbm)

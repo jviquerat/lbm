@@ -3,20 +3,17 @@ import math
 import time
 
 # Custom imports
-from lattice_utils import *
+from lattice import *
 
 ###############################################
 ### LBM poiseuille
 ###############################################
 
-# Count time
-start_time = time.time()
-
 # Domain size
-x_min       =-1.0
-x_max       = 4.0
-y_min       =-1.0
-y_max       = 1.0
+x_min       =-0.2
+x_max       = 2.0
+y_min       =-0.2
+y_max       = 0.2
 
 # Free parameters
 # L_lbm corresponds to y   length
@@ -24,7 +21,7 @@ y_max       = 1.0
 Re_lbm      = 100.0
 u_lbm       = 0.1
 L_lbm       = 100
-t_max       = 15.0
+t_max       = 8.0
 
 # Deduce other parameters
 Cs          = 1.0/math.sqrt(3.0)
@@ -42,7 +39,7 @@ nx          = math.floor(ny*(x_max-x_min)/(y_max-y_min))
 # Other parameters
 output_freq = 500
 dpi         = 200
-sigma       = math.floor(it_max/10)
+sigma       = math.floor(it_max/5)
 
 # Initialize lattice
 lattice = Lattice(nx      = nx,
@@ -71,12 +68,10 @@ lattice.equilibrium()
 lattice.g = lattice.g_eq.copy()
 
 # Count time
-end_time = time.time()
-print("Pre-processing time = {}".format(end_time - start_time))
 start_time = time.time()
 
 # Solve
-print('Solving...')
+print('### Solving')
 while (lattice.compute):
 
     # Printings
@@ -115,7 +110,7 @@ while (lattice.compute):
 
 # Count time
 end_time = time.time()
-print("Loop time = {}".format(end_time - start_time))
+print("# Loop time = {:f}".format(end_time - start_time))
 
 # Output error with exact solution
 lattice.poiseuille_error(u_lbm)

@@ -429,7 +429,7 @@ def generate_shape(n_pts,
 
     # Select shape type
     if (shape_type == 'cylinder'):
-        radius         = (1.0/math.sqrt(2))*np.ones((n_pts))
+        radius         = 0.5*np.ones((n_pts))
         edgy           = 1.0*np.ones((n_pts))
         ctrl_pts       = generate_cylinder_pts(n_pts)
         ctrl_pts[:,:] *= shape_size
@@ -441,8 +441,8 @@ def generate_shape(n_pts,
         ctrl_pts[:,:] *= shape_size
 
     if (shape_type == 'random'):
-        radius         = np.random.uniform(low=0.0, high=1.0, size=n_pts)
-        edgy           = np.random.uniform(low=0.0, high=1.0, size=n_pts)
+        radius         = np.random.uniform(low=0.8, high=1.0, size=n_pts)
+        edgy           = np.random.uniform(low=0.45, high=0.55, size=n_pts)
         ctrl_pts       = np.random.rand(n_pts,2)
         ctrl_pts[:,:] *= shape_size
 

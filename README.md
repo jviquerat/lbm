@@ -1,7 +1,9 @@
 # lbm
-A simple lattice-Boltzmann code for 2D flows resolutions
+A simple lattice-Boltzmann code for 2D flows resolutions. All the tools are contained in the `lattice_utils.py`, and separate cases are built that exploit this library.
 
-<img width="900" alt="" src="https://user-images.githubusercontent.com/44053700/78360815-a8391680-75b7-11ea-9a4b-98114fbf8bb9.gif">
+<p align="center">
+  <img width="900" alt="" src="https://user-images.githubusercontent.com/44053700/99295075-3dd29f00-2845-11eb-8e05-1d8a132b0feb.gif">
+</p>
 
 ## Contents
 
@@ -16,53 +18,61 @@ Below are some examples ran with the code. The related cases are available in th
 
 ## Lid-driven cavity
 
-A simple driven cavity in unit square. Launch it by running ```python3 cavity.py```
-
-Below are the computed time-domain velocity norms at Re=100 (left) and Re=1000 (right).
+A simple driven cavity in unit square. Launch it by running ```python3 cavity.py```.  
+Below are the computed time-domain velocity norms and final streamlines at Re=100 (left) and Re=1000 (right).
 
 <p align="center">
-<img width="280" alt="" src="https://user-images.githubusercontent.com/44053700/77251271-bac55e80-6c4d-11ea-9c75-bdc10da0fef9.gif"> <img width="280" alt="" src="https://user-images.githubusercontent.com/44053700/76447194-8ab5ca00-63c8-11ea-8d80-0fc7f9c17ed2.gif">
+  <img width="350" alt="" src="https://user-images.githubusercontent.com/44053700/98362755-12260c80-202e-11eb-873a-7f4948150331.gif"> <img width="350" alt="" src="https://user-images.githubusercontent.com/44053700/98362762-1520fd00-202e-11eb-8495-b21ecac968bc.gif">
 </p>
 
-The final streamlines:
-
 <p align="center">
-<img width="280" alt="" src="https://user-images.githubusercontent.com/44053700/76288545-4088f780-62a7-11ea-9893-dd0a19339bc5.png"> <img width="280" alt="" src="https://user-images.githubusercontent.com/44053700/76447230-9a351300-63c8-11ea-8722-35e1eb2151c0.png">
+  <img width="350" alt="" src="https://user-images.githubusercontent.com/44053700/76288545-4088f780-62a7-11ea-9893-dd0a19339bc5.png"> <img width="350" alt="" src="https://user-images.githubusercontent.com/44053700/76447230-9a351300-63c8-11ea-8722-35e1eb2151c0.png">
 </p>
 
-A comparison of u_x = f(y) at the center of the domain with reference data from Ghia
+A comparison of u_x = f(y) at the center of the domain with reference data from "U. Ghia, K. N. Ghia, C. T. Shin, *High-Re solutions for incompressible flow using Navier-Stokes equations and multigrid method*."
 
 <p align="center">
-<img width="280" alt="" src="https://user-images.githubusercontent.com/44053700/76288543-3ebf3400-62a7-11ea-9e2b-13e0f6327c89.png"> <img width="280" alt="" src="https://user-images.githubusercontent.com/44053700/76447238-9e613080-63c8-11ea-8e60-6f77248518a2.png">
+  <img width="350" alt="" src="https://user-images.githubusercontent.com/44053700/76288543-3ebf3400-62a7-11ea-9e2b-13e0f6327c89.png"> <img width="350" alt="" src="https://user-images.githubusercontent.com/44053700/76447238-9e613080-63c8-11ea-8e60-6f77248518a2.png">
 </p>
 
 ## Poiseuille flow
 
-The establishment of a Poiseuille flow in a channel. Launch it by running ```python3 poiseuille.py```
-
-First, the evolution of velocity norm with time :
-
-<p align="center">
-<img width="550" alt="" src="https://user-images.githubusercontent.com/44053700/77248108-4b447480-6c37-11ea-8396-31207aad9bc8.gif">
-</p>
-
-And the comparison of u_x = f(y) at the center of the domain with exact solution:
+The establishment of a Poiseuille flow in a channel. Launch it by running ```python3 poiseuille.py```.  
+Below is a comparison of u_x = f(y) at the center of the domain with exact solution:
 
 <p align="center">
-<img width="280" alt="" src="https://user-images.githubusercontent.com/44053700/77248104-47185700-6c37-11ea-8e2d-693e34a0132c.png">
+  <img width="450" alt="" src="https://user-images.githubusercontent.com/44053700/77248104-47185700-6c37-11ea-8e2d-693e34a0132c.png">
 </p>
 
-## Poiseuille with obstacle
+## Turek benchmark
 
-The computation of drag and lift force on an arbitrary shape in a Poiseuille flow. Launch it by running ```python3 poiseuille.py```
+The Turek cylinder benchmark CFD case is described in "Schafer, M., Turek, S. *Benchmark Computations of Laminar Flow Around a Cylinder*". The 2D case consists in a circular cylinder in a channel with top and bottom no-slip conditions, and with a Poiseuille flow at the inlet (these cases are named 2D-1 and 2D-2 in the aforementionned reference). The cylinder is voluntarily not centered to trigger instability at sufficient Reynolds number. Here, we explore the accuracy of the drag and lift computation.
 
-<img width="900" alt="" src="https://user-images.githubusercontent.com/44053700/78360815-a8391680-75b7-11ea-9a4b-98114fbf8bb9.gif">
+|        |`ny` | 2D-1 (Re=20) Cd   | 2D-1 (Re=20) Cl   | 2D-2 (Re=100) Cd  | 2D-2 (Re=100) Cl  |
+|--------|-----|-------------------|-------------------|-------------------|-------------------|
+| Turek  | --- |  5.5800           |  0.0107           |  3.2300           |  1.0000           |
+| lbm    | 100 |  5.6300           |  0.0862           |  3.0411           |  0.5834           |
+| lbm    | 200 |  5.5804           |  0.0371           |  3.2582           |  1.2047           |
+| lbm    | 300 |  5.5846           |  0.0261           |  3.2152           |  1.0987           |
+
+Below are snapshots of the 2D-1 and 2D-2 cases:
+
+<p align="center">
+  <img width="800" alt="" src="https://user-images.githubusercontent.com/44053700/99220547-2cef4280-27df-11eb-88f1-6339c908de43.png">
+  <img width="800" alt="" src="https://user-images.githubusercontent.com/44053700/99220555-2f519c80-27df-11eb-8eda-648422f89e74.png">
+</p>
+
+## Poiseuille with random obstacles
+
+It is possible to run a Poiseuille flow with random obstacles in the domain. Below is an example.
+
+<img width="900" alt="" src="https://user-images.githubusercontent.com/44053700/99222254-768d5c80-27e2-11eb-96a0-c26ecadfa0c0.gif">
 
 ## Running
 
 To run a simulation, adjust the parameters in the related python file, then run ```python3 case.py```. A results folder will be generated in ```./results/``` with the current date and time. The ```png/``` folder will contain outputs of the velocity norm over the domain. To generate a video out of the png files, you can use the ```convert``` command as follows:
 
-```convert -delay 10 -loop 0 'u_norm_%d.png'[0-100] animation.gif```
+```convert -delay 10 -resize 50% -loop 0 'u_norm_%d.png'[0-100] animation.gif```
 
 To optimize and resize gifs, use ```gifsicle``` :
 
