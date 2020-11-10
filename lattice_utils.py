@@ -16,12 +16,13 @@ from   buff              import *
 class Obstacle:
     ### ************************************************
     ### Constructor
-    def __init__(self, polygon, area, boundary, ibb):
+    def __init__(self, polygon, area, boundary, ibb, tag):
 
         self.polygon  = polygon
         self.area     = area
         self.boundary = boundary
         self.ibb      = ibb
+        self.tag      = tag
 
 ### ************************************************
 ### Class defining lattice object
@@ -163,6 +164,7 @@ class Lattice:
         print('# dx         = '+'{:f}'.format(self.dx))
         print('# nx         = '+str(self.nx))
         print('# ny         = '+str(self.ny))
+        print('# IBB        = '+str(self.IBB))
         print('')
 
     ### ************************************************
@@ -220,11 +222,9 @@ class Lattice:
         filename = self.output_dir+'drag_lift'
         with open(filename, 'a') as f:
             f.write('{} {} {} {} {} {} {}\n'.format(it*self.dt,
-                                              Cx,     Cy,
-                                              avg_Cx, avg_Cy,
-                                              dcx,    dcy))
-
-        return avg_Cx, avg_Cy
+                                                    Cx,     Cy,
+                                                    avg_Cx, avg_Cy,
+                                                    dcx,    dcy))
 
     ### ************************************************
     ### Obstacle halfway bounce-back no-slip b.c.
@@ -630,11 +630,13 @@ class Lattice:
         if (self.stop == 'it'):
             if (self.it > self.it_max):
                 self.compute = False
+                print('\n')
                 print('# Computation ended: it>it_max')
 
         if (self.stop == 'obs'):
             if (self.drag_buff.obs_cv and self.lift_buff.obs_cv):
                 self.compute = False
+                print('\n')
                 print('# Computation ended: converged')
 
         self.it += 1
@@ -644,14 +646,13 @@ class Lattice:
     def it_printings(self):
 
         if (self.stop == 'it'):
-            print('# it = '+str(self.it)+' / '+str(self.it_max),
-                  end='\r')
+            print('# it = '+str(self.it)+' / '+str(self.it_max), end='\r')
         if (self.stop == 'obs'):
-            str_d = "{:10.6f}".format(self.drag_buff.obs)
-            str_l = "{:10.6f}".format(self.lift_buff.obs)
+            str_d  = "{:10.6f}".format(self.drag_buff.obs)
+            str_l  = "{:10.6f}".format(self.lift_buff.obs)
 
-            print('it = '+str(self.it)+
-                  ', avg drag = '+str_d+', avg lift = '+str_l, end='\r')
+            print('# it = '+str(self.it)+
+                  ', avg drag ='+str_d+', avg lift ='+str_l, end='\r')
 
 ### ************************************************
 ### Compute equilibrium state

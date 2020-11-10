@@ -14,7 +14,7 @@ from lattice_utils import *
 shape1_name     = 'main'
 shape1_npts     = 4
 shape1_nspts    = 600
-shape1_type     = 'cylinder'
+shape1_type     = 'square'
 shape1_size     = 0.1
 shape1_position = [0.0, 0.0]
 
@@ -27,9 +27,9 @@ y_max       = 0.21
 # Free parameters
 # L_lbm correponds to y length
 # u_lbm corresponds to max velocity
-Re_lbm      = 20.0
+Re_lbm      = 100.0
 u_lbm       = 0.03
-L_lbm       = 200
+L_lbm       = 204
 
 # Deduce other parameters
 Cs          = 1.0/math.sqrt(3.0)
@@ -45,15 +45,15 @@ dy          = dx
 nx          = math.floor(ny*(x_max-x_min)/(y_max-y_min))
 
 # Other parameters
-output_freq = 50000
+output_freq = 1000
 dpi         = 300
-IBB         = False
-stop        = 'it'
+IBB         = True
+stop        = 'obs'
 obs_cv_ct   = 1.0e-2
 obs_cv_nb   = 1000
 t_max       = 0.02
 it_max      = math.floor(t_max/dt)
-sigma       = math.floor(5*nx)
+sigma       = math.floor(10*nx)
 
 # Initialize lattice
 lattice = Lattice(nx        = nx,
@@ -80,18 +80,18 @@ lattice = Lattice(nx        = nx,
 
 # Generate main shape and add to lattice
 shape1 = generate_shape(shape1_npts,
-                       shape1_position,
-                       shape1_type,
-                       shape1_size,
-                       shape1_name,
-                       shape1_nspts,
-                       lattice.output_dir)
-lattice.add_obstacle(shape1.curve_pts)
+                        shape1_position,
+                        shape1_type,
+                        shape1_size,
+                        shape1_name,
+                        shape1_nspts,
+                        lattice.output_dir)
+lattice.add_obstacle(shape1.curve_pts, 1)
 lattice.generate_image()
 
 # Initialize fields
 lattice.set_inlet_poiseuille(u_lbm, rho_lbm, 0, sigma)
-lattice.u[:,lattice.lattice] = 0.0
+lattice.u[:,np.where(lattice.lattice > 0.0)] = 0.0
 
 # Set initial distributions
 lattice.equilibrium()
@@ -137,8 +137,8 @@ while (lattice.compute):
     lattice.zou_he_bottom_right_corner()
 
     # Compute drag/lift
-    drag,     lift     = lattice.drag_lift(0, rho_lbm, u_avg, D_lbm)
-    avg_drag, avg_lift = lattice.add_buff(drag, lift, lattice.it)
+    drag, lift = lattice.drag_lift(0, rho_lbm, u_avg, D_lbm)
+    lattice.add_buff(drag, lift, lattice.it)
 
     # Check stopping criterion
     lattice.check_stop()
