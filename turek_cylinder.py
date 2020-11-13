@@ -14,7 +14,7 @@ from lattice_utils import *
 shape1_name     = 'main'
 shape1_npts     = 4
 shape1_nspts    = 600
-shape1_type     = 'square'
+shape1_type     = 'cylinder'
 shape1_size     = 0.1
 shape1_position = [0.0, 0.0]
 
@@ -29,7 +29,7 @@ y_max       = 0.21
 # u_lbm corresponds to max velocity
 Re_lbm      = 100.0
 u_lbm       = 0.03
-L_lbm       = 204
+L_lbm       = 100
 
 # Deduce other parameters
 Cs          = 1.0/math.sqrt(3.0)
