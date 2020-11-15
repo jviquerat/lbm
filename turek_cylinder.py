@@ -12,8 +12,8 @@ from lattice_utils import *
 
 # Shape1 parameters
 shape1_name     = 'main'
-shape1_npts     = 4
-shape1_nspts    = 600
+shape1_npts     = 200
+shape1_nspts    = 2
 shape1_type     = 'cylinder'
 shape1_size     = 0.1
 shape1_position = [0.0, 0.0]
@@ -27,9 +27,9 @@ y_max       = 0.21
 # Free parameters
 # L_lbm correponds to y length
 # u_lbm corresponds to max velocity
-Re_lbm      = 100.0
+Re_lbm      = 20.0
 u_lbm       = 0.03
-L_lbm       = 100
+L_lbm       = 200
 
 # Deduce other parameters
 Cs          = 1.0/math.sqrt(3.0)
@@ -45,7 +45,7 @@ dy          = dx
 nx          = math.floor(ny*(x_max-x_min)/(y_max-y_min))
 
 # Other parameters
-output_freq = 1000
+output_freq = 2000
 dpi         = 300
 IBB         = True
 stop        = 'obs'
@@ -56,27 +56,27 @@ it_max      = math.floor(t_max/dt)
 sigma       = math.floor(10*nx)
 
 # Initialize lattice
-lattice = Lattice(nx        = nx,
-                  ny        = ny,
-                  dx        = dx,
-                  dt        = dt,
-                  tau_lbm   = tau_lbm,
-                  Re_lbm    = Re_lbm,
-                  u_lbm     = u_lbm,
-                  L_lbm     = D_lbm,
-                  nu_lbm    = nu_lbm,
-                  rho_lbm   = rho_lbm,
-                  x_min     = x_min,
-                  x_max     = x_max,
-                  y_min     = y_min,
-                  y_max     = y_max,
-                  dpi       = dpi,
-                  IBB       = IBB,
-                  stop      = stop,
-                  t_max     = t_max,
-                  it_max    = it_max,
-                  obs_cv_ct = obs_cv_ct,
-                  obs_cv_nb = obs_cv_nb)
+lat = Lattice(nx        = nx,
+              ny        = ny,
+              dx        = dx,
+              dt        = dt,
+              tau_lbm   = tau_lbm,
+              Re_lbm    = Re_lbm,
+              u_lbm     = u_lbm,
+              L_lbm     = D_lbm,
+              nu_lbm    = nu_lbm,
+              rho_lbm   = rho_lbm,
+              x_min     = x_min,
+              x_max     = x_max,
+              y_min     = y_min,
+              y_max     = y_max,
+              dpi       = dpi,
+              IBB       = IBB,
+              stop      = stop,
+              t_max     = t_max,
+              it_max    = it_max,
+              obs_cv_ct = obs_cv_ct,
+              obs_cv_nb = obs_cv_nb)
 
 # Generate main shape and add to lattice
 shape1 = generate_shape(shape1_npts,
@@ -85,63 +85,63 @@ shape1 = generate_shape(shape1_npts,
                         shape1_size,
                         shape1_name,
                         shape1_nspts,
-                        lattice.output_dir)
-lattice.add_obstacle(shape1.curve_pts, 1)
-lattice.generate_image()
+                        lat.output_dir)
+lat.add_obstacle(shape1.curve_pts, 1)
+lat.generate_image()
 
 # Initialize fields
-lattice.set_inlet_poiseuille(u_lbm, rho_lbm, 0, sigma)
-lattice.u[:,np.where(lattice.lattice > 0.0)] = 0.0
+lat.set_inlet_poiseuille(u_lbm, rho_lbm, 0, sigma)
+lat.u[:,np.where(lat.lattice > 0.0)] = 0.0
 
 # Set initial distributions
-lattice.equilibrium()
-lattice.g = lattice.g_eq.copy()
+lat.equilibrium()
+lat.g = lat.g_eq.copy()
 
 # Count time
 start_time = time.time()
 
 # Solve
 print('### Solving')
-while (lattice.compute):
+while (lat.compute):
 
     # Printings
-    lattice.it_printings()
+    lat.it_printings()
 
     # Progressively impose Poiseuille
-    lattice.set_inlet_poiseuille(u_lbm, rho_lbm, lattice.it, sigma)
+    lat.set_inlet_poiseuille(u_lbm, rho_lbm, lat.it, sigma)
 
     # Compute macroscopic fields
-    lattice.macro()
+    lat.macro()
 
     # Output field
-    lattice.output_fields(lattice.it,
+    lat.output_fields(lat.it,
                           output_freq,
                           u_norm   = True,
                           u_stream = False)
 
     # Compute equilibrium state
-    lattice.equilibrium()
+    lat.equilibrium()
 
     # Collisions
-    lattice.collision_stream()
+    lat.collision_stream()
 
     # Boundary conditions
-    lattice.bounce_back_obstacle(0)
-    lattice.zou_he_bottom_wall_velocity()
-    lattice.zou_he_left_wall_velocity()
-    lattice.zou_he_top_wall_velocity()
-    lattice.zou_he_right_wall_pressure()
-    lattice.zou_he_bottom_left_corner()
-    lattice.zou_he_top_left_corner()
-    lattice.zou_he_top_right_corner()
-    lattice.zou_he_bottom_right_corner()
+    lat.bounce_back_obstacle(0)
+    lat.zou_he_bottom_wall_velocity()
+    lat.zou_he_left_wall_velocity()
+    lat.zou_he_top_wall_velocity()
+    lat.zou_he_right_wall_pressure()
+    lat.zou_he_bottom_left_corner()
+    lat.zou_he_top_left_corner()
+    lat.zou_he_top_right_corner()
+    lat.zou_he_bottom_right_corner()
 
     # Compute drag/lift
-    drag, lift = lattice.drag_lift(0, rho_lbm, u_avg, D_lbm)
-    lattice.add_buff(drag, lift, lattice.it)
+    drag, lift = lat.drag_lift(0, rho_lbm, u_avg, D_lbm)
+    lat.add_buff(drag, lift, lat.it)
 
     # Check stopping criterion
-    lattice.check_stop()
+    lat.check_stop()
 
 # Count time
 end_time = time.time()
