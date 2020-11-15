@@ -325,7 +325,7 @@ class Lattice:
             plt.imshow(vm,
                        cmap = 'RdBu_r',
                        vmin = 0,
-                       vmax = self.u_lbm,
+                       vmax = 1.5*self.u_lbm,
                        interpolation = 'spline16')
 
             filename = self.png_dir+'u_norm_'+str(self.output_it)+'.png'
