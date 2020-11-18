@@ -1,5 +1,5 @@
 # lbm
-A simple lattice-Boltzmann code for 2D flow resolutions. All the tools are contained in the `lattice_utils.py`, and separate cases are built on top of this library.
+A simple lattice-Boltzmann code for 2D flow resolutions. All the tools are contained in the `lattice.py` file, and separate cases are built on top of this library.
 
 <p align="center">
   <img width="900" alt="" src="https://user-images.githubusercontent.com/44053700/99295075-3dd29f00-2845-11eb-8e05-1d8a132b0feb.gif">
