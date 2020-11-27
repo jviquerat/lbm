@@ -342,14 +342,18 @@ class Lattice:
             fig.subplots_adjust(0,0,1,1)
             ux = self.u[0,:,:].copy()
             uy = self.u[1,:,:].copy()
+            uy = np.rot90(uy)
+            ux = np.rot90(ux)
+            uy = np.flipud(uy)
+            ux = np.flipud(ux)
             x = np.linspace(0, 1, self.nx)
             y = np.linspace(0, 1, self.ny)
             u = np.linspace(0, 1, 50)
             g = np.meshgrid(u,u)
             str_pts = list(zip(*(x.flat for x in g)))
-            plt.streamplot(y,x,
-                           uy,
+            plt.streamplot(x,y,
                            ux,
+                           uy,
                            linewidth = 0.2,
                            color='k',
                            arrowstyle = '-',
