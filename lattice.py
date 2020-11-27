@@ -338,14 +338,18 @@ class Lattice:
         # The outputted streamplot is rotated and flipped...
         if (u_stream):
             plt.clf()
+            fig, ax = plt.subplots(figsize=plt.figaspect(vm))
+            fig.subplots_adjust(0,0,1,1)
+            ux = self.u[0,:,:].copy()
+            uy = self.u[1,:,:].copy()
             x = np.linspace(0, 1, self.nx)
             y = np.linspace(0, 1, self.ny)
             u = np.linspace(0, 1, 50)
             g = np.meshgrid(u,u)
             str_pts = list(zip(*(x.flat for x in g)))
-            plt.streamplot(y, x,
-                           self.u[1],
-                           self.u[0],
+            plt.streamplot(y,x,
+                           uy,
+                           ux,
                            linewidth = 0.2,
                            color='k',
                            arrowstyle = '-',
@@ -354,9 +358,9 @@ class Lattice:
 
             filename = self.output_dir+'u_stream.png'
             plt.axis('off')
-            plt.gca().set_aspect('equal')
             plt.savefig(filename,
                         dpi=self.dpi)
+            plt.close()
 
         # Update counter
         self.output_it += 1
@@ -545,19 +549,26 @@ class Lattice:
 
     ### ************************************************
     ### Set driven cavity fields
-    def set_cavity(self, u_lbm):
+    def set_cavity(self, ut, ub = 0.0, ul = 0.0):
 
-        lx              = self.lx
-        ly              = self.ly
+        lx               = self.lx
+        ly               = self.ly
 
-        self.u_left[:]    = 0.0
-        self.u_right[:]   = 0.0
-        self.u_top[:]     = 0.0
-        self.u_bot[:]     = 0.0
+        self.u_left[:]   = 0.0
+        self.u_right[:]  = 0.0
+        self.u_top[:]    = 0.0
+        self.u_bot[:]    = 0.0
 
-        self.u_top[0,:] = u_lbm
-        self.u[0,:,ly]  = self.u_top[0,:]
-        self.u[1,:,ly]  = self.u_top[1,:]
+        self.u_top[0,:]  = ut
+        self.u_bot[0,:]  = ub
+        self.u_left[1,:] = ul
+
+        self.u[0,:,ly]   = self.u_top[0,:]
+        self.u[1,:,ly]   = self.u_top[1,:]
+        self.u[0,:,0]    = self.u_bot[0,:]
+        self.u[1,:,0]    = self.u_bot[1,:]
+        self.u[0,0,:]    = self.u_left[0,:]
+        self.u[1,0,:]    = self.u_left[1,:]
 
     ### ************************************************
     ### Poiseuille flow
