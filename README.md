@@ -36,15 +36,6 @@ A comparison of u_x = f(y) at the center of the domain with reference data from 
   <img width="350" alt="" src="https://user-images.githubusercontent.com/44053700/76288543-3ebf3400-62a7-11ea-9e2b-13e0f6327c89.png"> <img width="350" alt="" src="https://user-images.githubusercontent.com/44053700/76447238-9e613080-63c8-11ea-8e60-6f77248518a2.png">
 </p>
 
-## Poiseuille flow
-
-The establishment of a Poiseuille flow in a channel. Launch it by running ```python3 poiseuille.py```.  
-Below is a comparison of u_x = f(y) at the center of the domain with exact solution:
-
-<p align="center">
-  <img width="450" alt="" src="https://user-images.githubusercontent.com/44053700/77248104-47185700-6c37-11ea-8e2d-693e34a0132c.png">
-</p>
-
 ## Turek benchmark
 
 The Turek cylinder benchmark CFD case is described in "Schafer, M., Turek, S. *Benchmark Computations of Laminar Flow Around a Cylinder*". The 2D case consists in a circular cylinder in a channel with top and bottom no-slip conditions, and with a Poiseuille flow at the inlet (these cases are named 2D-1 and 2D-2 in the aforementionned reference). The cylinder is voluntarily not centered to trigger instability at sufficient Reynolds number. Here, we explore the accuracy of the drag and lift computation.
