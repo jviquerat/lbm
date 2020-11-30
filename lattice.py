@@ -304,6 +304,7 @@ class Lattice:
 
         # Handle inputs
         u_norm   = kwargs.get('u_norm',   True)
+        u_ctr    = kwargs.get('u_ctr',    False)
         u_stream = kwargs.get('u_stream', True)
 
         # Exit if no plotting
@@ -334,6 +335,28 @@ class Lattice:
                         dpi=self.dpi)
             plt.close()
 
+        # Plot u contour
+        if (u_ctr):
+            plt.clf()
+            fig, ax = plt.subplots(figsize=plt.figaspect(vm))
+            fig.subplots_adjust(0,0,1,1)
+            x  = np.linspace(0, 1, self.nx)
+            y  = np.linspace(0, 1, self.ny)
+            ux = self.u[0,:,:].copy()
+            uy = self.u[1,:,:].copy()
+            uy = np.rot90(uy)
+            ux = np.rot90(ux)
+            uy = np.flipud(uy)
+            ux = np.flipud(ux)
+            vm = np.sqrt(ux**2+uy**2)
+            plt.contour(x, y, vm, cmap='RdBu_r',
+                        vmin=0.0, vmax=1.5*self.u_lbm)
+            filename = self.png_dir+'u_ctr_'+str(self.output_it)+'.png'
+            plt.axis('off')
+            plt.savefig(filename,
+                        dpi=self.dpi)
+            plt.close()
+
         # Plot u streamlines
         # The outputted streamplot is rotated and flipped...
         if (u_stream):
@@ -346,19 +369,20 @@ class Lattice:
             ux = np.rot90(ux)
             uy = np.flipud(uy)
             ux = np.flipud(ux)
-            x = np.linspace(0, 1, self.nx)
-            y = np.linspace(0, 1, self.ny)
-            u = np.linspace(0, 1, 50)
-            g = np.meshgrid(u,u)
+            vm = np.sqrt(ux**2+uy**2)
+            vm = np.rot90(vm)
+            x  = np.linspace(0, 1, self.nx)
+            y  = np.linspace(0, 1, self.ny)
+            u  = np.linspace(0, 1, 100)
+            g  = np.meshgrid(u,u)
             str_pts = list(zip(*(x.flat for x in g)))
-            plt.streamplot(x,y,
-                           ux,
-                           uy,
-                           linewidth = 0.2,
-                           color='k',
-                           arrowstyle = '-',
-                           start_points=str_pts,
-                           density = 10)
+            plt.streamplot(x, y, ux, uy,
+                           linewidth    = 1.5,
+                           color        = uy,
+                           cmap         = 'RdBu_r',
+                           arrowstyle   = '-',
+                           start_points = str_pts,
+                           density      = 3)
 
             filename = self.output_dir+'u_stream.png'
             plt.axis('off')
@@ -553,7 +577,7 @@ class Lattice:
 
     ### ************************************************
     ### Set driven cavity fields
-    def set_cavity(self, ut, ub = 0.0, ul = 0.0):
+    def set_cavity(self, ut, ub = 0.0, ul = 0.0, ur = 0.0):
 
         lx               = self.lx
         ly               = self.ly
@@ -563,9 +587,10 @@ class Lattice:
         self.u_top[:]    = 0.0
         self.u_bot[:]    = 0.0
 
-        self.u_top[0,:]  = ut
-        self.u_bot[0,:]  = ub
-        self.u_left[1,:] = ul
+        self.u_top[0,:]   = ut
+        self.u_bot[0,:]   = ub
+        self.u_left[1,:]  = ul
+        self.u_right[1,:] = ur
 
         self.u[0,:,ly]   = self.u_top[0,:]
         self.u[1,:,ly]   = self.u_top[1,:]
@@ -573,6 +598,8 @@ class Lattice:
         self.u[1,:,0]    = self.u_bot[1,:]
         self.u[0,0,:]    = self.u_left[0,:]
         self.u[1,0,:]    = self.u_left[1,:]
+        self.u[0,lx,:]   = self.u_right[0,:]
+        self.u[1,lx,:]   = self.u_right[1,:]
 
     ### ************************************************
     ### Poiseuille flow

@@ -12,8 +12,8 @@ from lattice import *
 ### Free parameters
 Re_lbm      = 100.0
 u_lbm       = 0.03
-L_lbm       = 200
-t_max       = 0.5
+L_lbm       = 400
+t_max       = 8.0
 
 # Deduce other parameters
 Cs          = 1.0/math.sqrt(3.0)
@@ -25,7 +25,7 @@ dt          = Re_lbm*nu_lbm/L_lbm**2
 it_max      = math.floor(t_max/dt)
 
 # Other parameters
-output_freq = 500
+output_freq = 2000
 dpi         = 200
 
 # Initialize lattice
@@ -44,7 +44,7 @@ lattice = Lattice(nx      = nx,
                   it_max  = it_max)
 
 # Initialize fields
-lattice.set_cavity(u_lbm, 0.0, 0.0)
+lattice.set_cavity(-u_lbm, -2.0*u_lbm, -1.0*u_lbm, 1.5*u_lbm)
 lattice.rho *= rho_lbm
 
 # Set initial distributions
@@ -68,6 +68,7 @@ while (lattice.compute):
     lattice.output_fields(lattice.it,
                           output_freq,
                           u_norm   = True,
+                          u_ctr    = False,
                           u_stream = False)
 
     # Compute equilibrium state
