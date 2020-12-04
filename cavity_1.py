@@ -10,9 +10,9 @@ from lattice import *
 ###############################################
 
 ### Free parameters
-Re_lbm      = 1000.0
+Re_lbm      = 100.0
 u_lbm       = 0.03
-L_lbm       = 600
+L_lbm       = 200
 t_max       = 20.0
 
 # Deduce other parameters

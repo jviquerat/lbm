@@ -326,7 +326,7 @@ class Lattice:
             plt.imshow(vm,
                        cmap = 'RdBu_r',
                        vmin = 0,
-                       vmax = 1.5*self.u_lbm,
+                       vmax = 1.0*self.u_lbm,
                        interpolation = 'spline16')
 
             filename = self.png_dir+'u_norm_'+str(self.output_it)+'.png'
@@ -373,16 +373,19 @@ class Lattice:
             vm = np.rot90(vm)
             x  = np.linspace(0, 1, self.nx)
             y  = np.linspace(0, 1, self.ny)
-            u  = np.linspace(0, 1, 100)
-            g  = np.meshgrid(u,u)
-            str_pts = list(zip(*(x.flat for x in g)))
+            nn = 20
+            u  = np.linspace(0, 1, nn)
+            str_pts = []
+            for a in range(nn):
+                for b in range(nn):
+                    str_pts.append([u[a],u[b]])
             plt.streamplot(x, y, ux, uy,
-                           linewidth    = 1.5,
-                           color        = uy,
+                           linewidth    = 0.2,
+                           #color        = black,
                            cmap         = 'RdBu_r',
                            arrowstyle   = '-',
                            start_points = str_pts,
-                           density      = 3)
+                           density      = 20)
 
             filename = self.output_dir+'u_stream.png'
             plt.axis('off')
