@@ -580,7 +580,7 @@ class Lattice:
 
     ### ************************************************
     ### Set driven cavity fields
-    def set_cavity(self, ut, ub = 0.0, ul = 0.0, ur = 0.0):
+    def set_cavity(self, ut, ub, ul, ur, it, sigma):
 
         lx               = self.lx
         ly               = self.ly
@@ -590,10 +590,13 @@ class Lattice:
         self.u_top[:]    = 0.0
         self.u_bot[:]    = 0.0
 
-        self.u_top[0,:]   = ut
-        self.u_bot[0,:]   = ub
-        self.u_left[1,:]  = ul
-        self.u_right[1,:] = ur
+        val  = it
+        ret  = (1.0 - math.exp(-val**2/(2.0*sigma**2)))
+
+        self.u_top[0,:]   = ut*ret
+        self.u_bot[0,:]   = ub*ret
+        self.u_left[1,:]  = ul*ret
+        self.u_right[1,:] = ur*ret
 
         self.u[0,:,ly]   = self.u_top[0,:]
         self.u[1,:,ly]   = self.u_top[1,:]
