@@ -47,11 +47,11 @@ The Turek cylinder benchmark CFD case is described in "Schafer, M., Turek, S. *B
 | lbm    | 200 |  5.5804           |  0.0371           |  3.2582           |  1.2047           |
 | lbm    | 300 |  5.5846           |  0.0261           |  3.2152           |  1.0987           |
 
-Below are snapshots of the 2D-1 and 2D-2 cases:
+Below are videos of the 2D-1 and 2D-2 cases:
 
 <p align="center">
-  <img width="800" alt="" src="https://user-images.githubusercontent.com/44053700/99220547-2cef4280-27df-11eb-88f1-6339c908de43.png">
-  <img width="800" alt="" src="https://user-images.githubusercontent.com/44053700/99220555-2f519c80-27df-11eb-8eda-648422f89e74.png">
+  <img width="800" alt="" src="https://user-images.githubusercontent.com/44053700/101684500-d0421900-3a66-11eb-8137-7d936569c388.gif">
+  <img width="800" alt="" src="https://user-images.githubusercontent.com/44053700/101684599-f7004f80-3a66-11eb-820d-c4da29dc1dfe.gif">
 </p>
 
 ## Poiseuille with random obstacles
