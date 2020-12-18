@@ -58,7 +58,9 @@ Below are videos of the 2D-1 and 2D-2 cases:
 
 It is possible to run a Poiseuille flow with random obstacles in the domain. Below is an example.
 
-<img width="900" alt="" src="https://user-images.githubusercontent.com/44053700/99222254-768d5c80-27e2-11eb-96a0-c26ecadfa0c0.gif">
+<p align="center">
+  <img width="900" alt="" src="https://user-images.githubusercontent.com/44053700/99222254-768d5c80-27e2-11eb-96a0-c26ecadfa0c0.gif">
+</p>
 
 ## Running
 
