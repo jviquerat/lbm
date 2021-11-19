@@ -94,3 +94,27 @@ class cavity(base_app):
 # lattice.output_fields(1, 1,
 #                       u_norm   = False,
 #                       u_stream = True)
+
+    ### Compute cavity error in the middle of the domain
+    def compute_error(self, u):
+
+        ux_error = np.zeros((self.nx))
+        uy_error = np.zeros((self.ny))
+        nx       = math.floor(self.nx/2)
+        ny       = math.floor(self.ny/2)
+
+        for i in range(self.nx):
+            uy_error[i] = u[1,i,ny]/self.u_lbm
+
+        for j in range(self.ny):
+            ux_error[j] = u[0,nx,j]/self.u_lbm
+
+        # Write to files
+        filename = self.output_dir+'cavity_uy'
+        with open(filename, 'w') as f:
+            for i in range(self.nx):
+                f.write('{} {}\n'.format(i*self.dx, uy_error[i]))
+        filename = self.output_dir+'cavity_ux'
+        with open(filename, 'w') as f:
+            for j in range(self.ny):
+                f.write('{} {}\n'.format(j*self.dy, ux_error[j]))

@@ -645,30 +645,7 @@ class Lattice:
                                             u_error[0,j],
                                             u_error[1,j]))
 
-    ### ************************************************
-    ### Cavity error in the middle of the domain
-    def cavity_error(self, u_lbm):
 
-        ux_error = np.zeros((self.nx))
-        uy_error = np.zeros((self.ny))
-        nx       = math.floor(self.nx/2)
-        ny       = math.floor(self.ny/2)
-
-        for i in range(self.nx):
-            uy_error[i] = self.u[1,i,ny]/u_lbm
-
-        for j in range(self.ny):
-            ux_error[j] = self.u[0,nx,j]/u_lbm
-
-        # Write to files
-        filename = self.output_dir+'cavity_uy'
-        with open(filename, 'w') as f:
-            for i in range(self.nx):
-                f.write('{} {}\n'.format(i*self.dx, uy_error[i]))
-        filename = self.output_dir+'cavity_ux'
-        with open(filename, 'w') as f:
-            for j in range(self.ny):
-                f.write('{} {}\n'.format(j*self.dx, ux_error[j]))
 
     ### ************************************************
     ### Check stopping criterion
