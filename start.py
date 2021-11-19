@@ -22,3 +22,5 @@ if __name__ == '__main__':
     # Instanciate app
     app = app_factory.create(app_name)
 
+    # Instanciate lattice
+    lattice = lattice(app)

@@ -27,5 +27,4 @@ class base_app():
         self.tau_lbm     = 0.5 + self.nu_lbm/(self.Cs**2)
         self.dt          = self.Re_lbm*self.nu_lbm/self.L_lbm**2
         self.dx          = 1.0/float(self.nx)
-        self.dy          = 1.0/float(self.ny)
         self.it_max      = math.floor(self.t_max/self.dt)

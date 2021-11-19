@@ -12,11 +12,16 @@ class cavity(base_app):
     def __init__(self):
 
         # Free arguments (definition is mandatory)
+        self.name        = 'cavity'
         self.Re_lbm      = 100.0
         self.L_lbm       = 200
         self.u_lbm       = 0.03
         self.rho_lbm     = 1.0
         self.t_max       = 20.0
+        self.x_min       = 0.0
+        self.x_max       = 1.0
+        self.y_min       = 0.0
+        self.y_max       = 1.0
 
         # Deduce remaining lbm parameters
         self.compute_lbm_parameters()
@@ -117,4 +122,4 @@ class cavity(base_app):
         filename = self.output_dir+'cavity_ux'
         with open(filename, 'w') as f:
             for j in range(self.ny):
-                f.write('{} {}\n'.format(j*self.dy, ux_error[j]))
+                f.write('{} {}\n'.format(j*self.dx, ux_error[j]))
