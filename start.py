@@ -30,12 +30,12 @@ if __name__ == '__main__':
     lattice.equilibrium()
     lattice.g = lattice.g_eq.copy()
 
-    # Count time
+    # Timer and loop data
     start_time = time.time()
+    it         = 0
+    compute    = True
 
     # Solve
-    it      = 0
-    compute = True
     print('### Solving')
     while (compute):
 
