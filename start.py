@@ -24,3 +24,15 @@ if __name__ == '__main__':
 
     # Instanciate lattice
     lattice = lattice(app)
+
+    # Initialize fields and distributions
+    lattice.init_fields()
+    lattice.equilibrium()
+    lattice.g = lattice.g_eq.copy()
+
+    # Count time
+    start_time = time.time()
+
+    # Solve
+    print('### Solving')
+    # while (lattice.compute):

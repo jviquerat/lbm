@@ -28,3 +28,4 @@ class base_app():
         self.dt          = self.Re_lbm*self.nu_lbm/self.L_lbm**2
         self.dx          = 1.0/float(self.nx)
         self.it_max      = math.floor(self.t_max/self.dt)
+        self.sigma       = math.floor(10*self.nx)

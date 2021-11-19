@@ -1,6 +1,5 @@
 # Generic imports
 import math
-import time
 
 # Custom imports
 from lbm.src.app.base_app import *
@@ -27,20 +26,6 @@ class cavity(base_app):
         self.compute_lbm_parameters()
 
 
-# # Initialize lattice
-# lattice = Lattice(nx      = nx,
-#                   ny      = nx,
-#                   dx      = 1.0/nx,
-#                   dt      = dt,
-#                   tau_lbm = tau_lbm,
-#                   Re_lbm  = Re_lbm,
-#                   u_lbm   = u_lbm,
-#                   L_lbm   = L_lbm,
-#                   nu_lbm  = nu_lbm,
-#                   rho_lbm = rho_lbm,
-#                   dpi     = dpi,
-#                   t_max   = t_max,
-#                   it_max  = it_max)
 
 # # Initialize fields
 # lattice.set_cavity(u_lbm)
@@ -99,6 +84,34 @@ class cavity(base_app):
 # lattice.output_fields(1, 1,
 #                       u_norm   = False,
 #                       u_stream = True)
+
+    ### Initialize driven cavity fields
+    def init_fields(self, lattice):
+
+        self.inlet_fields(lattice, 0)
+        lattice.rho *= self.rho_lbm
+
+    ### Set inlet fields
+    def inlet_fields(self, lattice, it):
+
+        lx = lattice.lx
+        ly = lattice.ly
+
+        lattice.u_top[0,:] = self.u_lbm
+
+        lattice.u[:,:,ly]  = lattice.u_top[:,:]
+        lattice.u[:,:,0]   = 0.0
+        lattice.u[:,0,:]   = 0.0
+        lattice.u[:,lx,:]  = 0.0
+
+        # self.u[0,:,ly]   = self.u_top[0,:]
+        # self.u[1,:,ly]   = self.u_top[1,:]
+        # self.u[0,:,0]    = 0.0
+        # self.u[1,:,0]    = 0.0
+        # self.u[0,0,:]    = 0.0
+        # self.u[1,0,:]    = 0.0
+        # self.u[0,lx,:]   = 0.0
+        # self.u[1,lx,:]   = 0.0
 
     ### Compute cavity error in the middle of the domain
     def compute_error(self, u):

@@ -90,6 +90,9 @@ class lattice:
         if hasattr(app, "obs_cv_ct"): self.obs_cv_ct = app.obs_cv_ct
         if hasattr(app, "obs_cv_nb"): self.obs_cv_nb = app.obs_cv_nb
 
+        # Keep app to handle inlets, boundary conditions, etc
+        self.app = app
+
         # Initialize other parameters
         self.output_it  = 0
         self.lx         = self.nx - 1
@@ -195,6 +198,13 @@ class lattice:
         print('# ny         = '+str(self.ny))
         print('# IBB        = '+str(self.IBB))
         print('')
+
+    ### ************************************************
+    ### Initialize fields
+    def init_fields(self):
+
+        # Initialize fields
+        self.app.init_fields(self)
 
     ### ************************************************
     ### Compute macroscopic fields
@@ -607,34 +617,7 @@ class lattice:
                 self.u_left[:,j] = u
                 self.u[:,i,j]    = u
 
-    ### ************************************************
-    ### Set driven cavity fields
-    def set_cavity(self, ut, ub, ul, ur, it, sigma):
 
-        lx               = self.lx
-        ly               = self.ly
-
-        self.u_left[:]   = 0.0
-        self.u_right[:]  = 0.0
-        self.u_top[:]    = 0.0
-        self.u_bot[:]    = 0.0
-
-        val  = it
-        ret  = (1.0 - math.exp(-val**2/(2.0*sigma**2)))
-
-        self.u_top[0,:]   = ut*ret
-        self.u_bot[0,:]   = ub*ret
-        self.u_left[1,:]  = ul*ret
-        self.u_right[1,:] = ur*ret
-
-        self.u[0,:,ly]   = self.u_top[0,:]
-        self.u[1,:,ly]   = self.u_top[1,:]
-        self.u[0,:,0]    = self.u_bot[0,:]
-        self.u[1,:,0]    = self.u_bot[1,:]
-        self.u[0,0,:]    = self.u_left[0,:]
-        self.u[1,0,:]    = self.u_left[1,:]
-        self.u[0,lx,:]   = self.u_right[0,:]
-        self.u[1,lx,:]   = self.u_right[1,:]
 
     ### ************************************************
     ### Poiseuille flow
