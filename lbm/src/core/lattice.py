@@ -696,7 +696,7 @@ class lattice:
 
 ### ************************************************
 ### Compute equilibrium state
-@njit(parallel=True,cache=True)
+@njit(parallel=True,cache=True,fastmath=True,nogil=True)
 def nb_equilibrium(u, c, w, rho, g_eq):
 
     # Compute velocity term
@@ -710,26 +710,21 @@ def nb_equilibrium(u, c, w, rho, g_eq):
 
 ### ************************************************
 ### Collision and streaming
-@njit(parallel=True,cache=True)
+@njit(parallel=True,cache=True,fastmath=True,nogil=True)
 def nb_col_str(g, g_eq, g_up, om_p, om_m, c, ns, nx, ny, lx, ly):
 
     # Take care of q=0 first
-    g_up[0,:,:] = g[0,:,:] - om_p*(g[0,:,:] - g_eq[0,:,:])
+    g_up[0,:,:] = (1.0-om_p)*g[0,:,:] + om_p*g_eq[0,:,:]
     g   [0,:,:] = g_up[0,:,:]
 
     # Collide other indices
     for q in nb.prange(1,9):
         qb = ns[q]
 
-        g_up[q,:,:] = (          g   [q,:,:]   -
-                       om_p*0.5*(g   [q,:,:]   +
-                                 g   [qb,:,:]  -
-                                 g_eq[q,:,:]   -
-                                 g_eq[qb,:,:]) -
-                       om_m*0.5*(g   [q,:,:]   -
-                                 g   [qb,:,:]  -
-                                 g_eq[q,:,:]   +
-                                 g_eq[qb,:,:]))
+        g_up[q,:,:] = ((1.0-0.5*(om_p+om_m))*g[q,:,:]   -
+                            0.5*(om_p-om_m)*g[qb,:,:]   +
+                            0.5*(om_p+om_m)*g_eq[q,:,:] +
+                            0.5*(om_p-om_m)*g_eq[qb,:,:])
 
     # Stream
     g[1,1:nx, :  ] = g_up[1,0:lx, :  ]
@@ -743,7 +738,7 @@ def nb_col_str(g, g_eq, g_up, om_p, om_m, c, ns, nx, ny, lx, ly):
 
 ### ************************************************
 ### Compute drag and lift
-@njit(parallel=True,cache=True)
+@njit(parallel=True,cache=True,fastmath=True,nogil=True)
 def nb_drag_lift(boundary, ns, c, g_up, g, R_ref, U_ref, L_ref):
 
     # Initialize
@@ -771,7 +766,7 @@ def nb_drag_lift(boundary, ns, c, g_up, g, R_ref, U_ref, L_ref):
 
 ### ************************************************
 ### Obstacle halfway bounce-back no-slip b.c.
-@njit(parallel=True,cache=True)
+@njit(parallel=True,cache=True,fastmath=True,nogil=True)
 def nb_bounce_back_obstacle(IBB, boundary, ns, sc,
                             obs_ibb, g_up, g, u, lattice):
 
@@ -815,7 +810,7 @@ def nb_bounce_back_obstacle(IBB, boundary, ns, sc,
 
 ### ************************************************
 ### Zou-He left wall velocity b.c.
-@njit(cache=True)
+@njit(cache=True,fastmath=True,nogil=True)
 def nb_zou_he_left_wall_velocity(lx, ly, u, u_left, rho, g):
 
     cst1 = 2.0/3.0
@@ -841,7 +836,7 @@ def nb_zou_he_left_wall_velocity(lx, ly, u, u_left, rho, g):
 
 ### ************************************************
 ### Zou-He right wall velocity b.c.
-@njit(cache=True)
+@njit(cache=True,fastmath=True,nogil=True)
 def nb_zou_he_right_wall_velocity(lx, ly, u, u_right, rho, g):
 
     cst1 = 2.0/3.0
@@ -867,7 +862,7 @@ def nb_zou_he_right_wall_velocity(lx, ly, u, u_right, rho, g):
 
 ### ************************************************
 ### Zou-He right wall pressure b.c.
-@njit(cache=True)
+@njit(cache=True,fastmath=True,nogil=True)
 def nb_zou_he_right_wall_pressure(lx, ly, u, rho_right, u_right, rho, g):
 
     cst1 = 2.0/3.0
@@ -893,7 +888,7 @@ def nb_zou_he_right_wall_pressure(lx, ly, u, rho_right, u_right, rho, g):
 
 ### ************************************************
 ### Zou-He no-slip top wall velocity b.c.
-@njit(cache=True)
+@njit(cache=True,fastmath=True,nogil=True)
 def nb_zou_he_top_wall_velocity(lx, ly, u, u_top, rho, g):
 
     cst1 = 2.0/3.0
@@ -919,7 +914,7 @@ def nb_zou_he_top_wall_velocity(lx, ly, u, u_top, rho, g):
 
 ### ************************************************
 ### Zou-He no-slip bottom wall velocity b.c.
-@njit(cache=True)
+@njit(cache=True,fastmath=True,nogil=True)
 def nb_zou_he_bottom_wall_velocity(lx, ly, u, u_bot, rho, g):
 
     cst1 = 2.0/3.0
@@ -945,7 +940,7 @@ def nb_zou_he_bottom_wall_velocity(lx, ly, u, u_bot, rho, g):
 
 ### ************************************************
 ### Zou-He no-slip bottom left corner velocity b.c.
-@njit(cache=True)
+@njit(cache=True,fastmath=True,nogil=True)
 def nb_zou_he_bottom_left_corner_velocity(lx, ly, u, rho, g):
 
     u[0,0,0] = u[0,1,0]
@@ -969,7 +964,7 @@ def nb_zou_he_bottom_left_corner_velocity(lx, ly, u, rho, g):
 
 ### ************************************************
 ### Zou-He no-slip top left corner velocity b.c.
-@njit(cache=True)
+@njit(cache=True,fastmath=True,nogil=True)
 def nb_zou_he_top_left_corner_velocity(lx, ly, u, rho, g):
 
     u[0,0,ly] = u[0,1,ly]
@@ -994,7 +989,7 @@ def nb_zou_he_top_left_corner_velocity(lx, ly, u, rho, g):
 
 ### ************************************************
 ### Zou-He no-slip top right corner velocity b.c.
-@njit(cache=True)
+@njit(cache=True,fastmath=True,nogil=True)
 def nb_zou_he_top_right_corner_velocity(lx, ly, u, rho, g):
 
     u[0,lx,ly] = u[0,lx-1,ly]
@@ -1018,7 +1013,7 @@ def nb_zou_he_top_right_corner_velocity(lx, ly, u, rho, g):
 
 ### ************************************************
 ### Zou-He no-slip bottom right corner velocity b.c.
-@njit(cache=True)
+@njit(cache=True,fastmath=True,nogil=True)
 def nb_zou_he_bottom_right_corner_velocity(lx, ly, u, rho, g):
 
     u[0,lx,0] = u[0,lx-1,0]

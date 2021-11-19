@@ -17,7 +17,7 @@ class cavity(base_app):
         self.L_lbm       = 200
         self.u_lbm       = 0.03
         self.rho_lbm     = 1.0
-        self.t_max       = 1.0
+        self.t_max       = 0.4
         self.x_min       = 0.0
         self.x_max       = 1.0
         self.y_min       = 0.0
