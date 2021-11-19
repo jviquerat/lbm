@@ -1,15 +1,14 @@
 # Generic imports
 import os
 import math
-import numpy             as np
-import matplotlib.pyplot as plt
-import numba             as nb
-
-from   datetime          import datetime
-from   numba             import jit
+import numpy              as np
+import matplotlib.pyplot  as plt
+import numba              as nb
+from   datetime           import datetime
+from   numba              import jit
 
 # Custom imports
-from   buff              import *
+from   lbm.src.utils.buff import *
 
 ### ************************************************
 ### Class defining an obstacle in the lattice

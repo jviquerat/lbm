@@ -3,7 +3,7 @@ import math
 import time
 
 # Custom imports
-from lattice import *
+from src.lattice import *
 
 ###############################################
 ### LBM lid-driven cavity
