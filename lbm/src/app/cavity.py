@@ -3,32 +3,24 @@ import math
 import time
 
 # Custom imports
+from lbm.src.app.base_app import *
 from lbm.src.core.lattice import *
 
 ###############################################
 ### Lid-drive cavity
-class cavity():
+class cavity(base_app):
     def __init__(self):
 
-        ### Free arguments
+        # Free arguments (definition is mandatory)
         self.Re_lbm      = 100.0
         self.L_lbm       = 200
         self.u_lbm       = 0.03
         self.rho_lbm     = 1.0
         self.t_max       = 20.0
 
-        # Deduce other parameters
-        self.Cs          = 1.0/math.sqrt(3.0)
-        self.nx          = self.L_lbm
-        self.ny          = self.L_lbm
-        self.nu_lbm      = self.u_lbm*self.L_lbm/self.Re_lbm
-        self.tau_lbm     = 0.5 + self.nu_lbm/(self.Cs**2)
-        self.dt          = self.Re_lbm*self.nu_lbm/self.L_lbm**2
-        self.it_max      = math.floor(self.t_max/self.dt)
+        # Deduce remaining lbm parameters
+        self.compute_lbm_parameters()
 
-        # Other parameters
-        self.output_freq = 500
-        self.dpi         = 200
 
 # # Initialize lattice
 # lattice = Lattice(nx      = nx,
