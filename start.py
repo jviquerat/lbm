@@ -26,7 +26,7 @@ if __name__ == '__main__':
     lattice = lattice(app)
 
     # Initialize fields and distributions
-    lattice.init_fields()
+    lattice.initialize()
     lattice.equilibrium()
     lattice.g = lattice.g_eq.copy()
 
@@ -34,5 +34,44 @@ if __name__ == '__main__':
     start_time = time.time()
 
     # Solve
+    it      = 0
+    compute = True
     print('### Solving')
-    # while (lattice.compute):
+    while (compute):
+
+        # Printings
+        lattice.printings(it)
+
+        # Set inlets
+        lattice.set_inlets()
+
+        # Compute macroscopic fields
+        lattice.macro()
+
+        # Output field
+        lattice.outputs(it)
+
+        # Compute equilibrium state
+        lattice.equilibrium()
+
+        # Streaming
+        lattice.collision_stream()
+
+        # Boundary conditions
+        lattice.set_bc()
+
+        # Compute observables (drag, lift, etc)
+        lattice.observables()
+
+        # Check stopping criterion
+        compute = lattice.check_stop(it)
+
+        # Increment iteration
+        it += 1
+
+# Count time
+end_time = time.time()
+print("# Loop time = {:f}".format(end_time - start_time))
+
+# Perform final operations and outputs
+lattice.finalize()

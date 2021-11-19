@@ -166,9 +166,7 @@ class lattice:
         # Obstacles
         self.obstacles = []
 
-        # Iterating and stopping
-        self.it        = 0
-        self.compute   = True
+        # Buffers
         self.drag_buff = Buff('drag',
                               self.dt,
                               self.obs_cv_ct,
@@ -200,11 +198,50 @@ class lattice:
         print('')
 
     ### ************************************************
-    ### Initialize fields
-    def init_fields(self):
+    ### Initialize fields and others
+    def initialize(self):
 
-        # Initialize fields
-        self.app.init_fields(self)
+        self.app.initialize(self)
+
+    ### ************************************************
+    ### Set inlet fields
+    def set_inlets(self):
+
+        pass
+
+    ### ************************************************
+    ### Outputs
+    def outputs(self, it):
+
+        self.app.write_fields(self, it)
+
+    ### ************************************************
+    ### Set boundary conditions
+    def set_bc(self):
+
+        # Account for obstacles
+
+        # Wall BCs
+        self.zou_he_bottom_wall_velocity()
+        self.zou_he_left_wall_velocity()
+        self.zou_he_right_wall_velocity()
+        self.zou_he_top_wall_velocity()
+        self.zou_he_bottom_left_corner()
+        self.zou_he_top_left_corner()
+        self.zou_he_top_right_corner()
+        self.zou_he_bottom_right_corner()
+
+    ### ************************************************
+    ### Compute observables
+    def observables(self):
+
+        pass
+
+    ### ************************************************
+    ### Finalize
+    def finalize(self):
+
+        self.app.finalize(self)
 
     ### ************************************************
     ### Compute macroscopic fields
@@ -339,15 +376,12 @@ class lattice:
 
     ### ************************************************
     ### Output 2D flow amplitude
-    def output_fields(self, it, freq, *args, **kwargs):
+    def write_fields(self, *args, **kwargs):
 
         # Handle inputs
-        u_norm   = kwargs.get('u_norm',   True)
+        u_norm   = kwargs.get('u_norm',   False)
         u_ctr    = kwargs.get('u_ctr',    False)
-        u_stream = kwargs.get('u_stream', True)
-
-        # Exit if no plotting
-        if (it%freq != 0): return
+        u_stream = kwargs.get('u_stream', False)
 
         # Compute norm
         v = np.sqrt(self.u[0,:,:]**2+self.u[1,:,:]**2)
@@ -662,33 +696,35 @@ class lattice:
 
     ### ************************************************
     ### Check stopping criterion
-    def check_stop(self):
+    def check_stop(self, it):
 
+        compute = True
+        
         if (self.stop == 'it'):
-            if (self.it > self.it_max):
-                self.compute = False
+            if (it >= self.it_max):
+                compute = False
                 print('\n')
                 print('# Computation ended: it>it_max')
 
         if (self.stop == 'obs'):
             if (self.drag_buff.obs_cv and self.lift_buff.obs_cv):
-                self.compute = False
+                compute = False
                 print('\n')
                 print('# Computation ended: converged')
 
-        self.it += 1
+        return compute
 
     ### ************************************************
     ### Iteration printings
-    def it_printings(self):
+    def printings(self, it):
 
         if (self.stop == 'it'):
-            print('# it = '+str(self.it)+' / '+str(self.it_max), end='\r')
+            print('# it = '+str(it)+' / '+str(self.it_max), end='\r')
         if (self.stop == 'obs'):
             str_d  = "{:10.6f}".format(self.drag_buff.obs)
             str_l  = "{:10.6f}".format(self.lift_buff.obs)
 
-            print('# it = '+str(self.it)+
+            print('# it = '+str(it)+
                   ', avg drag ='+str_d+', avg lift ='+str_l, end='\r')
 
 ### ************************************************
