@@ -32,18 +32,16 @@ class cavity(base_app):
         self.top_bc(lattice, 0)
         lattice.rho *= self.rho_lbm
 
-    ### Set inlet fields
-    def set_inlets(self, lattice, it):
-
-        pass
-
     ### Set top bc
     def top_bc(self, lattice, it):
 
         lx = lattice.lx
         ly = lattice.ly
 
-        lattice.u_top[0,:] = self.u_lbm
+        lattice.u_top[0,:]   = self.u_lbm
+        lattice.u_bot[0,:]   = 0.0
+        lattice.u_left[1,:]  = 0.0
+        lattice.u_right[1,:] = 0.0
 
         lattice.u[:,:,ly]  = lattice.u_top[:,:]
         lattice.u[:,:,0]   = 0.0
@@ -58,11 +56,6 @@ class cavity(base_app):
 
         # Output field
         lattice.write_fields(u_norm = True)
-
-    ### Compute observables
-    def observables(self, lattice, it):
-
-        pass
 
     ### Finalize
     def finalize(self, lattice):

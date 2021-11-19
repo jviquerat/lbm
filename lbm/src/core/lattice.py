@@ -5,7 +5,7 @@ import numpy              as np
 import matplotlib.pyplot  as plt
 import numba              as nb
 from   datetime           import datetime
-from   numba              import jit
+from   numba              import jit, njit
 
 # Custom imports
 from   lbm.src.utils.buff import *
@@ -696,7 +696,7 @@ class lattice:
 
 ### ************************************************
 ### Compute equilibrium state
-@jit(nopython=True,parallel=True,cache=True)
+@njit(parallel=True,cache=True)
 def nb_equilibrium(u, c, w, rho, g_eq):
 
     # Compute velocity term
@@ -710,7 +710,7 @@ def nb_equilibrium(u, c, w, rho, g_eq):
 
 ### ************************************************
 ### Collision and streaming
-@jit(nopython=True,parallel=True,cache=True)
+@njit(parallel=True,cache=True)
 def nb_col_str(g, g_eq, g_up, om_p, om_m, c, ns, nx, ny, lx, ly):
 
     # Take care of q=0 first
@@ -743,7 +743,7 @@ def nb_col_str(g, g_eq, g_up, om_p, om_m, c, ns, nx, ny, lx, ly):
 
 ### ************************************************
 ### Compute drag and lift
-@jit(nopython=True,parallel=True,cache=True)
+@njit(parallel=True,cache=True)
 def nb_drag_lift(boundary, ns, c, g_up, g, R_ref, U_ref, L_ref):
 
     # Initialize
@@ -771,7 +771,7 @@ def nb_drag_lift(boundary, ns, c, g_up, g, R_ref, U_ref, L_ref):
 
 ### ************************************************
 ### Obstacle halfway bounce-back no-slip b.c.
-@jit(nopython=True,parallel=True,cache=True)
+@njit(parallel=True,cache=True)
 def nb_bounce_back_obstacle(IBB, boundary, ns, sc,
                             obs_ibb, g_up, g, u, lattice):
 
@@ -815,7 +815,7 @@ def nb_bounce_back_obstacle(IBB, boundary, ns, sc,
 
 ### ************************************************
 ### Zou-He left wall velocity b.c.
-@jit(nopython=True,cache=True)
+@njit(cache=True)
 def nb_zou_he_left_wall_velocity(lx, ly, u, u_left, rho, g):
 
     cst1 = 2.0/3.0
@@ -841,7 +841,7 @@ def nb_zou_he_left_wall_velocity(lx, ly, u, u_left, rho, g):
 
 ### ************************************************
 ### Zou-He right wall velocity b.c.
-@jit(nopython=True,cache=True)
+@njit(cache=True)
 def nb_zou_he_right_wall_velocity(lx, ly, u, u_right, rho, g):
 
     cst1 = 2.0/3.0
@@ -867,7 +867,7 @@ def nb_zou_he_right_wall_velocity(lx, ly, u, u_right, rho, g):
 
 ### ************************************************
 ### Zou-He right wall pressure b.c.
-@jit(nopython=True,cache=True)
+@njit(cache=True)
 def nb_zou_he_right_wall_pressure(lx, ly, u, rho_right, u_right, rho, g):
 
     cst1 = 2.0/3.0
@@ -893,7 +893,7 @@ def nb_zou_he_right_wall_pressure(lx, ly, u, rho_right, u_right, rho, g):
 
 ### ************************************************
 ### Zou-He no-slip top wall velocity b.c.
-@jit(nopython=True,cache=True)
+@njit(cache=True)
 def nb_zou_he_top_wall_velocity(lx, ly, u, u_top, rho, g):
 
     cst1 = 2.0/3.0
@@ -919,7 +919,7 @@ def nb_zou_he_top_wall_velocity(lx, ly, u, u_top, rho, g):
 
 ### ************************************************
 ### Zou-He no-slip bottom wall velocity b.c.
-@jit(nopython=True,cache=True)
+@njit(cache=True)
 def nb_zou_he_bottom_wall_velocity(lx, ly, u, u_bot, rho, g):
 
     cst1 = 2.0/3.0
@@ -945,7 +945,7 @@ def nb_zou_he_bottom_wall_velocity(lx, ly, u, u_bot, rho, g):
 
 ### ************************************************
 ### Zou-He no-slip bottom left corner velocity b.c.
-@jit(nopython=True,cache=True)
+@njit(cache=True)
 def nb_zou_he_bottom_left_corner_velocity(lx, ly, u, rho, g):
 
     u[0,0,0] = u[0,1,0]
@@ -969,7 +969,7 @@ def nb_zou_he_bottom_left_corner_velocity(lx, ly, u, rho, g):
 
 ### ************************************************
 ### Zou-He no-slip top left corner velocity b.c.
-@jit(nopython=True,cache=True)
+@njit(cache=True)
 def nb_zou_he_top_left_corner_velocity(lx, ly, u, rho, g):
 
     u[0,0,ly] = u[0,1,ly]
@@ -994,7 +994,7 @@ def nb_zou_he_top_left_corner_velocity(lx, ly, u, rho, g):
 
 ### ************************************************
 ### Zou-He no-slip top right corner velocity b.c.
-@jit(nopython=True,cache=True)
+@njit(cache=True)
 def nb_zou_he_top_right_corner_velocity(lx, ly, u, rho, g):
 
     u[0,lx,ly] = u[0,lx-1,ly]
@@ -1018,7 +1018,7 @@ def nb_zou_he_top_right_corner_velocity(lx, ly, u, rho, g):
 
 ### ************************************************
 ### Zou-He no-slip bottom right corner velocity b.c.
-@jit(nopython=True,cache=True)
+@njit(cache=True)
 def nb_zou_he_bottom_right_corner_velocity(lx, ly, u, rho, g):
 
     u[0,lx,0] = u[0,lx-1,0]
