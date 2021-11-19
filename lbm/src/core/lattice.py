@@ -90,9 +90,6 @@ class lattice:
         if hasattr(app, "obs_cv_ct"): self.obs_cv_ct = app.obs_cv_ct
         if hasattr(app, "obs_cv_nb"): self.obs_cv_nb = app.obs_cv_nb
 
-        # Keep app to handle inlets, boundary conditions, etc
-        self.app = app
-
         # Initialize other parameters
         self.output_it  = 0
         self.lx         = self.nx - 1
@@ -198,24 +195,6 @@ class lattice:
         print('')
 
     ### ************************************************
-    ### Initialize fields and others
-    def initialize(self):
-
-        self.app.initialize(self)
-
-    ### ************************************************
-    ### Set inlet fields
-    def set_inlets(self):
-
-        pass
-
-    ### ************************************************
-    ### Outputs
-    def outputs(self, it):
-
-        self.app.write_fields(self, it)
-
-    ### ************************************************
     ### Set boundary conditions
     def set_bc(self):
 
@@ -230,18 +209,6 @@ class lattice:
         self.zou_he_top_left_corner()
         self.zou_he_top_right_corner()
         self.zou_he_bottom_right_corner()
-
-    ### ************************************************
-    ### Compute observables
-    def observables(self):
-
-        pass
-
-    ### ************************************************
-    ### Finalize
-    def finalize(self):
-
-        self.app.finalize(self)
 
     ### ************************************************
     ### Compute macroscopic fields
@@ -699,7 +666,7 @@ class lattice:
     def check_stop(self, it):
 
         compute = True
-        
+
         if (self.stop == 'it'):
             if (it >= self.it_max):
                 compute = False

@@ -29,11 +29,16 @@ class cavity(base_app):
     ### Initialize driven cavity fields
     def initialize(self, lattice):
 
-        self.inlet_fields(lattice, 0)
+        self.top_bc(lattice, 0)
         lattice.rho *= self.rho_lbm
 
     ### Set inlet fields
-    def inlet_fields(self, lattice, it):
+    def set_inlets(self, lattice, it):
+
+        pass
+
+    ### Set top bc
+    def top_bc(self, lattice, it):
 
         lx = lattice.lx
         ly = lattice.ly
@@ -45,14 +50,19 @@ class cavity(base_app):
         lattice.u[:,0,:]   = 0.0
         lattice.u[:,lx,:]  = 0.0
 
-    ### Write fields
-    def write_fields(self, lattice, it):
+    ### Write outputs
+    def outputs(self, lattice, it):
 
         # Check iteration
         if (it%self.output_freq != 0): return
 
         # Output field
         lattice.write_fields(u_norm = True)
+
+    ### Compute observables
+    def observables(self, lattice, it):
+
+        pass
 
     ### Finalize
     def finalize(self, lattice):
