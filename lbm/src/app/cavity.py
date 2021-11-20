@@ -4,6 +4,7 @@ import math
 # Custom imports
 from lbm.src.app.base_app import *
 from lbm.src.core.lattice import *
+from lbm.src.plot.plot    import *
 
 ###############################################
 ### Lid-drive cavity
@@ -25,7 +26,6 @@ class cavity(base_app):
 
         # Output parameters
         self.output_freq = 5000
-        self.dpi         = 200
 
         # Deduce remaining lbm parameters
         self.compute_lbm_parameters()
@@ -59,7 +59,10 @@ class cavity(base_app):
         if (it%self.output_freq != 0): return
 
         # Output field
-        lattice.write_fields(u_norm = True)
+        plot_norm(lattice, self.output_it, self.dpi)
+
+        # Increment plotting counter
+        self.output_it += 1
 
     ### Finalize
     def finalize(self, lattice):
@@ -68,7 +71,7 @@ class cavity(base_app):
         self.line_fields(lattice)
 
         # Write streamline field
-        lattice.write_fields(u_stream = True)
+        #plot_streamlines(lattice, self.dpi)
 
     ### Compute line fields in the middle of the domain
     def line_fields(self, lattice):

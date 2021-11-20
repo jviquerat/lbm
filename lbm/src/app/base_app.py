@@ -7,6 +7,7 @@ class base_app():
     def __init__(self):
 
         # Default free arguments (definition is mandatory)
+        self.name        = 'base'
         self.Re_lbm      = 100.0
         self.L_lbm       = 200
         self.u_lbm       = 0.03
@@ -19,6 +20,7 @@ class base_app():
 
         # Output parameters
         self.output_freq = 500
+        self.output_it   = 0
         self.dpi         = 200
 
     ### Compute default lbm parameters

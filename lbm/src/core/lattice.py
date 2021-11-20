@@ -2,7 +2,6 @@
 import os
 import math
 import numpy              as np
-import matplotlib.pyplot  as plt
 from   datetime           import datetime
 
 # Custom imports
@@ -339,101 +338,6 @@ class lattice:
 
         nb_zou_he_bottom_right_corner_velocity(self.lx, self.ly, self.u,
                                                self.rho, self.g)
-
-    ### ************************************************
-    ### Output 2D flow amplitude
-    def write_fields(self, *args, **kwargs):
-
-        # Handle inputs
-        u_norm   = kwargs.get('u_norm',   False)
-        u_ctr    = kwargs.get('u_ctr',    False)
-        u_stream = kwargs.get('u_stream', False)
-
-        # Compute norm
-        v = np.sqrt(self.u[0,:,:]**2+self.u[1,:,:]**2)
-
-        # Mask obstacles
-        v[np.where(self.lattice > 0.0)] = -1.0
-        vm = np.ma.masked_where((v < 0.0), v)
-        vm = np.rot90(vm)
-
-        # Plot u norm
-        if (u_norm):
-            plt.clf()
-            fig, ax = plt.subplots(figsize=plt.figaspect(vm))
-            fig.subplots_adjust(0,0,1,1)
-            plt.imshow(vm,
-                       cmap = 'RdBu_r',
-                       vmin = 0,
-                       vmax = 1.0*self.u_lbm,
-                       interpolation = 'spline16')
-
-            filename = self.png_dir+'u_norm_'+str(self.output_it)+'.png'
-            plt.axis('off')
-            plt.savefig(filename,
-                        dpi=self.dpi)
-            plt.close()
-
-        # Plot u contour
-        if (u_ctr):
-            plt.clf()
-            fig, ax = plt.subplots(figsize=plt.figaspect(vm))
-            fig.subplots_adjust(0,0,1,1)
-            x  = np.linspace(0, 1, self.nx)
-            y  = np.linspace(0, 1, self.ny)
-            ux = self.u[0,:,:].copy()
-            uy = self.u[1,:,:].copy()
-            uy = np.rot90(uy)
-            ux = np.rot90(ux)
-            uy = np.flipud(uy)
-            ux = np.flipud(ux)
-            vm = np.sqrt(ux**2+uy**2)
-            plt.contour(x, y, vm, cmap='RdBu_r',
-                        vmin=0.0, vmax=1.5*self.u_lbm)
-            filename = self.png_dir+'u_ctr_'+str(self.output_it)+'.png'
-            plt.axis('off')
-            plt.savefig(filename,
-                        dpi=self.dpi)
-            plt.close()
-
-        # Plot u streamlines
-        # The outputted streamplot is rotated and flipped...
-        if (u_stream):
-            plt.clf()
-            fig, ax = plt.subplots(figsize=plt.figaspect(vm))
-            fig.subplots_adjust(0,0,1,1)
-            ux = self.u[0,:,:].copy()
-            uy = self.u[1,:,:].copy()
-            uy = np.rot90(uy)
-            ux = np.rot90(ux)
-            uy = np.flipud(uy)
-            ux = np.flipud(ux)
-            vm = np.sqrt(ux**2+uy**2)
-            vm = np.rot90(vm)
-            x  = np.linspace(0, 1, self.nx)
-            y  = np.linspace(0, 1, self.ny)
-            nn = 20
-            u  = np.linspace(0, 1, nn)
-            str_pts = []
-            for a in range(nn):
-                for b in range(nn):
-                    str_pts.append([u[a],u[b]])
-            plt.streamplot(x, y, ux, uy,
-                           linewidth    = 0.2,
-                           #color        = black,
-                           cmap         = 'RdBu_r',
-                           arrowstyle   = '-',
-                           start_points = str_pts,
-                           density      = 20)
-
-            filename = self.output_dir+'u_stream.png'
-            plt.axis('off')
-            plt.savefig(filename,
-                        dpi=self.dpi)
-            plt.close()
-
-        # Update counter
-        self.output_it += 1
 
     ### ************************************************
     ### Add obstacle
