@@ -15,13 +15,17 @@ class cavity(base_app):
         self.name        = 'cavity'
         self.Re_lbm      = 100.0
         self.L_lbm       = 200
-        self.u_lbm       = 0.03
+        self.u_lbm       = 0.1
         self.rho_lbm     = 1.0
-        self.t_max       = 0.4
+        self.t_max       = 12.0
         self.x_min       = 0.0
         self.x_max       = 1.0
         self.y_min       = 0.0
         self.y_max       = 1.0
+
+        # Output parameters
+        self.output_freq = 5000
+        self.dpi         = 200
 
         # Deduce remaining lbm parameters
         self.compute_lbm_parameters()

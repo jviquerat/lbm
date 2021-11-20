@@ -12,6 +12,10 @@ class base_app():
         self.u_lbm       = 0.03
         self.rho_lbm     = 1.0
         self.t_max       = 20.0
+        self.x_min       = 0.0
+        self.x_max       = 1.0
+        self.y_min       = 0.0
+        self.y_max       = 1.0
 
         # Output parameters
         self.output_freq = 500
