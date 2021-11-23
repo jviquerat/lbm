@@ -27,8 +27,6 @@ if __name__ == '__main__':
 
     # Initialize fields and distributions
     app.initialize(lattice)
-    lattice.equilibrium()
-    lattice.g = lattice.g_eq.copy()
 
     # Timer and loop data
     start_time = time.time()
@@ -58,7 +56,7 @@ if __name__ == '__main__':
         lattice.collision_stream()
 
         # Boundary conditions
-        lattice.set_bc()
+        app.set_bc(lattice)
 
         # Compute observables (drag, lift, etc)
         app.observables(lattice, it)

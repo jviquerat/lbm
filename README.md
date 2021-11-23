@@ -23,17 +23,13 @@ A simple driven cavity in unit square. Launch it by running ```python3 cavity.py
 Below are the computed time-domain velocity norms and final streamlines at Re=100 (left) and Re=1000 (right).
 
 <p align="center">
-  <img width="350" alt="" src="https://user-images.githubusercontent.com/44053700/98362755-12260c80-202e-11eb-873a-7f4948150331.gif"> <img width="350" alt="" src="https://user-images.githubusercontent.com/44053700/98362762-1520fd00-202e-11eb-8495-b21ecac968bc.gif">
+  <img width="350" alt="" src="lbm/save/driven_cavity/re_100_nx_200/anim-opt.gif"> <img width="350" alt="" src="lbm/save/driven_cavity/re_1000_nx_250/anim-opt.gif">
 </p>
 
-<p align="center">
-  <img width="350" alt="" src="https://user-images.githubusercontent.com/44053700/76288545-4088f780-62a7-11ea-9893-dd0a19339bc5.png"> <img width="350" alt="" src="https://user-images.githubusercontent.com/44053700/76447230-9a351300-63c8-11ea-8722-35e1eb2151c0.png">
-</p>
-
-A comparison of u_x = f(y) at the center of the domain with reference data from "U. Ghia, K. N. Ghia, C. T. Shin, *High-Re solutions for incompressible flow using Navier-Stokes equations and multigrid method*."
+A comparison of `u = f(y)` and `v = f(x)` at the center of the domain with reference data from "U. Ghia, K. N. Ghia, C. T. Shin, *High-Re solutions for incompressible flow using Navier-Stokes equations and multigrid method*."
 
 <p align="center">
-  <img width="350" alt="" src="https://user-images.githubusercontent.com/44053700/76288543-3ebf3400-62a7-11ea-9e2b-13e0f6327c89.png"> <img width="350" alt="" src="https://user-images.githubusercontent.com/44053700/76447238-9e613080-63c8-11ea-8e60-6f77248518a2.png">
+  <img width="350" alt="" src="lbm/save/driven_cavity/re_100_nx_200/re_100.png"> <img width="350" alt="" src="lbm/save/driven_cavity/re_1000_nx_250/re_1000.png">
 </p>
 
 ## Turek benchmark

@@ -1,6 +1,10 @@
 # Generic imports
 import math
 
+# Custom imports
+from lbm.src.utils.shapes import *
+from lbm.src.core.obstacle import *
+
 ###############################################
 ### Base app
 class base_app():
@@ -27,12 +31,14 @@ class base_app():
     def compute_lbm_parameters(self):
 
         self.Cs          = 1.0/math.sqrt(3.0)
-        self.nx          = self.L_lbm
         self.ny          = self.L_lbm
         self.nu_lbm      = self.u_lbm*self.L_lbm/self.Re_lbm
         self.tau_lbm     = 0.5 + self.nu_lbm/(self.Cs**2)
         self.dt          = self.Re_lbm*self.nu_lbm/self.L_lbm**2
-        self.dx          = 1.0/float(self.nx)
+        self.dx          = (self.y_max-self.y_min)/self.ny
+        self.dy          = self.dx
+        self.nx          = math.floor(self.ny*(self.x_max-self.x_min)/
+                                      (self.y_max-self.y_min))
         self.it_max      = math.floor(self.t_max/self.dt)
         self.sigma       = math.floor(10*self.nx)
 
@@ -45,3 +51,17 @@ class base_app():
     def observables(self, lattice, it):
 
         pass
+
+    ### Add obstacles
+    def add_obstacles(self, lattice, obstacles):
+
+        for i in range(len(obstacles)):
+            obs   = obstacles[i]
+            shape = generate_shape(obs.n_pts, obs.pos,
+                                   obs.type,  obs.size,
+                                   obs.name,  obs.n_spts,
+                                   lattice.output_dir)
+            obstacles[i].set_polygon(shape.curve_pts)
+            obstacles[i].set_tag(i)
+            area, bnd, ibb = lattice.add_obstacle(obstacles[i])
+            obstacles[i].fill(area, bnd, ibb)

@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 
 ### ************************************************
 ### Class defining shape object
-class Shape:
+class shape:
     ### ************************************************
     ### Constructor
     def __init__(self,
@@ -447,20 +447,20 @@ def generate_shape(n_pts,
         ctrl_pts[:,:] *= shape_size
 
     # Initialize and build shape
-    shape = Shape(shape_name,
-                  position,
-                  ctrl_pts,
-                  n_pts,
-                  n_sampling_pts,
-                  radius,
-                  edgy,
-                  output_dir)
+    s = shape(shape_name,
+              position,
+              ctrl_pts,
+              n_pts,
+              n_sampling_pts,
+              radius,
+              edgy,
+              output_dir)
 
-    shape.build()
-    shape.generate_image(xmin =-shape_size,
-                         xmax = shape_size,
-                         ymin =-shape_size,
-                         ymax = shape_size)
-    shape.write_csv()
+    s.build()
+    s.generate_image(xmin =-shape_size,
+                     xmax = shape_size,
+                     ymin =-shape_size,
+                     ymax = shape_size)
+    s.write_csv()
 
-    return shape
+    return s

@@ -4,9 +4,8 @@ import math
 import numpy as np
 
 ###############################################
-### Class Buff
-### A buffer class
-class Buff:
+### A buffer class with 
+class buff:
 
     ### Create object
     def __init__(self,

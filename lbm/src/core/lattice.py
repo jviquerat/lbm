@@ -1,25 +1,14 @@
 # Generic imports
 import os
 import math
-import numpy              as np
-from   datetime           import datetime
+import numpy                 as np
+from   datetime              import datetime
 
 # Custom imports
-from   lbm.src.utils.buff import *
-from   lbm.src.core.nb    import *
-
-### ************************************************
-### Class defining an obstacle in the lattice
-class Obstacle:
-    ### ************************************************
-    ### Constructor
-    def __init__(self, polygon, area, boundary, ibb, tag):
-
-        self.polygon  = polygon
-        self.area     = area
-        self.boundary = boundary
-        self.ibb      = ibb
-        self.tag      = tag
+from   lbm.src.utils.buff    import *
+from   lbm.src.core.nb       import *
+from   lbm.src.core.obstacle import *
+from   lbm.src.plot.plot     import *
 
 ### ************************************************
 ### Class defining lattice object
@@ -88,13 +77,6 @@ class lattice:
         if hasattr(app, "obs_cv_ct"): self.obs_cv_ct = app.obs_cv_ct
         if hasattr(app, "obs_cv_nb"): self.obs_cv_nb = app.obs_cv_nb
 
-        # Initialize other parameters
-        self.output_it  = 0
-        self.lx         = self.nx - 1
-        self.ly         = self.ny - 1
-        self.q          = 9
-        self.Cs         = 1.0/math.sqrt(3.0)
-
         # Output dirs
         time             = datetime.now().strftime('%Y-%m-%d_%H_%M_%S')
         self.results_dir = './results/'
@@ -107,6 +89,39 @@ class lattice:
             os.makedirs(self.output_dir,  exist_ok=True)
         if (not os.path.exists(self.png_dir)):
             os.makedirs(self.png_dir,     exist_ok=True)
+
+        # Default LBM parameters and fields
+        self.set_default_lbm()
+
+        # Printings
+        print('##################')
+        print('### LBM solver ###')
+        print('##################')
+        print('')
+        print('# name       = '+self.name)
+        print('# u_lbm      = '+'{:f}'.format(self.u_lbm))
+        print('# L_lbm      = '+'{:f}'.format(self.L_lbm))
+        print('# nu_lbm     = '+'{:f}'.format(self.nu_lbm))
+        print('# Re_lbm     = '+'{:f}'.format(self.Re_lbm))
+        print('# tau_p_lbm  = '+'{:f}'.format(self.tau_p_lbm))
+        print('# tau_m_lbm  = '+'{:f}'.format(self.tau_m_lbm))
+        print('# dt         = '+'{:f}'.format(self.dt))
+        print('# dx         = '+'{:f}'.format(self.dx))
+        print('# nx         = '+str(self.nx))
+        print('# ny         = '+str(self.ny))
+        print('# IBB        = '+str(self.IBB))
+        print('')
+
+    ### ************************************************
+    ### Set default LBM parameters
+    def set_default_lbm(self):
+
+        # Default LBM parameters
+        self.output_it  = 0
+        self.lx         = self.nx - 1
+        self.ly         = self.ny - 1
+        self.q          = 9
+        self.Cs         = 1.0/math.sqrt(3.0)
 
         # TRT parameters
         self.tau_p_lbm  = self.tau_lbm
@@ -157,56 +172,6 @@ class lattice:
         # Physical fields
         self.rho     = np.ones ((   self.nx, self.ny))
         self.u       = np.zeros((2, self.nx, self.ny))
-
-        # Obstacles
-        self.obstacles = []
-
-        # Buffers
-        self.drag_buff = Buff('drag',
-                              self.dt,
-                              self.obs_cv_ct,
-                              self.obs_cv_nb,
-                              self.output_dir)
-        self.lift_buff = Buff('lift',
-                              self.dt,
-                              self.obs_cv_ct,
-                              self.obs_cv_nb,
-                              self.output_dir)
-
-        # Printings
-        print('##################')
-        print('### LBM solver ###')
-        print('##################')
-        print('')
-        print('# name       = '+self.name)
-        print('# u_lbm      = '+'{:f}'.format(self.u_lbm))
-        print('# L_lbm      = '+'{:f}'.format(self.L_lbm))
-        print('# nu_lbm     = '+'{:f}'.format(self.nu_lbm))
-        print('# Re_lbm     = '+'{:f}'.format(self.Re_lbm))
-        print('# tau_p_lbm  = '+'{:f}'.format(self.tau_p_lbm))
-        print('# tau_m_lbm  = '+'{:f}'.format(self.tau_m_lbm))
-        print('# dt         = '+'{:f}'.format(self.dt))
-        print('# dx         = '+'{:f}'.format(self.dx))
-        print('# nx         = '+str(self.nx))
-        print('# ny         = '+str(self.ny))
-        print('# IBB        = '+str(self.IBB))
-        print('')
-
-    ### ************************************************
-    ### Set boundary conditions
-    def set_bc(self):
-
-        # Account for obstacles
-
-        # Wall BCs
-        self.zou_he_bottom_wall_velocity()
-        self.zou_he_left_wall_velocity()
-        self.zou_he_right_wall_velocity()
-        self.zou_he_top_wall_velocity()
-        self.zou_he_bottom_left_corner()
-        self.zou_he_top_left_corner()
-        self.zou_he_top_right_corner()
-        self.zou_he_bottom_right_corner()
 
     ### ************************************************
     ### Compute macroscopic fields
@@ -341,12 +306,14 @@ class lattice:
 
     ### ************************************************
     ### Add obstacle
-    def add_obstacle(self, polygon, tag):
+    def add_obstacle(self, obstacle):
 
         # Initial print
+        tag = obstacle.tag
         print('### Obstacle ',str(tag))
 
         # Compute polygon bnds
+        polygon      = obstacle.polygon
         poly_bnds    = np.zeros((4))
         poly_bnds[0] = np.amin(polygon[:,0])
         poly_bnds[1] = np.amax(polygon[:,0])
@@ -354,9 +321,9 @@ class lattice:
         poly_bnds[3] = np.amax(polygon[:,1])
 
         # Declare lattice arrays
-        obstacle = np.empty((0,2), dtype=int)
-        boundary = np.empty((0,3), dtype=int)
-        ibb      = np.empty((1),   dtype=float)
+        obs = np.empty((0,2), dtype=int)
+        bnd = np.empty((0,3), dtype=int)
+        ibb = np.empty((1),   dtype=float)
 
         # Fill lattice
         for i in range(self.nx):
@@ -371,16 +338,15 @@ class lattice:
 
                     if (self.is_inside(polygon, pt)):
                         self.lattice[i,j] = tag
-                        obstacle = np.append(obstacle,
-                                             np.array([[i,j]]), axis=0)
+                        obs = np.append(obs, np.array([[i,j]]), axis=0)
 
         # Printings
-        print('# '+str(obstacle.shape[0])+' locations in obstacle')
+        print('# '+str(obs.shape[0])+' locations in obstacle')
 
         # Build boundary of obstacle, i.e. 1st layer of fluid
-        for k in range(len(obstacle)):
-            i = obstacle[k,0]
-            j = obstacle[k,1]
+        for k in range(len(obs)):
+            i = obs[k,0]
+            j = obs[k,1]
 
             for q in range(1,9):
                 qb  = self.ns[q]
@@ -390,21 +356,20 @@ class lattice:
                 jj  = j + cy
 
                 if (not self.lattice[ii,jj]):
-                    boundary = np.append(boundary,
-                                         np.array([[ii,jj,qb]]), axis=0)
+                    bnd = np.append(bnd, np.array([[ii,jj,qb]]), axis=0)
 
         # Some cells were counted multiple times, unique-sort them
-        boundary = np.unique(boundary, axis=0)
+        bnd = np.unique(bnd, axis=0)
 
         # Printings
-        print('# '+str(boundary.shape[0])+' locations on boundary')
+        print('# '+str(bnd.shape[0])+' locations on boundary')
 
         # Compute lattice-boundary distances if IBB is True
         if (self.IBB):
-            for k in range(len(boundary)):
-                i    = boundary[k,0]
-                j    = boundary[k,1]
-                q    = boundary[k,2]
+            for k in range(len(bnd)):
+                i    = bnd[k,0]
+                j    = bnd[k,1]
+                q    = bnd[k,2]
                 pt   = self.lattice_coords(i, j)
                 x    = polygon[:,0] - pt[0]
                 y    = polygon[:,1] - pt[1]
@@ -422,12 +387,10 @@ class lattice:
         # Printings
         print('# Area = '+'{:f}'.format(area))
 
-        # Add obstacle
-        obs = Obstacle(polygon, area, boundary, ibb, tag)
-        self.obstacles.append(obs)
-
         # Last print
         print('')
+
+        return area, bnd, ibb
 
     ### ************************************************
     ### Get lattice coordinates from integers
@@ -470,16 +433,16 @@ class lattice:
 
     ### ************************************************
     ### Generate lattice image
-    def generate_image(self):
+    def generate_image(self, obstacles):
 
         # Add obstacle border
         lat = self.lattice.copy()
         lat = lat.astype(float)
 
-        for obs in range(len(self.obstacles)):
-            for k in range(len(self.obstacles[obs].boundary)):
-                i = self.obstacles[obs].boundary[k,0]
-                j = self.obstacles[obs].boundary[k,1]
+        for obs in range(len(obstacles)):
+            for k in range(len(obstacles[obs].boundary)):
+                i = obstacles[obs].boundary[k,0]
+                j = obstacles[obs].boundary[k,1]
                 lat[i,j] = -1.0
 
         # Plot and save image of lattice
@@ -489,20 +452,6 @@ class lattice:
                    np.rot90(lat),
                    vmin=-1.0,
                    vmax= 1.0)
-
-    ### ************************************************
-    ### Set inlet poiseuille fields
-    def set_inlet_poiseuille(self, u_lbm, rho_lbm, it, sigma):
-
-        self.u_left[:]    = 0.0
-        self.u_right[:]   = 0.0
-        self.u_top[:]     = 0.0
-        self.u_bot[:]     = 0.0
-        self.rho_right[:] = rho_lbm
-
-        for j in range(self.ny):
-            pt               = self.lattice_coords(0, j)
-            self.u_left[:,j] = u_lbm*self.poiseuille(pt, it, sigma)
 
     ### ************************************************
     ### Set full poiseuille fields
@@ -520,49 +469,6 @@ class lattice:
                 u                = u_lbm*self.poiseuille(pt, 1, 1.0e-10)
                 self.u_left[:,j] = u
                 self.u[:,i,j]    = u
-
-
-
-    ### ************************************************
-    ### Poiseuille flow
-    def poiseuille(self, pt, it, sigma):
-
-        x    = pt[0]
-        y    = pt[1]
-        H    = self.y_max - self.y_min
-        u    = np.zeros(2)
-        u[0] = 4.0*(self.y_max-y)*(y-self.y_min)/H**2
-
-        val  = it
-        ret  = (1.0 - math.exp(-val**2/(2.0*sigma**2)))
-        u   *= ret
-
-        return u
-
-    ### ************************************************
-    ### Poiseuille error in the middle of the domain
-    def poiseuille_error(self, u_lbm):
-
-        u_error = np.zeros((2,self.ny))
-        nx      = math.floor(self.nx/2)
-
-        for j in range(self.ny):
-            pt   = self.lattice_coords(nx,j)
-            u_ex = self.poiseuille(pt, 1.0e10, 1)
-            u    = self.u[:,nx,j]
-
-            u_error[0,j] = u[0]/u_lbm
-            u_error[1,j] = u_ex[0]
-
-        # Write to file
-        filename = self.output_dir+'poiseuille'
-        with open(filename, 'w') as f:
-            for j in range(self.ny):
-                f.write('{} {} {}\n'.format(j*self.dx,
-                                            u_error[0,j],
-                                            u_error[1,j]))
-
-
 
     ### ************************************************
     ### Check stopping criterion
