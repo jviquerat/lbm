@@ -38,7 +38,7 @@ if __name__ == '__main__':
     while (compute):
 
         # Printings
-        lattice.printings(it)
+        app.printings(it)
 
         # Set inlets
         app.set_inlets(lattice, it)
@@ -62,7 +62,7 @@ if __name__ == '__main__':
         app.observables(lattice, it)
 
         # Check stopping criterion
-        compute = lattice.check_stop(it)
+        compute = app.check_stop(it)
 
         # Increment iteration
         it += 1

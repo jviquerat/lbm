@@ -208,36 +208,17 @@ class lattice:
     ### Compute drag and lift
     def drag_lift(self, obs, R_ref, U_ref, L_ref):
 
-        Cx, Cy = nb_drag_lift(self.obstacles[obs].boundary, self.ns,
-                              self.c, self.g_up, self.g, R_ref, U_ref, L_ref)
+        Cx, Cy = nb_drag_lift(obs.boundary, self.ns, self.c,
+                              self.g_up, self.g, R_ref, U_ref, L_ref)
 
         return Cx, Cy
 
     ### ************************************************
-    ### Handle drag/lift buffers
-    def add_buff(self, Cx, Cy, it):
-
-        # Add to buffer and check for convergence
-        self.drag_buff.add(Cx)
-        self.lift_buff.add(Cy)
-
-        avg_Cx, dcx = self.drag_buff.mv_avg()
-        avg_Cy, dcy = self.lift_buff.mv_avg()
-
-        # Write to file
-        filename = self.output_dir+'drag_lift'
-        with open(filename, 'a') as f:
-            f.write('{} {} {} {} {} {} {}\n'.format(it*self.dt,
-                                                    Cx,     Cy,
-                                                    avg_Cx, avg_Cy,
-                                                    dcx,    dcy))
-
-    ### ************************************************
     ### Obstacle halfway bounce-back no-slip b.c.
-    def bounce_back_obstacle(self, obs):
+    def bounce_back_obstacle(self, obstacle):
 
-        nb_bounce_back_obstacle(self.IBB, self.obstacles[obs].boundary,
-                                self.ns, self.c, self.obstacles[obs].ibb,
+        nb_bounce_back_obstacle(self.IBB, obstacle.boundary,
+                                self.ns, self.c, obstacle.ibb,
                                 self.g_up, self.g, self.u, self.lattice)
 
     ### ************************************************
@@ -394,7 +375,7 @@ class lattice:
 
     ### ************************************************
     ### Get lattice coordinates from integers
-    def lattice_coords(self, i, j):
+    def get_coords(self, i, j):
 
         # Compute and return the coordinates of the lattice node (i,j)
         dx = (self.x_max - self.x_min)/(self.nx - 1)
@@ -452,54 +433,3 @@ class lattice:
                    np.rot90(lat),
                    vmin=-1.0,
                    vmax= 1.0)
-
-    ### ************************************************
-    ### Set full poiseuille fields
-    def set_full_poiseuille(self, u_lbm, rho_lbm):
-
-        self.u_left[:]    = 0.0
-        self.u_right[:]   = 0.0
-        self.u_top[:]     = 0.0
-        self.u_bot[:]     = 0.0
-        self.rho_right[:] = rho_lbm
-
-        for j in range(self.ny):
-            for i in range(self.nx):
-                pt               = self.lattice_coords(i, j)
-                u                = u_lbm*self.poiseuille(pt, 1, 1.0e-10)
-                self.u_left[:,j] = u
-                self.u[:,i,j]    = u
-
-    ### ************************************************
-    ### Check stopping criterion
-    def check_stop(self, it):
-
-        compute = True
-
-        if (self.stop == 'it'):
-            if (it >= self.it_max):
-                compute = False
-                print('\n')
-                print('# Computation ended: it>it_max')
-
-        if (self.stop == 'obs'):
-            if (self.drag_buff.obs_cv and self.lift_buff.obs_cv):
-                compute = False
-                print('\n')
-                print('# Computation ended: converged')
-
-        return compute
-
-    ### ************************************************
-    ### Iteration printings
-    def printings(self, it):
-
-        if (self.stop == 'it'):
-            print('# it = '+str(it)+' / '+str(self.it_max), end='\r')
-        if (self.stop == 'obs'):
-            str_d  = "{:10.6f}".format(self.drag_buff.obs)
-            str_l  = "{:10.6f}".format(self.lift_buff.obs)
-
-            print('# it = '+str(it)+
-                  ', avg drag ='+str_d+', avg lift ='+str_l, end='\r')
-

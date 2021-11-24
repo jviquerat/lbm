@@ -10,9 +10,8 @@ from lbm.src.plot.plot    import *
 ### Lid-driven cavity
 class cavity(base_app):
     def __init__(self):
-        super().__init__()
 
-        # Free arguments (definition is mandatory)
+        # Free arguments
         self.name        = 'cavity'
         self.Re_lbm      = 100.0
         self.L_lbm       = 200
@@ -26,9 +25,21 @@ class cavity(base_app):
 
         # Output parameters
         self.output_freq = 500
+        self.output_it   = 0
+        self.dpi         = 200
 
         # Deduce remaining lbm parameters
-        self.compute_lbm_parameters()
+        self.Cs          = 1.0/math.sqrt(3.0)
+        self.ny          = self.L_lbm
+        self.nu_lbm      = self.u_lbm*self.L_lbm/self.Re_lbm
+        self.tau_lbm     = 0.5 + self.nu_lbm/(self.Cs**2)
+        self.dt          = self.Re_lbm*self.nu_lbm/self.L_lbm**2
+        self.dx          = (self.y_max-self.y_min)/self.ny
+        self.dy          = self.dx
+        self.nx          = math.floor(self.ny*(self.x_max-self.x_min)/
+                                      (self.y_max-self.y_min))
+        self.it_max      = math.floor(self.t_max/self.dt)
+        self.sigma       = math.floor(10*self.nx)
 
     ### Initialize driven cavity fields
     def initialize(self, lattice):

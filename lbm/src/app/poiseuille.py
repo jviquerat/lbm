@@ -9,25 +9,22 @@ from lbm.src.utils.buff    import *
 from lbm.src.plot.plot     import *
 
 ###############################################
-### Turek benchmark
-class turek(base_app):
+### Poiseuille benchmark
+class poiseuille(base_app):
     def __init__(self):
 
         # Free arguments
-        self.name        = 'turek'
+        self.name        = 'poiseuille'
         self.Re_lbm      = 100.0
-        self.L_lbm       = 200
-        self.u_lbm       = 0.2
+        self.L_lbm       = 100
+        self.u_lbm       = 0.1
         self.rho_lbm     = 1.0
-        self.t_max       = 0.02
+        self.t_max       = 15.0
         self.x_min       =-0.2
         self.x_max       = 2.0
         self.y_min       =-0.2
-        self.y_max       = 0.21
-        self.IBB         = True
-        self.stop        = 'obs'
-        self.obs_cv_ct   = 1.0e-2
-        self.obs_cv_nb   = 1000
+        self.y_max       = 0.2
+        self.stop        = 'it'
 
         # Output parameters
         self.output_freq = 500
@@ -38,11 +35,9 @@ class turek(base_app):
         self.Cs      = 1.0/math.sqrt(3.0)
         self.ny      = self.L_lbm
         self.u_avg   = 2.0*self.u_lbm/3.0
-        self.r_cyl   = 0.1
-        self.D_lbm   = math.floor(self.ny*self.r_cyl/(self.y_max-self.y_min))
-        self.nu_lbm  = self.u_avg*self.D_lbm/self.Re_lbm
+        self.nu_lbm  = self.u_avg*self.L_lbm/self.Re_lbm
         self.tau_lbm = 0.5 + self.nu_lbm/(self.Cs**2)
-        self.dt      = self.Re_lbm*self.nu_lbm/self.D_lbm**2
+        self.dt      = self.Re_lbm*self.nu_lbm/self.L_lbm**2
         self.dx      = (self.y_max-self.y_min)/self.ny
         self.dy      = self.dx
         self.nx      = math.floor(self.ny*(self.x_max-self.x_min)/
@@ -50,36 +45,15 @@ class turek(base_app):
         self.it_max  = math.floor(self.t_max/self.dt)
         self.sigma   = math.floor(10*self.nx)
 
-        # Obstacle
-        cylinder = obstacle('turek', 200, 2,
-                            'cylinder', self.r_cyl, [0.0,0.0])
-        self.obstacles = [cylinder]
-
     ### Add obstacles and initialize fields
     def initialize(self, lattice):
 
-        # Add obstacles to lattice
-        self.add_obstacles(lattice, self.obstacles)
-
         # Initialize fields
         self.set_inlets(lattice, 0)
-        lattice.u[:,np.where(lattice.lattice > 0.0)] = 0.0
         lattice.rho *= self.rho_lbm
 
         # Output image
-        lattice.generate_image(self.obstacles)
-
-        # Set buffers
-        self.drag_buff = buff('drag',
-                              lattice.dt,
-                              lattice.obs_cv_ct,
-                              lattice.obs_cv_nb,
-                              lattice.output_dir)
-        self.lift_buff = buff('lift',
-                              lattice.dt,
-                              lattice.obs_cv_ct,
-                              lattice.obs_cv_nb,
-                              lattice.output_dir)
+        lattice.generate_image([])
 
         # Compute first equilibrium
         lattice.equilibrium()
@@ -95,7 +69,7 @@ class turek(base_app):
         ret  = (1.0 - math.exp(-val**2/(2.0*self.sigma**2)))
 
         for j in range(self.ny):
-            pt               = lattice.lattice_coords(0, j)
+            pt               = lattice.get_coords(0, j)
             lattice.u_left[:,j] = ret*self.u_lbm*self.poiseuille(pt)
 
         lattice.u_top[0,:]   = 0.0
@@ -105,9 +79,6 @@ class turek(base_app):
 
     ### Set boundary conditions
     def set_bc(self, lattice):
-
-        # Obstacle
-        lattice.bounce_back_obstacle(self.obstacles[0])
 
         # Wall BCs
         lattice.zou_he_bottom_wall_velocity()
@@ -131,36 +102,11 @@ class turek(base_app):
         # Increment plotting counter
         self.output_it += 1
 
-    ### Compute observables
-    def observables(self, lattice, it):
-
-        drag, lift = lattice.drag_lift(self.obstacles[0],
-                                       self.rho_lbm, self.u_avg, self.D_lbm)
-        self.add_buff(drag, lift, lattice, it)
-
-    ### Handle drag/lift buffers
-    def add_buff(self, Cx, Cy, lattice, it):
-
-        # Add to buffer and check for convergence
-        self.drag_buff.add(Cx)
-        self.lift_buff.add(Cy)
-
-        avg_Cx, dcx = self.drag_buff.mv_avg()
-        avg_Cy, dcy = self.lift_buff.mv_avg()
-
-        # Write to file
-        filename = lattice.output_dir+'drag_lift'
-        with open(filename, 'a') as f:
-            f.write('{} {} {} {} {} {} {}\n'.format(it*self.dt,
-                                                    Cx,     Cy,
-                                                    avg_Cx, avg_Cy,
-                                                    dcx,    dcy))
-
     ### Finalize
     def finalize(self, lattice):
 
-        # Compute 1D fields to compare with ref. data
-        self.line_fields(lattice)
+        # Compute error
+        self.compute_error(lattice)
 
     ### Poiseuille flow
     def poiseuille(self, pt):
@@ -172,3 +118,25 @@ class turek(base_app):
         u[0] = 4.0*(self.y_max-y)*(y-self.y_min)/H**2
 
         return u
+
+    ### Poiseuille error in the middle of the domain
+    def compute_error(self, lattice):
+
+        u_error = np.zeros((2,self.ny))
+        nx      = math.floor(self.nx/2)
+
+        for j in range(self.ny):
+            pt   = lattice.get_coords(nx,j)
+            u_ex = self.poiseuille(pt)
+            u    = lattice.u[:,nx,j]
+
+            u_error[0,j] = u[0]/self.u_lbm
+            u_error[1,j] = u_ex[0]
+
+        # Write to file
+        filename = lattice.output_dir+'poiseuille'
+        with open(filename, 'w') as f:
+            for j in range(self.ny):
+                f.write('{} {} {}\n'.format(j*self.dx,
+                                            u_error[0,j],
+                                            u_error[1,j]))
