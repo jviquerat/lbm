@@ -22,6 +22,7 @@ class cavity(base_app):
         self.x_max       = 1.0
         self.y_min       = 0.0
         self.y_max       = 1.0
+        self.stop        = 'it'
 
         # Output parameters
         self.output_freq = 500

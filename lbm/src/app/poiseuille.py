@@ -16,18 +16,18 @@ class poiseuille(base_app):
         # Free arguments
         self.name        = 'poiseuille'
         self.Re_lbm      = 100.0
-        self.L_lbm       = 100
+        self.L_lbm       = 50
         self.u_lbm       = 0.1
         self.rho_lbm     = 1.0
         self.t_max       = 15.0
         self.x_min       =-0.2
-        self.x_max       = 2.0
+        self.x_max       = 1.0
         self.y_min       =-0.2
         self.y_max       = 0.2
         self.stop        = 'it'
 
         # Output parameters
-        self.output_freq = 500
+        self.output_freq = 50000
         self.output_it   = 0
         self.dpi         = 200
 
@@ -122,8 +122,9 @@ class poiseuille(base_app):
     ### Poiseuille error in the middle of the domain
     def compute_error(self, lattice):
 
-        u_error = np.zeros((2,self.ny))
-        nx      = math.floor(self.nx/2)
+        u_error  = np.zeros((3,self.ny))
+        nx       = math.floor(self.nx/2)
+        l1_error = 0.0
 
         for j in range(self.ny):
             pt   = lattice.get_coords(nx,j)
@@ -132,6 +133,8 @@ class poiseuille(base_app):
 
             u_error[0,j] = u[0]/self.u_lbm
             u_error[1,j] = u_ex[0]
+            u_error[2,j] = abs(u_error[0,j] - u_error[1,j])
+            l1_error    += u_error[2,j]*self.dx
 
         # Write to file
         filename = lattice.output_dir+'poiseuille'
@@ -140,3 +143,5 @@ class poiseuille(base_app):
                 f.write('{} {} {}\n'.format(j*self.dx,
                                             u_error[0,j],
                                             u_error[1,j]))
+
+        return l1_error
