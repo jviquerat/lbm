@@ -27,6 +27,5 @@ scan-build==2.0.19
 scipy==1.6.0
 six==1.15.0
 sympy==1.7.1
-TBB==0.2
 toml==0.10.2
 virtualenv==20.3.1
