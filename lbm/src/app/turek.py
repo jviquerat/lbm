@@ -16,8 +16,8 @@ class turek(base_app):
         # Free arguments
         self.name        = 'turek'
         self.Re_lbm      = 100.0
-        self.L_lbm       = 200
-        self.u_lbm       = 0.2
+        self.L_lbm       = 151
+        self.u_lbm       = 0.05
         self.rho_lbm     = 1.0
         self.t_max       = 0.02
         self.x_min       =-0.2
@@ -26,7 +26,7 @@ class turek(base_app):
         self.y_max       = 0.21
         self.IBB         = True
         self.stop        = 'obs'
-        self.obs_cv_ct   = 1.0e-2
+        self.obs_cv_ct   = 1.0e-3
         self.obs_cv_nb   = 1000
 
         # Output parameters
@@ -95,7 +95,7 @@ class turek(base_app):
         ret  = (1.0 - math.exp(-val**2/(2.0*self.sigma**2)))
 
         for j in range(self.ny):
-            pt               = lattice.lattice_coords(0, j)
+            pt               = lattice.get_coords(0, j)
             lattice.u_left[:,j] = ret*self.u_lbm*self.poiseuille(pt)
 
         lattice.u_top[0,:]   = 0.0
@@ -126,7 +126,7 @@ class turek(base_app):
         if (it%self.output_freq != 0): return
 
         # Output field
-        plot_norm(lattice, self.output_it, self.dpi)
+        plot_norm(lattice, 0.0, 1.5, self.output_it, self.dpi)
 
         # Increment plotting counter
         self.output_it += 1
@@ -155,12 +155,6 @@ class turek(base_app):
                                                     Cx,     Cy,
                                                     avg_Cx, avg_Cy,
                                                     dcx,    dcy))
-
-    ### Finalize
-    def finalize(self, lattice):
-
-        # Compute 1D fields to compare with ref. data
-        self.line_fields(lattice)
 
     ### Poiseuille flow
     def poiseuille(self, pt):

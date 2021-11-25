@@ -74,7 +74,7 @@ def nb_drag_lift(boundary, ns, c, g_up, g, R_ref, U_ref, L_ref):
 
 ### ************************************************
 ### Obstacle halfway bounce-back no-slip b.c.
-@njit(parallel=True,cache=True,fastmath=True,nogil=True)
+@njit(parallel=True,cache=True,nogil=True)
 def nb_bounce_back_obstacle(IBB, boundary, ns, sc,
                             obs_ibb, g_up, g, u, lattice):
 

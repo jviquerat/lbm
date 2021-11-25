@@ -97,7 +97,7 @@ class poiseuille(base_app):
         if (it%self.output_freq != 0): return
 
         # Output field
-        plot_norm(lattice, self.output_it, self.dpi)
+        plot_norm(lattice, 0.0, 1.5, self.output_it, self.dpi)
 
         # Increment plotting counter
         self.output_it += 1

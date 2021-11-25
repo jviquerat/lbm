@@ -291,7 +291,7 @@ class lattice:
 
         # Initial print
         tag = obstacle.tag
-        print('### Obstacle ',str(tag))
+        print('# Obstacle ',str(tag))
 
         # Compute polygon bnds
         polygon      = obstacle.polygon
@@ -309,7 +309,7 @@ class lattice:
         # Fill lattice
         for i in range(self.nx):
             for j in range(self.ny):
-                pt = self.lattice_coords(i, j)
+                pt = self.get_coords(i, j)
 
                 # Check if pt is inside polygon bbox
                 if ((pt[0] > poly_bnds[0]) and
@@ -351,7 +351,7 @@ class lattice:
                 i    = bnd[k,0]
                 j    = bnd[k,1]
                 q    = bnd[k,2]
-                pt   = self.lattice_coords(i, j)
+                pt   = self.get_coords(i, j)
                 x    = polygon[:,0] - pt[0]
                 y    = polygon[:,1] - pt[1]
                 dist = np.sqrt(np.square(x) + np.square(y))

@@ -33,7 +33,7 @@ class base_app():
                                    obs.name,  obs.n_spts,
                                    lattice.output_dir)
             obstacles[i].set_polygon(shape.curve_pts)
-            obstacles[i].set_tag(i)
+            obstacles[i].set_tag(i+1)
             area, bnd, ibb = lattice.add_obstacle(obstacles[i])
             obstacles[i].fill(area, bnd, ibb)
 

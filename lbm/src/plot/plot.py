@@ -6,7 +6,7 @@ import matplotlib.pyplot  as plt
 
 ### ************************************************
 ### Output 2D flow amplitude
-def plot_norm(lattice, output_it, dpi):
+def plot_norm(lattice, val_min, val_max, output_it, dpi):
 
     # Compute norm
     v = np.sqrt(lattice.u[0,:,:]**2+lattice.u[1,:,:]**2)
@@ -22,8 +22,8 @@ def plot_norm(lattice, output_it, dpi):
     fig.subplots_adjust(0,0,1,1)
     plt.imshow(vm,
                cmap = 'RdBu_r',
-               vmin = 0,
-               vmax = lattice.u_lbm,
+               vmin = val_min*lattice.u_lbm,
+               vmax = val_max*lattice.u_lbm,
                interpolation = 'spline16')
 
     filename = lattice.png_dir+'u_norm_'+str(output_it)+'.png'

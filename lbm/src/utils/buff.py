@@ -51,7 +51,7 @@ class buff:
     def mv_avg(self):
 
         f_avg             = self.f_avg()
-        it_s              = math.floor(3*self.it/4)
+        it_s              = math.floor(self.it*4/5)
         it_e              = self.it
         self.obs          = self.p_avg(self.buff, it_s, it_e)
         self.avg1_buff    = np.append(self.avg1_buff, self.obs)
@@ -62,9 +62,9 @@ class buff:
         self.obs          = self.p_avg(self.avg3_buff, it_s, it_e)
 
         growth = 0.0
-        if (self.it > 5):
-            growth = (self.avg3_buff[-1] -
-                      self.avg3_buff[-5])/(4.0*self.dt)
+        if (self.it > 10):
+            db     = self.avg3_buff[it_e]-self.avg3_buff[it_s]
+            growth = db/((it_e-it_s+1)*self.dt)
 
             if (abs(growth) < self.obs_cv_ct):
                 self.obs_cv_cnt += 1
