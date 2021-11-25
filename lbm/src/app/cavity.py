@@ -14,7 +14,7 @@ class cavity(base_app):
         # Free arguments
         self.name        = 'cavity'
         self.Re_lbm      = 100.0
-        self.L_lbm       = 200
+        self.L_lbm       = 100
         self.u_lbm       = 0.2
         self.rho_lbm     = 1.0
         self.t_max       = 20.0
@@ -124,3 +124,5 @@ class cavity(base_app):
         with open(filename, 'w') as f:
             for j in range(self.ny):
                 f.write('{} {}\n'.format(j*self.dx, uy_error[j]))
+
+        return vx_error, uy_error
