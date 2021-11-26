@@ -61,7 +61,7 @@ Below is a video of the 2D-2 case:
 It is possible to run a Poiseuille flow with random obstacles in the domain. Below is an example.
 
 <p align="center">
-  <img width="900" alt="" src="https://user-images.githubusercontent.com/44053700/99222254-768d5c80-27e2-11eb-96a0-c26ecadfa0c0.gif">
+  <img width="800" alt="" src="https://user-images.githubusercontent.com/44053700/99222254-768d5c80-27e2-11eb-96a0-c26ecadfa0c0.gif">
 </p>
 
 ### Array of obstacles
