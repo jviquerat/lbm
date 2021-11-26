@@ -35,6 +35,16 @@ class turek(base_app):
         self.dpi         = 200
 
         # Deduce remaining lbm parameters
+        self.compute_lbm_parameters()
+
+        # Obstacle
+        cylinder = obstacle('turek', 200, 2,
+                            'cylinder', self.r_cyl, [0.0,0.0])
+        self.obstacles = [cylinder]
+
+    ### Compute remaining lbm parameters
+    def compute_lbm_parameters(self):
+
         self.Cs      = 1.0/math.sqrt(3.0)
         self.ny      = self.L_lbm
         self.u_avg   = 2.0*self.u_lbm/3.0
@@ -49,11 +59,6 @@ class turek(base_app):
                                   (self.y_max-self.y_min))
         self.it_max  = math.floor(self.t_max/self.dt)
         self.sigma   = math.floor(10*self.nx)
-
-        # Obstacle
-        cylinder = obstacle('turek', 200, 2,
-                            'cylinder', self.r_cyl, [0.0,0.0])
-        self.obstacles = [cylinder]
 
     ### Add obstacles and initialize fields
     def initialize(self, lattice):

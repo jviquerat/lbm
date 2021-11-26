@@ -304,7 +304,7 @@ class lattice:
         # Declare lattice arrays
         obs = np.empty((0,2), dtype=int)
         bnd = np.empty((0,3), dtype=int)
-        ibb = np.empty((1),   dtype=float)
+        ibb = np.empty((0),   dtype=float)
 
         # Fill lattice
         for i in range(self.nx):

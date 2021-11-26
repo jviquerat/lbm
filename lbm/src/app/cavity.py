@@ -30,6 +30,11 @@ class cavity(base_app):
         self.dpi         = 200
 
         # Deduce remaining lbm parameters
+        self.compute_lbm_parameters()
+
+    ### Compute remaining lbm parameters
+    def compute_lbm_parameters(self):
+
         self.Cs          = 1.0/math.sqrt(3.0)
         self.ny          = self.L_lbm
         self.nu_lbm      = self.u_lbm*self.L_lbm/self.Re_lbm
