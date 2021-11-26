@@ -42,11 +42,13 @@ A comparison of `u = f(y)` and `v = f(x)` at the center of the domain with refer
 
 The Turek cylinder benchmark CFD case is described in <a href="https://link.springer.com/chapter/10.1007/978-3-322-89849-4_39">"Schafer, M., Turek, S. *Benchmark Computations of Laminar Flow Around a Cylinder*"</a>. The 2D case consists in a circular cylinder in a channel with top and bottom no-slip conditions, and with a Poiseuille flow at the inlet (these cases are named 2D-1 and 2D-2 in the aforementionned reference). The cylinder is voluntarily not centered to trigger instability at sufficient Reynolds number. Here, we explore the accuracy of the drag and lift computation (using IBB). Note that for the 2D-2 case, the values correspond to the max drag and lift. The computational times are obtained on a standard laptop, with a field output every 500 iterations.
 
+<p align="center">
 |        |`ny` | 2D-1 (Re=20) Cd, Cl, CPU   | 2D-2 (Re=100) Cd, Cl, CPU  |
 |--------|-----|----------------------------|----------------------------|
 | Turek  | --- |  5.5800 - 0.0107 - N/A     |  3.2300 - 1.0000 - N/A     |
 | lbm    | 100 |  5.7111 - 0.0285 - 236 s.  |  3.5409 - 1.0696 - 518 s.  |
 | lbm    | 200 |  5.6250 - 0.0212 - 1367 s. |  3.2959 - 1.0253 - 2762 s. |
+</p>
 
 Below is a video of the 2D-2 case:
 
