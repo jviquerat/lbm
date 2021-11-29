@@ -15,21 +15,21 @@ class array(base_app):
 
         # Free arguments
         self.name        = 'array'
-        self.Re_lbm      = 100.0
+        self.Re_lbm      = 2000.0
         self.L_lbm       = 200
-        self.u_lbm       = 0.05
+        self.u_lbm       = 0.025
         self.rho_lbm     = 1.0
-        self.t_max       = 0.02
-        self.x_min       =-0.2
-        self.x_max       = 1.6
-        self.y_min       =-0.2
-        self.y_max       = 0.2
+        self.t_max       = 7.5
+        self.x_min       =-1.0
+        self.x_max       = 8.0
+        self.y_min       =-1.0
+        self.y_max       = 1.0
         self.IBB         = True
         self.stop        = 'it'
         self.obs_cv_ct   = 1.0e-3
         self.obs_cv_nb   = 1000
         self.n_obs       = 8
-        self.r_obs       = 0.02
+        self.r_obs       = 0.1
 
         # Output parameters
         self.output_freq = 500
@@ -40,12 +40,12 @@ class array(base_app):
         self.compute_lbm_parameters()
 
         # Obstacles
-        radius         = 0.1
+        radius         = 0.5
         self.obstacles = []
         for i in range(self.n_obs):
             pos = [radius*math.cos(2.0*math.pi*float(i)/self.n_obs),
-                   radius*math.sin(2.0*math.pi*float(i)/self.n_obs)]
-            obs = obstacle('array', 4, 2,
+                   radius*math.sin(2.0*math.pi*float(i)/self.n_obs)+0.01]
+            obs = obstacle('array', 4, 100,
                            'square', self.r_obs, pos)
             self.obstacles.append(obs)
 
@@ -56,10 +56,10 @@ class array(base_app):
         self.ny      = self.L_lbm
         self.u_avg   = 2.0*self.u_lbm/3.0
         self.r_cyl   = 0.1
-        self.D_lbm   = math.floor(self.ny*self.r_obs/(self.y_max-self.y_min))
-        self.nu_lbm  = self.u_avg*self.D_lbm/self.Re_lbm
+        self.D_lbm   = math.floor(self.ny*self.r_cyl/(self.y_max-self.y_min))
+        self.nu_lbm  = self.u_avg*self.L_lbm/self.Re_lbm
         self.tau_lbm = 0.5 + self.nu_lbm/(self.Cs**2)
-        self.dt      = self.Re_lbm*self.nu_lbm/self.D_lbm**2
+        self.dt      = self.Re_lbm*self.nu_lbm/self.L_lbm**2
         self.dx      = (self.y_max-self.y_min)/self.ny
         self.dy      = self.dx
         self.nx      = math.floor(self.ny*(self.x_max-self.x_min)/
@@ -95,7 +95,7 @@ class array(base_app):
         ret  = (1.0 - math.exp(-val**2/(2.0*self.sigma**2)))
 
         for j in range(self.ny):
-            pt               = lattice.get_coords(0, j)
+            pt                  = lattice.get_coords(0, j)
             lattice.u_left[:,j] = ret*self.u_lbm*self.poiseuille(pt)
 
         lattice.u_top[0,:]   = 0.0

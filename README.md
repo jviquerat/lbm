@@ -5,7 +5,7 @@
 A simple lattice-Boltzmann code for 2D flow resolutions. All the tools are contained in the `lattice.py` file, and separate cases are built on top of this library.
 
 <p align="center">
-  <img width="900" alt="" src="https://user-images.githubusercontent.com/44053700/99295075-3dd29f00-2845-11eb-8e05-1d8a132b0feb.gif">
+  <img width="800" alt="" src="lbm/save/header.gif">
 </p>
 
 ## Contents
@@ -26,7 +26,7 @@ Cases are described in the `lbm/src/app/` repository. To run a simulation, adjus
 
 ### Lid-driven cavity
 
-A simple driven cavity in unit square. Below are the computed time-domain velocity norms and final streamlines at Re=100 (left) and Re=1000 (right).
+A simple driven cavity in unit square. Below are the computed time-domain velocity norms and final streamlines at `Re=100` (left) and `Re=1000` (right).
 
 <p align="center">
   <img width="350" alt="" src="lbm/save/driven_cavity/re_100_nx_200/anim-opt.gif"> <img width="350" alt="" src="lbm/save/driven_cavity/re_1000_nx_250/anim-opt.gif">
@@ -56,12 +56,10 @@ Below is a video of the 2D-2 case:
 
 ## Applications
 
-### Poiseuille with random obstacles
+### Array of obstacles
 
-It is possible to run a Poiseuille flow with random obstacles in the domain. Below is an example.
+An array of square obstacles at `Re=2000`, with `ny=200`. This took approx 20 minutes on my laptop, although the accuracy here is questionable.
 
 <p align="center">
-  <img width="800" alt="" src="https://user-images.githubusercontent.com/44053700/99222254-768d5c80-27e2-11eb-96a0-c26ecadfa0c0.gif">
+  <img width="800" alt="" src="lbm/save/array/array.gif">
 </p>
-
-### Array of obstacles
