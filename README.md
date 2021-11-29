@@ -2,7 +2,7 @@
 
 ![master badge](https://github.com/jviquerat/lbm/workflows/lbm/badge.svg?branch=master)
 
-A simple lattice-Boltzmann code for 2D flow resolutions. All the tools are contained in the `lattice.py` file, and separate cases are built on top of this library.
+A simple lattice-Boltzmann code for 2D flow resolutions.
 
 <p align="center">
   <img width="800" alt="" src="lbm/save/header.gif">
