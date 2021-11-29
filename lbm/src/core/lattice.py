@@ -336,6 +336,7 @@ class lattice:
                 ii  = i + cx
                 jj  = j + cy
 
+                if ((ii > self.nx-1) or (jj > self.ny-1)): continue
                 if (not self.lattice[ii,jj]):
                     bnd = np.append(bnd, np.array([[ii,jj,qb]]), axis=0)
 

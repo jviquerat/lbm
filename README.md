@@ -58,8 +58,17 @@ Below is a video of the 2D-2 case:
 
 ### Array of obstacles
 
-An array of square obstacles at `Re=2000`, with `ny=200`. This took approx 20 minutes on my laptop, although the accuracy here is questionable.
+An array of square obstacles at `Re=2000`, with `ny=200`. This computation took approx 20 minutes on my laptop, although the accuracy here is questionable.
 
 <p align="center">
   <img width="800" alt="" src="lbm/save/array/array.gif">
 </p>
+
+### Double step in channel
+
+Two steps in a channel at `Re=500`, with `ny=150`. This computation took approx 15 minutes on my laptop.
+
+<p align="center">
+  <img width="800" alt="" src="lbm/save/step/step.gif">
+</p>
+
