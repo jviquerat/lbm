@@ -26,7 +26,7 @@ Cases are described in the `lbm/src/app/` repository. To run a simulation, adjus
 
 ### Lid-driven cavity
 
-A simple driven cavity in unit square. Below are the computed time-domain velocity norms and final streamlines at `Re=100` (left) and `Re=1000` (right).
+A simple driven cavity in unit square. Below are the computed time-domain velocity norms at `Re=100` (left) and `Re=1000` (right).
 
 <p align="center">
   <img width="300" alt="" src="lbm/save/driven_cavity/re_100_nx_200/anim-opt.gif"> <img width="300" alt="" src="lbm/save/driven_cavity/re_1000_nx_250/anim-opt.gif">
