@@ -20,7 +20,7 @@ This LBM code includes:
 
 ## Running simulations
 
-Cases are described in the `lbm/src/app/` repository. To run a simulation, adjust the parameters in the related python file, then run `python3 start.py <app_name>`. A results folder will be generated in `./results/` with the current date and time. If you wish to add a new application, you must create a new app, and register it in the factory, located in `lbm/src/app/app.py`. Below are some examples and benchmarks that were ran with the code. The related cases are available in the repository.
+Cases are described in the `lbm/src/app/` repository. To run a simulation, adjust the parameters in the related python file, then run `python3 start.py <app_name>`. A results folder will be generated in `./results/` with the current date and time. If you wish to add a new application, you must create a new app, and register it in the factory, located in `lbm/src/app/app.py`. Below are some examples and benchmarks that were ran with the code. The related cases are available in the repository. The computational times are obtained on a standard laptop.
 
 ## Benchmarks
 
@@ -29,18 +29,18 @@ Cases are described in the `lbm/src/app/` repository. To run a simulation, adjus
 A simple driven cavity in unit square. Below are the computed time-domain velocity norms and final streamlines at `Re=100` (left) and `Re=1000` (right).
 
 <p align="center">
-  <img width="350" alt="" src="lbm/save/driven_cavity/re_100_nx_200/anim-opt.gif"> <img width="350" alt="" src="lbm/save/driven_cavity/re_1000_nx_250/anim-opt.gif">
+  <img width="300" alt="" src="lbm/save/driven_cavity/re_100_nx_200/anim-opt.gif"> <img width="300" alt="" src="lbm/save/driven_cavity/re_1000_nx_250/anim-opt.gif">
 </p>
 
 A comparison of `u = f(y)` and `v = f(x)` at the center of the domain with reference data from <a href="https://www.sciencedirect.com/science/article/pii/0021999182900584">"U. Ghia, K. N. Ghia, C. T. Shin, *High-Re solutions for incompressible flow using Navier-Stokes equations and multigrid method*"</a>.
 
 <p align="center">
-  <img width="350" alt="" src="lbm/save/driven_cavity/re_100_nx_200/re_100.png"> <img width="350" alt="" src="lbm/save/driven_cavity/re_1000_nx_250/re_1000.png">
+  <img width="300" alt="" src="lbm/save/driven_cavity/re_100_nx_200/re_100.png"> <img width="300" alt="" src="lbm/save/driven_cavity/re_1000_nx_250/re_1000.png">
 </p>
 
 ### Turek benchmark
 
-The Turek cylinder benchmark CFD case is described in <a href="https://link.springer.com/chapter/10.1007/978-3-322-89849-4_39">"Schafer, M., Turek, S. *Benchmark Computations of Laminar Flow Around a Cylinder*"</a>. The 2D case consists in a circular cylinder in a channel with top and bottom no-slip conditions, and with a Poiseuille flow at the inlet (these cases are named 2D-1 and 2D-2 in the aforementionned reference). The cylinder is voluntarily not centered to trigger instability at sufficient Reynolds number. Here, we explore the accuracy of the drag and lift computation (using IBB). Note that for the 2D-2 case, the values correspond to the max drag and lift. The computational times are obtained on a standard laptop, with a field output every 500 iterations.
+The Turek cylinder benchmark CFD case is described in <a href="https://link.springer.com/chapter/10.1007/978-3-322-89849-4_39">"Schafer, M., Turek, S. *Benchmark Computations of Laminar Flow Around a Cylinder*"</a>. Here, we explore the accuracy of the drag and lift computation (using IBB). Note that for the 2D-2 case, the values correspond to the max drag and lift.
 
 |        |`ny` | 2D-1 (Re=20) Cd, Cl, CPU   | 2D-2 (Re=100) Cd, Cl, CPU  |
 |--------|-----|----------------------------|----------------------------|
