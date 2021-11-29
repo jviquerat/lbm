@@ -1,0 +1,9 @@
+*.DS_Store
+*.png
+*.csv
+*.gif
+*~
+.*
+results/
+save/
+__pycache__/

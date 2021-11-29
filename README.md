@@ -1,8 +1,11 @@
 # lbm
+
+![master badge](https://github.com/jviquerat/lbm/workflows/lbm/badge.svg?branch=master)
+
 A simple lattice-Boltzmann code for 2D flow resolutions. All the tools are contained in the `lattice.py` file, and separate cases are built on top of this library.
 
 <p align="center">
-  <img width="900" alt="" src="https://user-images.githubusercontent.com/44053700/99295075-3dd29f00-2845-11eb-8e05-1d8a132b0feb.gif">
+  <img width="800" alt="" src="lbm/save/header.gif">
 </p>
 
 ## Contents
@@ -15,59 +18,57 @@ This LBM code includes:
 - Drag/lift computation using interpolated bounce-back
 - Core routines are deferred to Numba
 
-Below are some examples ran with the code. The related cases are available in the repository.
+## Running simulations
 
-## Lid-driven cavity
+Cases are described in the `lbm/src/app/` repository. To run a simulation, adjust the parameters in the related python file, then run `python3 start.py <app_name>`. A results folder will be generated in `./results/` with the current date and time. If you wish to add a new application, you must create a new app, and register it in the factory, located in `lbm/src/app/app.py`. Below are some examples and benchmarks that were ran with the code. The related cases are available in the repository. The computational times are obtained on a standard laptop.
 
-A simple driven cavity in unit square. Launch it by running ```python3 cavity.py```.  
-Below are the computed time-domain velocity norms and final streamlines at Re=100 (left) and Re=1000 (right).
+## Benchmarks
 
-<p align="center">
-  <img width="350" alt="" src="https://user-images.githubusercontent.com/44053700/98362755-12260c80-202e-11eb-873a-7f4948150331.gif"> <img width="350" alt="" src="https://user-images.githubusercontent.com/44053700/98362762-1520fd00-202e-11eb-8495-b21ecac968bc.gif">
-</p>
+### Lid-driven cavity
 
-<p align="center">
-  <img width="350" alt="" src="https://user-images.githubusercontent.com/44053700/76288545-4088f780-62a7-11ea-9893-dd0a19339bc5.png"> <img width="350" alt="" src="https://user-images.githubusercontent.com/44053700/76447230-9a351300-63c8-11ea-8722-35e1eb2151c0.png">
-</p>
-
-A comparison of u_x = f(y) at the center of the domain with reference data from "U. Ghia, K. N. Ghia, C. T. Shin, *High-Re solutions for incompressible flow using Navier-Stokes equations and multigrid method*."
+A simple driven cavity in unit square. Below are the computed time-domain velocity norms and final streamlines at `Re=100` (left) and `Re=1000` (right).
 
 <p align="center">
-  <img width="350" alt="" src="https://user-images.githubusercontent.com/44053700/76288543-3ebf3400-62a7-11ea-9e2b-13e0f6327c89.png"> <img width="350" alt="" src="https://user-images.githubusercontent.com/44053700/76447238-9e613080-63c8-11ea-8e60-6f77248518a2.png">
+  <img width="300" alt="" src="lbm/save/driven_cavity/re_100_nx_200/anim-opt.gif"> <img width="300" alt="" src="lbm/save/driven_cavity/re_1000_nx_250/anim-opt.gif">
 </p>
 
-## Turek benchmark
-
-The Turek cylinder benchmark CFD case is described in "Schafer, M., Turek, S. *Benchmark Computations of Laminar Flow Around a Cylinder*". The 2D case consists in a circular cylinder in a channel with top and bottom no-slip conditions, and with a Poiseuille flow at the inlet (these cases are named 2D-1 and 2D-2 in the aforementionned reference). The cylinder is voluntarily not centered to trigger instability at sufficient Reynolds number. Here, we explore the accuracy of the drag and lift computation.
-
-|        |`ny` | 2D-1 (Re=20) Cd   | 2D-1 (Re=20) Cl   | 2D-2 (Re=100) Cd  | 2D-2 (Re=100) Cl  |
-|--------|-----|-------------------|-------------------|-------------------|-------------------|
-| Turek  | --- |  5.5800           |  0.0107           |  3.2300           |  1.0000           |
-| lbm    | 100 |  5.6300           |  0.0862           |  3.0411           |  0.5834           |
-| lbm    | 200 |  5.5804           |  0.0371           |  3.2582           |  1.2047           |
-| lbm    | 300 |  5.5846           |  0.0261           |  3.2152           |  1.0987           |
-
-Below are videos of the 2D-1 and 2D-2 cases:
+A comparison of `u = f(y)` and `v = f(x)` at the center of the domain with reference data from <a href="https://www.sciencedirect.com/science/article/pii/0021999182900584">"U. Ghia, K. N. Ghia, C. T. Shin, *High-Re solutions for incompressible flow using Navier-Stokes equations and multigrid method*"</a>.
 
 <p align="center">
-  <img width="800" alt="" src="https://user-images.githubusercontent.com/44053700/101684500-d0421900-3a66-11eb-8137-7d936569c388.gif">
-  <img width="800" alt="" src="https://user-images.githubusercontent.com/44053700/101684599-f7004f80-3a66-11eb-820d-c4da29dc1dfe.gif">
+  <img width="300" alt="" src="lbm/save/driven_cavity/re_100_nx_200/re_100.png"> <img width="300" alt="" src="lbm/save/driven_cavity/re_1000_nx_250/re_1000.png">
 </p>
 
-## Poiseuille with random obstacles
+### Turek benchmark
 
-It is possible to run a Poiseuille flow with random obstacles in the domain. Below is an example.
+The Turek cylinder benchmark CFD case is described in <a href="https://link.springer.com/chapter/10.1007/978-3-322-89849-4_39">"Schafer, M., Turek, S. *Benchmark Computations of Laminar Flow Around a Cylinder*"</a>. Here, we explore the accuracy of the drag and lift computation (using IBB). Note that for the 2D-2 case, the values correspond to the max drag and lift.
+
+|        |`ny` | 2D-1 (Re=20) Cd, Cl, CPU   | 2D-2 (Re=100) Cd, Cl, CPU  |
+|--------|-----|----------------------------|----------------------------|
+| Turek  | --- |  5.5800 - 0.0107 - N/A     |  3.2300 - 1.0000 - N/A     |
+| lbm    | 100 |  5.7111 - 0.0285 - 236 s.  |  3.5409 - 1.0696 - 518 s.  |
+| lbm    | 200 |  5.6250 - 0.0212 - 1367 s. |  3.2959 - 1.0253 - 2762 s. |
+
+Below is a video of the 2D-2 case:
 
 <p align="center">
-  <img width="900" alt="" src="https://user-images.githubusercontent.com/44053700/99222254-768d5c80-27e2-11eb-96a0-c26ecadfa0c0.gif">
+  <img width="800" alt="" src="lbm/save/turek/re_100_ny_200/turek.gif">
 </p>
 
-## Running
+## Applications
 
-To run a simulation, adjust the parameters in the related python file, then run ```python3 case.py```. A results folder will be generated in ```./results/``` with the current date and time. The ```png/``` folder will contain outputs of the velocity norm over the domain. To generate a video out of the png files, you can use the ```convert``` command as follows:
+### Array of obstacles
 
-```convert -delay 10 -resize 50% -loop 0 'u_norm_%d.png'[0-100] animation.gif```
+An array of square obstacles at `Re=2000`, with `ny=200`. This computation took approx 20 minutes on my laptop, although the accuracy here is questionable.
 
-To optimize and resize gifs, use ```gifsicle``` :
+<p align="center">
+  <img width="800" alt="" src="lbm/save/array/array.gif">
+</p>
 
-```gifsicle -i animation.gif --scale 0.6 -O3 --colors 256 -o anim-opt.gif```
+### Double step in channel
+
+Two steps in a channel at `Re=500`, with `ny=150`. This computation took approx 15 minutes on my laptop.
+
+<p align="center">
+  <img width="800" alt="" src="lbm/save/step/step.gif">
+</p>
+
