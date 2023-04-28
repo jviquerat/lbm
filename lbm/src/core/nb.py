@@ -206,9 +206,9 @@ def nb_zou_he_top_wall_velocity(lx, ly, u, u_top, rho, g):
     u[0,:,ly] = u_top[0,:]
     u[1,:,ly] = u_top[1,:]
 
-    rho[:,0] = (g[0,:,0] + g[1,:,0] + g[2,:,0] +
-                2.0*g[3,:,0] + 2.0*g[5,:,0] +
-                2.0*g[7,:,0])/(1.0 + u[1,:,ly])
+    rho[:,ly] = (g[0,:,ly] + g[1,:,ly] + g[2,:,ly] +
+                2.0*g[3,:,ly] + 2.0*g[5,:,ly] +
+                2.0*g[7,:,ly])/(1.0 + u[1,:,ly])
 
     g[4,:,ly] = (g[3,:,ly] - cst1*rho[:,ly]*u[1,:,ly])
 
